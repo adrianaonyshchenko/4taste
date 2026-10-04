@@ -1,24 +1,49 @@
-﻿using System.Text;
+﻿using System;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Serilog;
 
 namespace FourTaste.WPF
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         public MainWindow()
         {
             InitializeComponent();
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            string currentUser = "Адріана";
+            string moduleName = "CulinaryModule";
+
+            Log.Information(
+                "Користувач {UserName} виконав дію у модулі {Module}",
+                currentUser,
+                moduleName);
+
+            int attemptedValue = -5;
+
+            Log.Warning(
+                "Користувач {UserName} ввів некоректне значення кількості: {Value}",
+                currentUser,
+                attemptedValue);
+
+            try
+            {
+                throw new InvalidOperationException(
+                    "Помилка підключення до бази даних рецепшенa.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(
+                    ex,
+                    "Сталася критична помилка в модулі {Module} для користувача {UserName}",
+                    moduleName,
+                    currentUser);
+            }
+
+            MessageBox.Show("Різні типи логів надіслано в Seq!");
+        }
+
     }
 }
