@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="FourTaste.ApplicationCore/FourTaste.ApplicationCore.csproj" />
+  <Project Path="FourTaste.Infrastructure/FourTaste.Infrastructure.csproj" />
+  <Project Path="FourTaste.WPF/FourTaste.WPF.csproj" Id="7caf0caa-2ac3-4b18-a60c-ff3df6456def" />
+</Solution>
