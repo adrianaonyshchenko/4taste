@@ -11,7 +11,7 @@ namespace FourTaste.WPF
 
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.Seq("http://192.168.0.123:5341")
+                .WriteTo.Seq("http://localhost:5341")
                 .CreateLogger();
         }
 
