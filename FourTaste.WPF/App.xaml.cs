@@ -1,8 +1,8 @@
-﻿using System.Windows;
-using Serilog;
-
-namespace FourTaste.WPF
+﻿namespace FourTaste.WPF
 {
+    using System.Windows;
+    using Serilog;
+
     public partial class App : Application
     {
         protected override void OnStartup(StartupEventArgs e)

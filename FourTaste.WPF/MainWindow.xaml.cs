@@ -1,14 +1,14 @@
-﻿using System;
-using System.Windows;
-using Serilog;
-
-namespace FourTaste.WPF
+﻿namespace FourTaste.WPF
 {
+    using System;
+    using System.Windows;
+    using Serilog;
+
     public partial class MainWindow : Window
     {
         public MainWindow()
         {
-            InitializeComponent();
+            this.InitializeComponent();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -44,6 +44,5 @@ namespace FourTaste.WPF
 
             MessageBox.Show("Різні типи логів надіслано в Seq!");
         }
-
     }
 }

@@ -6,7 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-	  <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+	  <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	  <NoWarn>$(NoWarn);SA1633;SA1601;SA1600;SA0001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

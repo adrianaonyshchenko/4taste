@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.EntityFrameworkCore;
-using FourTaste.ApplicationCore.Entities;
-
-
-namespace FourTaste.Infrastructure.Data
+﻿namespace FourTaste.Infrastructure.Data
 {
-    internal class AppDbContext: DbContext
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using FourTaste.ApplicationCore.Entities;
+    using Microsoft.EntityFrameworkCore;
+
+    internal class AppDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
 

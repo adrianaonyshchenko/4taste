@@ -4,7 +4,9 @@
 <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	  <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+	  <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	  <NoWarn>$(NoWarn);SA1600;SA1633;</NoWarn>
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 	<ItemGroup>
