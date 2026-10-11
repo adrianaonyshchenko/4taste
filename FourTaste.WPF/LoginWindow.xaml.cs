@@ -1,10 +1,11 @@
-﻿using System;
-using System.Windows;
-using FourTaste.ApplicationCore.Services;
+﻿using FourTaste.ApplicationCore.Services;
 using FourTaste.Infrastructure.Data;
 using FourTaste.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using System;
+using System.Windows;
 
 namespace FourTaste.WPF
 {
@@ -42,8 +43,8 @@ namespace FourTaste.WPF
 
                     MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                    var mainWindow = new MainWindow();
-                    mainWindow.Show();
+                    var profileWindow = App.ServiceProvider?.GetService<ManageAllergiesWindow>() ?? new ManageAllergiesWindow();
+                    profileWindow.Show();
                     this.Close();
                 }
             }

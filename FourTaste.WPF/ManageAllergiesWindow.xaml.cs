@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
@@ -15,23 +16,20 @@ namespace FourTaste.WPF
     {
         private readonly IAllergyService allergyService;
         private readonly UserService userService;
-        private readonly int currentUserId = 1;
+        private readonly IAuthService authService;
+        private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
         public ManageAllergiesWindow()
-            : this(ResolveAllergyService(), ResolveUserService())
+            : this(ResolveAllergyService(), ResolveUserService(), ResolveAuthService())
         {
         }
 
-        public ManageAllergiesWindow(IAllergyService allergyService)
-            : this(allergyService, ResolveUserService())
-        {
-        }
-
-        public ManageAllergiesWindow(IAllergyService allergyService, UserService userService)
+        public ManageAllergiesWindow(IAllergyService allergyService, UserService userService, IAuthService authService)
         {
             this.InitializeComponent();
             this.allergyService = allergyService ?? throw new ArgumentNullException(nameof(allergyService));
             this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            this.authService = authService ?? throw new ArgumentNullException(nameof(authService));
         }
 
         private static IAllergyService ResolveAllergyService()
@@ -44,7 +42,6 @@ namespace FourTaste.WPF
                     return resolved;
                 }
             }
-
             var options = new DbContextOptionsBuilder<AppDbContext>()
                 .UseNpgsql("Host=ep-mute-sea-b5ks3hrm-pooler.c-7.us-east-2.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_a8u2btDTpHiX;Ssl Mode=Require;Trust Server Certificate=true")
                 .Options;
@@ -63,13 +60,30 @@ namespace FourTaste.WPF
                     return resolved;
                 }
             }
-
             var options = new DbContextOptionsBuilder<AppDbContext>()
                 .UseNpgsql("Host=ep-mute-sea-b5ks3hrm-pooler.c-7.us-east-2.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_a8u2btDTpHiX;Ssl Mode=Require;Trust Server Certificate=true")
                 .Options;
             var context = new AppDbContext(options);
             var repository = new UserRepository(context);
             return new UserService(repository);
+        }
+
+        private static IAuthService ResolveAuthService()
+        {
+            if (App.ServiceProvider != null)
+            {
+                var resolved = App.ServiceProvider.GetService<IAuthService>();
+                if (resolved != null)
+                {
+                    return resolved;
+                }
+            }
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseNpgsql("Host=ep-mute-sea-b5ks3hrm-pooler.c-7.us-east-2.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_a8u2btDTpHiX;Ssl Mode=Require;Trust Server Certificate=true")
+                .Options;
+            var context = new AppDbContext(options);
+            var repository = new UserRepository(context);
+            return new AuthService(repository, Log.Logger);
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -82,7 +96,7 @@ namespace FourTaste.WPF
         {
             try
             {
-                var user = await this.userService.GetUserByIdAsync(this.currentUserId);
+                var user = await this.userService.GetUserByIdAsync(this.CurrentUserId);
                 if (user != null)
                 {
                     this.ProfileNameTextBox.Text = user.Name;
@@ -94,7 +108,7 @@ namespace FourTaste.WPF
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Помилка завантаження профілю користувача з ID {UserId}", this.currentUserId);
+                Log.Error(ex, "Помилка завантаження профілю користувача з ID {UserId}", this.CurrentUserId);
             }
         }
 
@@ -102,16 +116,12 @@ namespace FourTaste.WPF
         {
             try
             {
-                var allergies = await this.allergyService.GetAllergiesByUserIdAsync(this.currentUserId);
+                var allergies = await this.allergyService.GetAllergiesByUserIdAsync(this.CurrentUserId);
                 this.AllergiesListBox.ItemsSource = allergies;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Не вдалося завантажити список алергенів: {ex.Message}",
-                    "Помилка",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                MessageBox.Show($"Не вдалося завантажити список алергенів: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -120,32 +130,18 @@ namespace FourTaste.WPF
             try
             {
                 string allergenName = this.AllergenTextBox.Text;
-                await this.allergyService.AddAllergyAsync(this.currentUserId, allergenName);
-
+                await this.allergyService.AddAllergyAsync(this.CurrentUserId, allergenName);
                 this.AllergenTextBox.Clear();
                 await this.LoadAllergiesAsync();
-
-                MessageBox.Show(
-                    "Алерген успішно збережено!",
-                    "Успіх",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                MessageBox.Show("Алерген успішно збережено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (ArgumentException ex)
             {
-                MessageBox.Show(
-                    ex.Message,
-                    "Помилка валідації",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                MessageBox.Show(ex.Message, "Помилка валідації", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Помилка збереження: {ex.Message}",
-                    "Помилка",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                MessageBox.Show($"Помилка збереження: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -153,14 +149,9 @@ namespace FourTaste.WPF
         {
             if (this.AllergiesListBox.SelectedItem is not Allergy selectedAllergy)
             {
-                MessageBox.Show(
-                    "Будь ласка, оберіть алерген зі списку для видалення.",
-                    "Увага",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                MessageBox.Show("Будь ласка, оберіть алерген зі списку для видалення.", "Увага", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-
             try
             {
                 await this.allergyService.DeleteAllergyAsync(selectedAllergy.Id);
@@ -168,11 +159,7 @@ namespace FourTaste.WPF
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Помилка видалення: {ex.Message}",
-                    "Помилка",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                MessageBox.Show($"Помилка видалення: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -183,25 +170,14 @@ namespace FourTaste.WPF
                 string name = this.ProfileNameTextBox.Text;
                 string username = this.ProfileUsernameTextBox.Text;
                 string email = this.ProfileEmailTextBox.Text;
-
-                await this.userService.UpdateProfileAsync(this.currentUserId, name, username, email);
-
+                await this.userService.UpdateProfileAsync(this.CurrentUserId, name, username, email);
                 this.DisplayNameTextBlock.Text = string.IsNullOrWhiteSpace(name) ? "Ім'я" : name.Trim();
                 this.DisplayUsernameTextBlock.Text = username.Trim();
-
-                MessageBox.Show(
-                    "Особисті дані успішно оновлено!",
-                    "Успіх",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                MessageBox.Show("Особисті дані успішно оновлено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Помилка оновлення профілю: {ex.Message}",
-                    "Помилка",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                MessageBox.Show($"Помилка оновлення профілю: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -210,33 +186,19 @@ namespace FourTaste.WPF
             try
             {
                 string newPassword = this.NewPasswordBox.Password;
-                await this.userService.ChangePasswordAsync(this.currentUserId, newPassword);
+                await this.userService.ChangePasswordAsync(this.CurrentUserId, newPassword);
                 this.NewPasswordBox.Clear();
-
-                MessageBox.Show(
-                    "Пароль успішно змінено!",
-                    "Успіх",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                MessageBox.Show("Пароль успішно змінено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Помилка зміни пароля: {ex.Message}",
-                    "Помилка",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                MessageBox.Show($"Помилка зміни пароля: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
         private async void DeleteProfileButton_Click(object sender, RoutedEventArgs e)
         {
-            var confirm = MessageBox.Show(
-                "Ви впевнені, що хочете видалити свій обліковий запис?",
-                "Підтвердження видалення",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
+            var confirm = MessageBox.Show("Ви впевнені, що хочете видалити свій обліковий запис?", "Підтвердження видалення", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (confirm != MessageBoxResult.Yes)
             {
                 return;
@@ -244,12 +206,10 @@ namespace FourTaste.WPF
 
             try
             {
-                await this.userService.DeleteAccountAsync(this.currentUserId);
-                MessageBox.Show(
-                    "Обліковий запис видалено.",
-                    "Успіх",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                await this.userService.DeleteAccountAsync(this.CurrentUserId);
+                MessageBox.Show("Обліковий запис видалено.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                SessionContext.CurrentUser = null;
 
                 var registerWindow = App.ServiceProvider?.GetService<RegisterWindow>() ?? new RegisterWindow();
                 registerWindow.Show();
@@ -257,20 +217,26 @@ namespace FourTaste.WPF
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Помилка видалення профілю: {ex.Message}",
-                    "Помилка",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                MessageBox.Show($"Помилка видалення профілю: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void LogoutButton_Click(object sender, RoutedEventArgs e)
+        private async void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            Log.Information("Користувач з ID {UserId} вийшов із системи", this.currentUserId);
-            var registerWindow = App.ServiceProvider?.GetService<RegisterWindow>() ?? new RegisterWindow();
-            registerWindow.Show();
-            this.Close();
+            try
+            {
+                await this.authService.LogoutAsync(this.CurrentUserId);
+
+                SessionContext.CurrentUser = null;
+
+                var registerWindow = App.ServiceProvider?.GetService<RegisterWindow>() ?? new RegisterWindow();
+                registerWindow.Show();
+                this.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка при виході: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

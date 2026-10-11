@@ -30,7 +30,7 @@ namespace FourTaste.WPF
             var loggerFactory = new SerilogLoggerFactory(Log.Logger);
             var logger = loggerFactory.CreateLogger<AuthService>();
 
-            var authService = new AuthService(userRepository, logger);
+            var authService = new AuthService(userRepository, Serilog.Log.Logger);
 
             try
             {
@@ -38,10 +38,9 @@ namespace FourTaste.WPF
 
                 SessionContext.CurrentUser = null;
 
-                // TODO: розкоментувати після pull з гілки Ані
-                // var loginWindow = new LoginWindow();
-                // loginWindow.Show();
-                this.Close(); // тимчасово
+                var loginWindow = new LoginWindow();
+                loginWindow.Show();
+                this.Close();
             }
             catch (ArgumentException ex)
             {
