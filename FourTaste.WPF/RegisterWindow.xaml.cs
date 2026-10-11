@@ -67,7 +67,9 @@ namespace FourTaste.WPF
 
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Перехід до вікна входу", "Увійти", MessageBoxButton.OK, MessageBoxImage.Information);
+            var loginWindow = new LoginWindow();
+            loginWindow.Show();
+            this.Close();
         }
     }
 }
