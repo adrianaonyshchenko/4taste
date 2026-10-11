@@ -4,5 +4,6 @@
   </Folder>
   <Project Path="FourTaste.ApplicationCore/FourTaste.ApplicationCore.csproj" />
   <Project Path="FourTaste.Infrastructure/FourTaste.Infrastructure.csproj" />
+  <Project Path="FourTaste.Tests/FourTaste.Tests.csproj" Id="a44a24b5-cdc2-4b56-a578-ca98f3d402e4" />
   <Project Path="FourTaste.WPF/FourTaste.WPF.csproj" Id="7caf0caa-2ac3-4b18-a60c-ff3df6456def" />
 </Solution>
