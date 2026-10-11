@@ -1,4 +1,4 @@
-﻿using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +33,12 @@ namespace FourTaste.Infrastructure.Repositories
         public async Task<User?> GetByEmailAsync(string email)
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task UpdateAsync(User entity)
+        {
+            _context.Users.Update(entity);
+            await _context.SaveChangesAsync();
         }
     }
 }
