@@ -13,15 +13,18 @@ namespace FourTaste.WPF
 {
     public partial class App : Application
     {
+        // Збережено з гілки develop: властивість для Dependency Injection
         public static IServiceProvider? ServiceProvider { get; private set; }
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            // Налаштування логування з твоїм актуальним посиланням Ngrok
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.Seq("http://localhost:5341")
+                .WriteTo.Seq("https://husked-expanse-landmass.ngrok-free.dev")
                 .CreateLogger();
 
+            // Збережено з гілки develop: ініціалізація сервісів
             var services = new ServiceCollection();
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
