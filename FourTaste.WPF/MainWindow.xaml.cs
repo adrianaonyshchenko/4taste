@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Windows;
+using FourTaste.ApplicationCore.Services;
+using FourTaste.Infrastructure.Data;
+using FourTaste.Infrastructure.Repositories;
+using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Extensions.Logging;
 
 namespace FourTaste.WPF
 {
@@ -11,39 +16,36 @@ namespace FourTaste.WPF
             InitializeComponent();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            string currentUser = "Адріана";
-            string moduleName = "CulinaryModule";
+            if (SessionContext.CurrentUser is null)
+            {
+                MessageBox.Show("Немає активного користувача.");
+                return;
+            }
 
-            Log.Information(
-                "Користувач {UserName} виконав дію у модулі {Module}",
-                currentUser,
-                moduleName);
+            using var context = new AppDbContext();
+            var userRepository = new UserRepository(context);
 
-            int attemptedValue = -5;
+            var loggerFactory = new SerilogLoggerFactory(Log.Logger);
+            var logger = loggerFactory.CreateLogger<AuthService>();
 
-            Log.Warning(
-                "Користувач {UserName} ввів некоректне значення кількості: {Value}",
-                currentUser,
-                attemptedValue);
+            var authService = new AuthService(userRepository, Serilog.Log.Logger);
 
             try
             {
-                throw new InvalidOperationException(
-                    "Помилка підключення до бази даних рецепшенa.");
+                await authService.LogoutAsync(SessionContext.CurrentUser.ID);
+
+                SessionContext.CurrentUser = null;
+
+                var loginWindow = new LoginWindow();
+                loginWindow.Show();
+                this.Close();
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                Log.Error(
-                    ex,
-                    "Сталася критична помилка в модулі {Module} для користувача {UserName}",
-                    moduleName,
-                    currentUser);
+                MessageBox.Show(ex.Message, "Помилка виходу");
             }
-
-            MessageBox.Show("Різні типи логів надіслано в Seq!");
         }
-
     }
 }

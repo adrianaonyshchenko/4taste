@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Button Content="Натисни для логу" Width="150" Height="50" Click="Button_Click"/>
+        <Button x:Name="LogoutButton" Content="Вийти" Click="LogoutButton_Click"
+        HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" />
     </Grid>
 </Window>

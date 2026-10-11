@@ -2,6 +2,7 @@
 using FourTaste.Infrastructure.Data;
 using FourTaste.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Runtime.Intrinsics.X86;
 using System.Windows;
@@ -55,7 +56,10 @@ namespace FourTaste.WPF
 
                 if (success)
                 {
-                    MessageBox.Show("Реєстрація успішна!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show("Реєстрація успішна! Тепер увійдіть у систему.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
+                    loginWindow.Show();
                     this.Close();
                 }
             }
@@ -67,7 +71,9 @@ namespace FourTaste.WPF
 
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Перехід до вікна входу", "Увійти", MessageBoxButton.OK, MessageBoxImage.Information);
+            var loginWindow = new LoginWindow();
+            loginWindow.Show();
+            this.Close();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace FourTaste.Infrastructure.Data
@@ -6,6 +6,8 @@ namespace FourTaste.Infrastructure.Data
     public class AppDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
+
+        public DbSet<Allergy> Allergies { get; set; }
 
         public AppDbContext()
         {
