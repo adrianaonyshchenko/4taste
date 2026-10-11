@@ -1,35 +1,25 @@
-using System;
-using System.Windows;
-using FourTaste.ApplicationCore.Entities;
-using FourTaste.ApplicationCore.Interfaces;
-using FourTaste.ApplicationCore.Services;
-using FourTaste.Infrastructure.Data;
-using FourTaste.Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
 using Serilog;
+using System.IO;
+using System.Windows;
 
 namespace FourTaste.WPF
 {
     public partial class App : Application
     {
-        // Збережено з гілки develop: властивість для Dependency Injection
-        public static IServiceProvider? ServiceProvider { get; private set; }
-
         protected override void OnStartup(StartupEventArgs e)
         {
-            // Налаштування логування з твоїм актуальним посиланням Ngrok
+            base.OnStartup(e);
+
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .Build();
+
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.Seq("https://husked-expanse-landmass.ngrok-free.dev")
+                .ReadFrom.Configuration(configuration)
                 .CreateLogger();
 
-            // Збережено з гілки develop: ініціалізація сервісів
-            var services = new ServiceCollection();
-            ConfigureServices(services);
-            ServiceProvider = services.BuildServiceProvider();
-
-            base.OnStartup(e);
         }
 
         protected override void OnExit(ExitEventArgs e)
