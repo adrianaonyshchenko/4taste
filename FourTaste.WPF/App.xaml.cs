@@ -1,25 +1,38 @@
-﻿using Microsoft.Extensions.Configuration;
-using Serilog;
+using System;
 using System.IO;
 using System.Windows;
+using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Services;
+using FourTaste.Infrastructure.Data;
+using FourTaste.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace FourTaste.WPF
 {
     public partial class App : Application
     {
+        public static IServiceProvider? ServiceProvider { get; private set; }
+
         protected override void OnStartup(StartupEventArgs e)
         {
-            base.OnStartup(e);
-
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .Build();
 
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
                 .CreateLogger();
 
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            ServiceProvider = services.BuildServiceProvider();
+
+            base.OnStartup(e);
         }
 
         protected override void OnExit(ExitEventArgs e)
@@ -44,9 +57,11 @@ namespace FourTaste.WPF
             services.AddScoped<IAllergyService, AllergyService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<UserService>();
+            services.AddScoped<IAuthService, AuthService>();
 
             services.AddTransient<ManageAllergiesWindow>();
             services.AddTransient<RegisterWindow>();
+            services.AddTransient<LoginWindow>();
             services.AddTransient<MainWindow>();
         }
     }

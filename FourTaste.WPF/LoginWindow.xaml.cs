@@ -1,4 +1,4 @@
-﻿using FourTaste.ApplicationCore.Services;
+using FourTaste.ApplicationCore.Services;
 using FourTaste.Infrastructure.Data;
 using FourTaste.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace FourTaste.WPF
 {
@@ -26,6 +27,26 @@ namespace FourTaste.WPF
             var logger = Log.Logger;
 
             _authService = new AuthService(repository, logger);
+        }
+
+        private void EmailTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (EmailPlaceholder != null)
+            {
+                EmailPlaceholder.Visibility = EmailTextBox.Text.Length > 0
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
+            }
+        }
+
+        private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (PasswordPlaceholder != null)
+            {
+                PasswordPlaceholder.Visibility = PasswordBox.Password.Length > 0
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
+            }
         }
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)

@@ -1,4 +1,4 @@
-﻿using FourTaste.ApplicationCore.Services;
+using FourTaste.ApplicationCore.Services;
 using FourTaste.Infrastructure.Data;
 using FourTaste.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -52,7 +52,7 @@ namespace FourTaste.WPF
                 string email = this.EmailTextBox.Text;
                 string password = this.PasswordBox.Password;
 
-                bool success = await this.userService.RegisterAsync(username, email, password);
+                bool success = await this.userService.RegisterAsync(username, email, password, name);
 
                 if (success)
                 {

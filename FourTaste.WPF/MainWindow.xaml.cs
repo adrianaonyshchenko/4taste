@@ -1,11 +1,9 @@
-﻿using System;
+using System;
 using System.Windows;
 using FourTaste.ApplicationCore.Services;
 using FourTaste.Infrastructure.Data;
 using FourTaste.Infrastructure.Repositories;
-using Microsoft.Extensions.Logging;
 using Serilog;
-using Serilog.Extensions.Logging;
 
 namespace FourTaste.WPF
 {
@@ -26,10 +24,6 @@ namespace FourTaste.WPF
 
             using var context = new AppDbContext();
             var userRepository = new UserRepository(context);
-
-            var loggerFactory = new SerilogLoggerFactory(Log.Logger);
-            var logger = loggerFactory.CreateLogger<AuthService>();
-
             var authService = new AuthService(userRepository, Serilog.Log.Logger);
 
             try

@@ -14,7 +14,7 @@ namespace FourTaste.ApplicationCore.Services
             this.userRepository = userRepository;
         }
 
-        public async Task<bool> RegisterAsync(string username, string email, string password)
+        public async Task<bool> RegisterAsync(string username, string email, string password, string name = "")
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             {
@@ -37,8 +37,9 @@ namespace FourTaste.ApplicationCore.Services
 
             var newUser = new User
             {
-                Username = username,
-                Email = email,
+                Name = name.Trim(),
+                Username = username.Trim(),
+                Email = email.Trim(),
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             };
 
