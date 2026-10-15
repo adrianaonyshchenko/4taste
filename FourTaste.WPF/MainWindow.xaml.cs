@@ -7,11 +7,15 @@ using Serilog;
 
 namespace FourTaste.WPF
 {
+    using System;
+    using System.Windows;
+    using Serilog;
+
     public partial class MainWindow : Window
     {
         public MainWindow()
         {
-            InitializeComponent();
+            this.InitializeComponent();
         }
 
         private async void LogoutButton_Click(object sender, RoutedEventArgs e)
