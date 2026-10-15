@@ -15,6 +15,9 @@ using Serilog;
 
 namespace FourTaste.WPF
 {
+    using System.Windows;
+    using Serilog;
+
     public partial class App : Application
     {
         public static IServiceProvider? ServiceProvider { get; private set; }
