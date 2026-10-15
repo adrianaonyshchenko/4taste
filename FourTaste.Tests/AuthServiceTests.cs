@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Xunit;
 using Moq;
@@ -13,45 +13,53 @@ namespace FourTaste.Tests
     {
 
         [Fact]
-        public async Task LogoutAsync_ShouldCompleteSuccessfully_WhenUserExists()
+        public async Task LogoutAsync_ShouldClearSessionAndNotQueryDatabase_WhenCalled()
         {
             var mockRepo = new Mock<IUserRepository>();
             var mockLogger = new Mock<ILogger>();
-            var existingUser = new User { ID = 1, Username = "Tania" };
-
-            mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existingUser);
+            SessionContext.CurrentUser = new User { ID = 1, Username = "Tania" };
             var service = new AuthService(mockRepo.Object, mockLogger.Object);
 
-            var exception = await Record.ExceptionAsync(() => service.LogoutAsync(1));
+            var result = await service.LogoutAsync(1);
 
-            Assert.Null(exception);
+            Assert.True(result.IsSuccess);
+            Assert.Null(SessionContext.CurrentUser);
+            mockRepo.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
         }
 
         [Fact]
-        public async Task LogoutAsync_ShouldThrowArgumentException_WhenUserDoesNotExist()
+        public async Task LogoutAsync_ShouldSucceedAndClearSession_WhenNoSessionActive()
         {
             var mockRepo = new Mock<IUserRepository>();
             var mockLogger = new Mock<ILogger>();
-
-            mockRepo.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((User?)null);
+            SessionContext.CurrentUser = null;
             var service = new AuthService(mockRepo.Object, mockLogger.Object);
 
-            await Assert.ThrowsAsync<ArgumentException>(() =>
-                service.LogoutAsync(999));
+            var result = await service.LogoutAsync();
+
+            Assert.True(result.IsSuccess);
+            Assert.Null(SessionContext.CurrentUser);
+            mockRepo.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-1)]
-        [InlineData(-100)]
-        public async Task LogoutAsync_ShouldThrowArgumentException_WhenUserIdIsInvalid(int invalidId)
+        [Fact]
+        public async Task LogoutAsync_ShouldLogInformation_WhenSessionIsActive()
         {
             var mockRepo = new Mock<IUserRepository>();
-            var mockLogger = new Mock<ILogger>(); 
+            var mockLogger = new Mock<ILogger>();
+            SessionContext.CurrentUser = new User { ID = 10, Username = "TestUser" };
             var service = new AuthService(mockRepo.Object, mockLogger.Object);
 
-            await Assert.ThrowsAsync<ArgumentException>(() =>
-                service.LogoutAsync(invalidId));
+            var result = await service.LogoutAsync(10);
+
+            Assert.True(result.IsSuccess);
+            Assert.Null(SessionContext.CurrentUser);
+            mockLogger.Verify(
+                l => l.Information(
+                    It.Is<string>(s => s.Contains("сесію очищено")),
+                    10,
+                    "TestUser"),
+                Times.Once);
         }
 
         [Fact]
@@ -74,12 +82,12 @@ namespace FourTaste.Tests
 
             var result = await service.LoginAsync("test@gmail.com", "correct_password");
 
-            Assert.NotNull(result);
-            Assert.Equal("test@gmail.com", result.Email);
+            Assert.True(result.IsSuccess);
+            Assert.Equal("test@gmail.com", result.Value!.Email);
         }
 
         [Fact]
-        public async Task LoginAsync_Should_Throw_Exception_When_Password_Is_Wrong()
+        public async Task LoginAsync_Should_Return_Failure_When_Password_Is_Wrong()
         {
             var mockRepo = new Mock<IUserRepository>();
             var mockLogger = new Mock<ILogger>();
@@ -96,20 +104,53 @@ namespace FourTaste.Tests
 
             var service = new AuthService(mockRepo.Object, mockLogger.Object);
 
-            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-                service.LoginAsync("test@gmail.com", "wrong_password"));
+            var result = await service.LoginAsync("test@gmail.com", "wrong_password");
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Невірна електронна пошта або пароль.", result.Error);
         }
 
         [Fact]
-        public async Task LoginAsync_Should_Throw_ArgumentException_When_Email_Is_Empty()
+        public async Task LoginAsync_Should_Return_Failure_When_Email_Is_Empty()
         {
             var mockRepo = new Mock<IUserRepository>();
             var mockLogger = new Mock<ILogger>();
 
             var service = new AuthService(mockRepo.Object, mockLogger.Object);
 
-            await Assert.ThrowsAsync<ArgumentException>(() =>
-                service.LoginAsync("", "some_password"));
+            var result = await service.LoginAsync(string.Empty, "some_password");
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Електронна пошта не може бути порожньою.", result.Error);
+        }
+
+        [Fact]
+        public async Task LoginAsync_Should_Return_Failure_When_Password_Is_Empty()
+        {
+            var mockRepo = new Mock<IUserRepository>();
+            var mockLogger = new Mock<ILogger>();
+
+            var service = new AuthService(mockRepo.Object, mockLogger.Object);
+
+            var result = await service.LoginAsync("user@gmail.com", string.Empty);
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Пароль не може бути порожнім.", result.Error);
+        }
+
+        [Fact]
+        public async Task LoginAsync_Should_Return_Failure_When_User_Not_Found()
+        {
+            var mockRepo = new Mock<IUserRepository>();
+            mockRepo.Setup(r => r.GetByEmailAsync("notfound@gmail.com")).ReturnsAsync((User?)null);
+            var mockLogger = new Mock<ILogger>();
+
+            var service = new AuthService(mockRepo.Object, mockLogger.Object);
+
+            var result = await service.LoginAsync("notfound@gmail.com", "any_password");
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Невірна електронна пошта або пароль.", result.Error);
         }
     }
 }

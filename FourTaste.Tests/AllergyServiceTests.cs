@@ -19,8 +19,9 @@ namespace FourTaste.Tests
             var mockLogger = new Mock<ILogger>();
             var service = new AllergyService(mockRepo.Object, mockLogger.Object);
 
-            await service.AddAllergyAsync(1, "Арахіс");
+            var result = await service.AddAllergyAsync(1, "Арахіс");
 
+            Assert.True(result.IsSuccess);
             mockRepo.Verify(
                 r => r.AddAsync(It.Is<Allergy>(a => a.UserId == 1 && a.AllergenName == "Арахіс")),
                 Times.Once);
@@ -32,15 +33,16 @@ namespace FourTaste.Tests
         [Theory]
         [InlineData("")]
         [InlineData("   ")]
-        public async Task AddAllergyAsync_ShouldThrowArgumentExceptionAndLogWarning_WhenAllergenNameIsEmpty(string invalidName)
+        public async Task AddAllergyAsync_ShouldReturnFailureAndLogWarning_WhenAllergenNameIsEmpty(string invalidName)
         {
             var mockRepo = new Mock<IRepository<Allergy>>();
             var mockLogger = new Mock<ILogger>();
             var service = new AllergyService(mockRepo.Object, mockLogger.Object);
 
-            await Assert.ThrowsAsync<ArgumentException>(() =>
-                service.AddAllergyAsync(1, invalidName));
+            var result = await service.AddAllergyAsync(1, invalidName);
 
+            Assert.True(result.IsFailure);
+            Assert.Equal("Назва алергену не може бути порожньою.", result.Error);
             mockRepo.Verify(r => r.AddAsync(It.IsAny<Allergy>()), Times.Never);
             mockLogger.Verify(
                 l => l.Warning(It.IsAny<string>(), 1),
@@ -64,9 +66,33 @@ namespace FourTaste.Tests
 
             var result = await service.GetAllergiesByUserIdAsync(1);
 
-            Assert.Equal(2, result.Count);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(2, result.Value!.Count);
             mockLogger.Verify(
                 l => l.Information(It.IsAny<string>(), 2, 1),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task GetAllAllergiesAsync_ShouldReturnAllAllergiesAndLogInformation()
+        {
+            var allAllergies = new List<Allergy>
+            {
+                new Allergy { Id = 1, UserId = 1, AllergenName = "Арахіс" },
+                new Allergy { Id = 2, UserId = 2, AllergenName = "Мед" },
+            };
+
+            var mockRepo = new Mock<IRepository<Allergy>>();
+            mockRepo.Setup(r => r.ListAsync()).ReturnsAsync(allAllergies);
+            var mockLogger = new Mock<ILogger>();
+            var service = new AllergyService(mockRepo.Object, mockLogger.Object);
+
+            var result = await service.GetAllAllergiesAsync();
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal(2, result.Value!.Count);
+            mockLogger.Verify(
+                l => l.Information(It.IsAny<string>(), 2),
                 Times.Once);
         }
 
@@ -79,11 +105,30 @@ namespace FourTaste.Tests
             var mockLogger = new Mock<ILogger>();
             var service = new AllergyService(mockRepo.Object, mockLogger.Object);
 
-            await service.DeleteAllergyAsync(5);
+            var result = await service.DeleteAllergyAsync(5);
 
+            Assert.True(result.IsSuccess);
             mockRepo.Verify(r => r.DeleteAsync(existing), Times.Once);
             mockLogger.Verify(
                 l => l.Information(It.IsAny<string>(), "Глютен", 5),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteAllergyAsync_ShouldReturnFailureAndLogWarning_WhenAllergyDoesNotExist()
+        {
+            var mockRepo = new Mock<IRepository<Allergy>>();
+            mockRepo.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Allergy?)null);
+            var mockLogger = new Mock<ILogger>();
+            var service = new AllergyService(mockRepo.Object, mockLogger.Object);
+
+            var result = await service.DeleteAllergyAsync(999);
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Алерген з ID 999 не знайдено.", result.Error);
+            mockRepo.Verify(r => r.DeleteAsync(It.IsAny<Allergy>()), Times.Never);
+            mockLogger.Verify(
+                l => l.Warning(It.IsAny<string>(), 999),
                 Times.Once);
         }
     }

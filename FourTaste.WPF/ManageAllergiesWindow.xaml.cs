@@ -94,55 +94,42 @@ namespace FourTaste.WPF
 
         private async Task LoadUserProfileAsync()
         {
-            try
+            var result = await this.userService.GetUserByIdAsync(this.CurrentUserId);
+            if (result.IsSuccess && result.Value is { } user)
             {
-                var user = await this.userService.GetUserByIdAsync(this.CurrentUserId);
-                if (user != null)
-                {
-                    this.ProfileNameTextBox.Text = user.Name;
-                    this.ProfileUsernameTextBox.Text = user.Username;
-                    this.ProfileEmailTextBox.Text = user.Email;
-                    this.DisplayNameTextBlock.Text = string.IsNullOrWhiteSpace(user.Name) ? "Ім'я" : user.Name;
-                    this.DisplayUsernameTextBlock.Text = string.IsNullOrWhiteSpace(user.Username) ? "Нікнейм" : user.Username;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Помилка завантаження профілю користувача з ID {UserId}", this.CurrentUserId);
+                this.ProfileNameTextBox.Text = user.Name;
+                this.ProfileUsernameTextBox.Text = user.Username;
+                this.ProfileEmailTextBox.Text = user.Email;
+                this.DisplayNameTextBlock.Text = string.IsNullOrWhiteSpace(user.Name) ? "Ім'я" : user.Name;
+                this.DisplayUsernameTextBlock.Text = string.IsNullOrWhiteSpace(user.Username) ? "Нікнейм" : user.Username;
             }
         }
 
         private async Task LoadAllergiesAsync()
         {
-            try
+            var result = await this.allergyService.GetAllergiesByUserIdAsync(this.CurrentUserId);
+            if (result.IsFailure)
             {
-                var allergies = await this.allergyService.GetAllergiesByUserIdAsync(this.CurrentUserId);
-                this.AllergiesListBox.ItemsSource = allergies;
+                MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Не вдалося завантажити список алергенів: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
+
+            this.AllergiesListBox.ItemsSource = result.Value;
         }
 
         private async void SaveAllergyButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            string allergenName = this.AllergenTextBox.Text;
+            var result = await this.allergyService.AddAllergyAsync(this.CurrentUserId, allergenName);
+            if (result.IsFailure)
             {
-                string allergenName = this.AllergenTextBox.Text;
-                await this.allergyService.AddAllergyAsync(this.CurrentUserId, allergenName);
-                this.AllergenTextBox.Clear();
-                await this.LoadAllergiesAsync();
-                MessageBox.Show("Алерген успішно збережено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(result.Error, "Помилка валідації", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (ArgumentException ex)
-            {
-                MessageBox.Show(ex.Message, "Помилка валідації", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Помилка збереження: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+
+            this.AllergenTextBox.Clear();
+            await this.LoadAllergiesAsync();
+            MessageBox.Show("Алерген успішно збережено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private async void DeleteAllergyButton_Click(object sender, RoutedEventArgs e)
@@ -152,48 +139,46 @@ namespace FourTaste.WPF
                 MessageBox.Show("Будь ласка, оберіть алерген зі списку для видалення.", "Увага", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            try
+
+            var result = await this.allergyService.DeleteAllergyAsync(selectedAllergy.Id);
+            if (result.IsFailure)
             {
-                await this.allergyService.DeleteAllergyAsync(selectedAllergy.Id);
-                await this.LoadAllergiesAsync();
+                MessageBox.Show(result.Error, "Помилка видалення", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Помилка видалення: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+
+            await this.LoadAllergiesAsync();
         }
 
         private async void UpdateProfileButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            string name = this.ProfileNameTextBox.Text;
+            string username = this.ProfileUsernameTextBox.Text;
+            string email = this.ProfileEmailTextBox.Text;
+            var result = await this.userService.UpdateProfileAsync(this.CurrentUserId, name, username, email);
+            if (result.IsFailure)
             {
-                string name = this.ProfileNameTextBox.Text;
-                string username = this.ProfileUsernameTextBox.Text;
-                string email = this.ProfileEmailTextBox.Text;
-                await this.userService.UpdateProfileAsync(this.CurrentUserId, name, username, email);
-                this.DisplayNameTextBlock.Text = string.IsNullOrWhiteSpace(name) ? "Ім'я" : name.Trim();
-                this.DisplayUsernameTextBlock.Text = username.Trim();
-                MessageBox.Show("Особисті дані успішно оновлено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(result.Error, "Помилка оновлення профілю", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Помилка оновлення профілю: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
+
+            this.DisplayNameTextBlock.Text = string.IsNullOrWhiteSpace(name) ? "Ім'я" : name.Trim();
+            this.DisplayUsernameTextBlock.Text = username.Trim();
+            MessageBox.Show("Особисті дані успішно оновлено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private async void ChangePasswordButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            string newPassword = this.NewPasswordBox.Password;
+            var result = await this.userService.ChangePasswordAsync(this.CurrentUserId, newPassword);
+            if (result.IsFailure)
             {
-                string newPassword = this.NewPasswordBox.Password;
-                await this.userService.ChangePasswordAsync(this.CurrentUserId, newPassword);
-                this.NewPasswordBox.Clear();
-                MessageBox.Show("Пароль успішно змінено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(result.Error, "Помилка зміни пароля", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Помилка зміни пароля: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
+
+            this.NewPasswordBox.Clear();
+            MessageBox.Show("Пароль успішно змінено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private async void DeleteProfileButton_Click(object sender, RoutedEventArgs e)
@@ -204,39 +189,34 @@ namespace FourTaste.WPF
                 return;
             }
 
-            try
+            var result = await this.userService.DeleteAccountAsync(this.CurrentUserId);
+            if (result.IsFailure)
             {
-                await this.userService.DeleteAccountAsync(this.CurrentUserId);
-                MessageBox.Show("Обліковий запис видалено.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                SessionContext.CurrentUser = null;
-
-                var registerWindow = App.ServiceProvider?.GetService<RegisterWindow>() ?? new RegisterWindow();
-                registerWindow.Show();
-                this.Close();
+                MessageBox.Show(result.Error, "Помилка видалення профілю", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Помилка видалення профілю: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+
+            MessageBox.Show("Обліковий запис видалено.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            SessionContext.Clear();
+
+            var registerWindow = App.ServiceProvider?.GetService<RegisterWindow>() ?? new RegisterWindow();
+            registerWindow.Show();
+            this.Close();
         }
 
         private async void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            var result = await this.authService.LogoutAsync(this.CurrentUserId);
+            if (result.IsFailure)
             {
-                await this.authService.LogoutAsync(this.CurrentUserId);
-
-                SessionContext.CurrentUser = null;
-
-                var registerWindow = App.ServiceProvider?.GetService<RegisterWindow>() ?? new RegisterWindow();
-                registerWindow.Show();
-                this.Close();
+                MessageBox.Show(result.Error, "Помилка при виході", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Помилка при виході: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+
+            var registerWindow = App.ServiceProvider?.GetService<RegisterWindow>() ?? new RegisterWindow();
+            registerWindow.Show();
+            this.Close();
         }
     }
 }

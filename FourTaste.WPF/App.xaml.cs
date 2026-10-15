@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
@@ -19,6 +21,10 @@ namespace FourTaste.WPF
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            this.DispatcherUnhandledException += this.App_DispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += this.CurrentDomain_UnhandledException;
+            TaskScheduler.UnobservedTaskException += this.TaskScheduler_UnobservedTaskException;
+
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -63,6 +69,31 @@ namespace FourTaste.WPF
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
             services.AddTransient<MainWindow>();
+        }
+
+        private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            Log.Error(e.Exception, "Непередбачувана критична помилка в UI потоці (DispatcherUnhandledException)");
+            MessageBox.Show(
+                $"Виникла критична технічна помилка:\n{e.Exception.Message}\n\nЗверніться до адміністратора або перевірте підключення до бази даних чи мережі.",
+                "Критична помилка",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            e.Handled = true;
+        }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            if (e.ExceptionObject is Exception ex)
+            {
+                Log.Fatal(ex, "Критична неперехоплена помилка домену застосунку (AppDomain.UnhandledException)");
+            }
+        }
+
+        private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            Log.Error(e.Exception, "Неперехоплена помилка фонової задачі (TaskScheduler.UnobservedTaskException)");
+            e.SetObserved();
         }
     }
 }

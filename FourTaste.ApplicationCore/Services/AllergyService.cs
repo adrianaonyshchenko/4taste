@@ -1,5 +1,6 @@
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Results;
 using Serilog;
 
 namespace FourTaste.ApplicationCore.Services
@@ -15,14 +16,14 @@ namespace FourTaste.ApplicationCore.Services
             this.logger = logger ?? Log.Logger;
         }
 
-        public async Task AddAllergyAsync(int userId, string allergenName)
+        public async Task<Result> AddAllergyAsync(int userId, string allergenName)
         {
             if (string.IsNullOrWhiteSpace(allergenName))
             {
                 this.logger.Warning(
                     "Спроба додати порожній алерген для користувача з ID {UserId}",
                     userId);
-                throw new ArgumentException("Назва алергену не може бути порожньою.", nameof(allergenName));
+                return Result.Failure("Назва алергену не може бути порожньою.");
             }
 
             var allergy = new Allergy
@@ -31,67 +32,37 @@ namespace FourTaste.ApplicationCore.Services
                 AllergenName = allergenName.Trim(),
             };
 
-            try
-            {
-                await this.allergyRepository.AddAsync(allergy);
-                this.logger.Information(
-                    "Алерген {AllergenName} успішно збережено для користувача з ID {UserId}",
-                    allergy.AllergenName,
-                    userId);
-            }
-            catch (Exception ex)
-            {
-                this.logger.Error(
-                    ex,
-                    "Помилка під час збереження алергену {AllergenName} для користувача з ID {UserId}",
-                    allergy.AllergenName,
-                    userId);
-                throw;
-            }
+            await this.allergyRepository.AddAsync(allergy);
+            this.logger.Information(
+                "Алерген {AllergenName} успішно збережено для користувача з ID {UserId}",
+                allergy.AllergenName,
+                userId);
+            return Result.Success();
         }
 
-        public async Task<IReadOnlyList<Allergy>> GetAllergiesByUserIdAsync(int userId)
+        public async Task<Result<IReadOnlyList<Allergy>>> GetAllergiesByUserIdAsync(int userId)
         {
-            try
-            {
-                var allergies = await this.allergyRepository.ListAsync();
-                var userAllergies = allergies.Where(a => a.UserId == userId).ToList();
+            var allergies = await this.allergyRepository.ListAsync();
+            var userAllergies = allergies.Where(a => a.UserId == userId).ToList();
 
-                this.logger.Information(
-                    "Отримано {Count} алергенів для користувача з ID {UserId}",
-                    userAllergies.Count,
-                    userId);
+            this.logger.Information(
+                "Отримано {Count} алергенів для користувача з ID {UserId}",
+                userAllergies.Count,
+                userId);
 
-                return userAllergies;
-            }
-            catch (Exception ex)
-            {
-                this.logger.Error(
-                    ex,
-                    "Помилка під час отримання алергенів для користувача з ID {UserId}",
-                    userId);
-                throw;
-            }
+            return Result<IReadOnlyList<Allergy>>.Success(userAllergies);
         }
 
-        public async Task<IReadOnlyList<Allergy>> GetAllAllergiesAsync()
+        public async Task<Result<IReadOnlyList<Allergy>>> GetAllAllergiesAsync()
         {
-            try
-            {
-                var allergies = await this.allergyRepository.ListAsync();
-                this.logger.Information(
-                    "Отримано список усіх алергенів у кількості {Count}",
-                    allergies.Count);
-                return allergies;
-            }
-            catch (Exception ex)
-            {
-                this.logger.Error(ex, "Помилка під час отримання списку усіх алергенів");
-                throw;
-            }
+            var allergies = await this.allergyRepository.ListAsync();
+            this.logger.Information(
+                "Отримано список усіх алергенів у кількості {Count}",
+                allergies.Count);
+            return Result<IReadOnlyList<Allergy>>.Success(allergies);
         }
 
-        public async Task DeleteAllergyAsync(int allergyId)
+        public async Task<Result> DeleteAllergyAsync(int allergyId)
         {
             var existing = await this.allergyRepository.GetByIdAsync(allergyId);
             if (existing == null)
@@ -99,25 +70,15 @@ namespace FourTaste.ApplicationCore.Services
                 this.logger.Warning(
                     "Спроба видалити неіснуючий алерген з ID {AllergyId}",
                     allergyId);
-                throw new InvalidOperationException($"Алерген з ID {allergyId} не знайдено.");
+                return Result.Failure($"Алерген з ID {allergyId} не знайдено.");
             }
 
-            try
-            {
-                await this.allergyRepository.DeleteAsync(existing);
-                this.logger.Information(
-                    "Алерген {AllergenName} з ID {AllergyId} успішно видалено",
-                    existing.AllergenName,
-                    allergyId);
-            }
-            catch (Exception ex)
-            {
-                this.logger.Error(
-                    ex,
-                    "Помилка під час видалення алергену з ID {AllergyId}",
-                    allergyId);
-                throw;
-            }
+            await this.allergyRepository.DeleteAsync(existing);
+            this.logger.Information(
+                "Алерген {AllergenName} з ID {AllergyId} успішно видалено",
+                existing.AllergenName,
+                allergyId);
+            return Result.Success();
         }
     }
 }

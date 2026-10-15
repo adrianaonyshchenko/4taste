@@ -51,27 +51,27 @@ namespace FourTaste.WPF
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            string email = EmailTextBox.Text;
+            string password = PasswordBox.Password;
+
+            var loginResult = await _authService.LoginAsync(email, password);
+
+            if (loginResult.IsFailure)
             {
-                string email = EmailTextBox.Text;
-                string password = PasswordBox.Password;
-
-                var loggedInUser = await _authService.LoginAsync(email, password);
-
-                if (loggedInUser != null)
-                {
-                    SessionContext.CurrentUser = loggedInUser;
-
-                    MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                    var profileWindow = App.ServiceProvider?.GetService<ManageAllergiesWindow>() ?? new ManageAllergiesWindow();
-                    profileWindow.Show();
-                    this.Close();
-                }
+                MessageBox.Show(loginResult.Error, "Помилка входу", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
+
+            var loggedInUser = loginResult.Value!;
+            if (loggedInUser != null)
             {
-                MessageBox.Show($"Помилка входу: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                SessionContext.CurrentUser = loggedInUser;
+
+                MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                var profileWindow = App.ServiceProvider?.GetService<ManageAllergiesWindow>() ?? new ManageAllergiesWindow();
+                profileWindow.Show();
+                this.Close();
             }
         }
 
