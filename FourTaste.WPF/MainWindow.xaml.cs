@@ -1,4 +1,11 @@
-﻿namespace FourTaste.WPF
+using System;
+using System.Windows;
+using FourTaste.ApplicationCore.Services;
+using FourTaste.Infrastructure.Data;
+using FourTaste.Infrastructure.Repositories;
+using Serilog;
+
+namespace FourTaste.WPF
 {
     using System;
     using System.Windows;
@@ -11,38 +18,32 @@
             this.InitializeComponent();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            string currentUser = "Адріана";
-            string moduleName = "CulinaryModule";
+            if (SessionContext.CurrentUser is null)
+            {
+                MessageBox.Show("Немає активного користувача.");
+                return;
+            }
 
-            Log.Information(
-                "Користувач {UserName} виконав дію у модулі {Module}",
-                currentUser,
-                moduleName);
-
-            int attemptedValue = -5;
-
-            Log.Warning(
-                "Користувач {UserName} ввів некоректне значення кількості: {Value}",
-                currentUser,
-                attemptedValue);
+            using var context = new AppDbContext();
+            var userRepository = new UserRepository(context);
+            var authService = new AuthService(userRepository, Serilog.Log.Logger);
 
             try
             {
-                throw new InvalidOperationException(
-                    "Помилка підключення до бази даних рецепшенa.");
-            }
-            catch (Exception ex)
-            {
-                Log.Error(
-                    ex,
-                    "Сталася критична помилка в модулі {Module} для користувача {UserName}",
-                    moduleName,
-                    currentUser);
-            }
+                await authService.LogoutAsync(SessionContext.CurrentUser.ID);
 
-            MessageBox.Show("Різні типи логів надіслано в Seq!");
+                SessionContext.CurrentUser = null;
+
+                var loginWindow = new LoginWindow();
+                loginWindow.Show();
+                this.Close();
+            }
+            catch (ArgumentException ex)
+            {
+                MessageBox.Show(ex.Message, "Помилка виходу");
+            }
         }
     }
 }

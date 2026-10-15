@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);SA1633;SA1200;SA1600;SA1601;SA1513;SA1516;SA1518;SA1101;SA1508;SA0001;SA1201;SA1128;SA1413;SA1309;SA1005;SA1515;SA1025;SA1009;SA1111;SA1208;SA1507</NoWarn>
+  </PropertyGroup>
+</Project>

@@ -1,18 +1,28 @@
-﻿namespace FourTaste.Infrastructure.Data
-{
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
-    using FourTaste.ApplicationCore.Entities;
-    using Microsoft.EntityFrameworkCore;
+using FourTaste.ApplicationCore.Entities;
+using Microsoft.EntityFrameworkCore;
 
-    internal class AppDbContext : DbContext
+namespace FourTaste.Infrastructure.Data
+{
+    public class AppDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
 
+        public DbSet<Allergy> Allergies { get; set; }
+
+        public AppDbContext()
+        {
+        }
+
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        {
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Database=FourTaste;Username=postgres;Password=23072007");
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseNpgsql("Host=ep-mute-sea-b5ks3hrm-pooler.c-7.us-east-2.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_a8u2btDTpHiX;Ssl Mode=Require;Trust Server Certificate=true");
+            }
         }
     }
 }
