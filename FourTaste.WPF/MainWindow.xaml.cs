@@ -1,8 +1,10 @@
 using System;
 using System.Windows;
+using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
 using FourTaste.Infrastructure.Data;
 using FourTaste.Infrastructure.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace FourTaste.WPF
@@ -26,24 +28,19 @@ namespace FourTaste.WPF
                 return;
             }
 
-            using var context = new AppDbContext();
-            var userRepository = new UserRepository(context);
-            var authService = new AuthService(userRepository, Serilog.Log.Logger);
+            var authService = App.ServiceProvider?.GetService<IAuthService>()
+                ?? new AuthService(new UserRepository(new AppDbContext()), Serilog.Log.Logger);
 
-            try
+            var result = await authService.LogoutAsync(SessionContext.CurrentUser.ID);
+            if (result.IsFailure)
             {
-                await authService.LogoutAsync(SessionContext.CurrentUser.ID);
-
-                SessionContext.CurrentUser = null;
-
-                var loginWindow = new LoginWindow();
-                loginWindow.Show();
-                this.Close();
+                MessageBox.Show(result.Error, "Помилка виходу");
+                return;
             }
-            catch (ArgumentException ex)
-            {
-                MessageBox.Show(ex.Message, "Помилка виходу");
-            }
+
+            var loginWindow = new LoginWindow();
+            loginWindow.Show();
+            this.Close();
         }
     }
 }

@@ -1,6 +1,7 @@
 using BCrypt.Net;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Results;
 using Serilog;
 
 namespace FourTaste.ApplicationCore.Services
@@ -8,31 +9,33 @@ namespace FourTaste.ApplicationCore.Services
     public class UserService
     {
         private readonly IUserRepository userRepository;
+        private readonly ILogger logger;
 
-        public UserService(IUserRepository userRepository)
+        public UserService(IUserRepository userRepository, ILogger? logger = null)
         {
-            this.userRepository = userRepository;
+            this.userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            this.logger = logger ?? Log.Logger;
         }
 
-        public async Task<bool> RegisterAsync(string username, string email, string password, string name = "")
+        public async Task<Result> RegisterAsync(string username, string email, string password, string name = "")
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             {
-                Log.Warning("Спроба реєстрації з порожніми полями для email: {Email}", email);
-                throw new ArgumentException("Email та пароль не можуть бути порожніми.");
+                this.logger.Warning("Спроба реєстрації з порожніми полями для email: {Email}", email);
+                return Result.Failure("Email та пароль не можуть бути порожніми.");
             }
 
             if (!email.Contains('@'))
             {
-                Log.Warning("Некоректний формат email під час реєстрації: {Email}", email);
-                throw new FormatException("Некоректний формат електронної пошти.");
+                this.logger.Warning("Некоректний формат email під час реєстрації: {Email}", email);
+                return Result.Failure("Некоректний формат електронної пошти.");
             }
 
             var existingUser = await this.userRepository.GetByEmailAsync(email);
             if (existingUser != null)
             {
-                Log.Warning("Спроба зареєструвати вже зайнятий email: {Email}", email);
-                throw new InvalidOperationException("Користувач з таким email вже існує.");
+                this.logger.Warning("Спроба зареєструвати вже зайнятий email: {Email}", email);
+                return Result.Failure("Користувач з таким email вже існує.");
             }
 
             var newUser = new User
@@ -44,34 +47,37 @@ namespace FourTaste.ApplicationCore.Services
             };
 
             await this.userRepository.AddAsync(newUser);
-            Log.Information("Користувач {Email} успішно зареєстрований у системі", email);
-            return true;
+            this.logger.Information("Користувач {Email} успішно зареєстрований у системі", email);
+            return Result.Success();
         }
 
-        public async Task<User?> GetUserByIdAsync(int userId)
+        public async Task<Result<User>> GetUserByIdAsync(int userId)
         {
-            return await this.userRepository.GetByIdAsync(userId);
+            var user = await this.userRepository.GetByIdAsync(userId);
+            return user is null
+                ? Result<User>.Failure("Користувача не знайдено.")
+                : Result<User>.Success(user);
         }
 
-        public async Task<bool> UpdateProfileAsync(int userId, string name, string username, string email)
+        public async Task<Result> UpdateProfileAsync(int userId, string name, string username, string email)
         {
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email))
             {
-                Log.Warning("Спроба оновлення профілю з порожніми даними для ID: {UserId}", userId);
-                throw new ArgumentException("Нікнейм та електронна пошта не можуть бути порожніми.");
+                this.logger.Warning("Спроба оновлення профілю з порожніми даними для ID: {UserId}", userId);
+                return Result.Failure("Нікнейм та електронна пошта не можуть бути порожніми.");
             }
 
             if (!email.Contains('@'))
             {
-                Log.Warning("Некоректний формат email під час оновлення профілю: {Email}", email);
-                throw new FormatException("Некоректний формат електронної пошти.");
+                this.logger.Warning("Некоректний формат email під час оновлення профілю: {Email}", email);
+                return Result.Failure("Некоректний формат електронної пошти.");
             }
 
             var user = await this.userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                Log.Warning("Користувача з ID {UserId} не знайдено для оновлення", userId);
-                throw new InvalidOperationException("Користувача не знайдено.");
+                this.logger.Warning("Користувача з ID {UserId} не знайдено для оновлення", userId);
+                return Result.Failure("Користувача не знайдено.");
             }
 
             user.Name = name.Trim();
@@ -79,43 +85,43 @@ namespace FourTaste.ApplicationCore.Services
             user.Email = email.Trim();
 
             await this.userRepository.UpdateAsync(user);
-            Log.Information("Профіль користувача з ID {UserId} успішно оновлено", userId);
-            return true;
+            this.logger.Information("Профіль користувача з ID {UserId} успішно оновлено", userId);
+            return Result.Success();
         }
 
-        public async Task<bool> ChangePasswordAsync(int userId, string newPassword)
+        public async Task<Result> ChangePasswordAsync(int userId, string newPassword)
         {
             if (string.IsNullOrWhiteSpace(newPassword))
             {
-                Log.Warning("Спроба зміни пароля на порожній для користувача з ID: {UserId}", userId);
-                throw new ArgumentException("Новий пароль не може бути порожнім.");
+                this.logger.Warning("Спроба зміни пароля на порожній для користувача з ID: {UserId}", userId);
+                return Result.Failure("Новий пароль не може бути порожнім.");
             }
 
             var user = await this.userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                Log.Warning("Користувача з ID {UserId} не знайдено для зміни пароля", userId);
-                throw new InvalidOperationException("Користувача не знайдено.");
+                this.logger.Warning("Користувача з ID {UserId} не знайдено для зміни пароля", userId);
+                return Result.Failure("Користувача не знайдено.");
             }
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
             await this.userRepository.UpdateAsync(user);
-            Log.Information("Пароль користувача з ID {UserId} успішно змінено", userId);
-            return true;
+            this.logger.Information("Пароль користувача з ID {UserId} успішно змінено", userId);
+            return Result.Success();
         }
 
-        public async Task<bool> DeleteAccountAsync(int userId)
+        public async Task<Result> DeleteAccountAsync(int userId)
         {
             var user = await this.userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                Log.Warning("Користувача з ID {UserId} не знайдено для видалення", userId);
-                throw new InvalidOperationException("Користувача не знайдено.");
+                this.logger.Warning("Користувача з ID {UserId} не знайдено для видалення", userId);
+                return Result.Failure("Користувача не знайдено.");
             }
 
             await this.userRepository.DeleteAsync(user);
-            Log.Information("Акаунт користувача з ID {UserId} успішно видалено", userId);
-            return true;
+            this.logger.Information("Акаунт користувача з ID {UserId} успішно видалено", userId);
+            return Result.Success();
         }
     }
 }

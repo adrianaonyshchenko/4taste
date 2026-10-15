@@ -45,27 +45,26 @@ namespace FourTaste.WPF
 
         private async void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            string name = this.NameTextBox.Text;
+            string username = this.UsernameTextBox.Text;
+            string email = this.EmailTextBox.Text;
+            string password = this.PasswordBox.Password;
+
+            var result = await this.userService.RegisterAsync(username, email, password, name);
+
+            if (result.IsFailure)
             {
-                string name = this.NameTextBox.Text;
-                string username = this.UsernameTextBox.Text;
-                string email = this.EmailTextBox.Text;
-                string password = this.PasswordBox.Password;
-
-                bool success = await this.userService.RegisterAsync(username, email, password, name);
-
-                if (success)
-                {
-                    MessageBox.Show("Реєстрація успішна! Тепер увійдіть у систему.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                    var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
-                    loginWindow.Show();
-                    this.Close();
-                }
+                MessageBox.Show(result.Error, "Помилка реєстрації", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
+
+            if (result.IsSuccess)
             {
-                MessageBox.Show($"Помилка: {ex.Message}", "Помилка реєстрації", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Реєстрація успішна! Тепер увійдіть у систему.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
+                loginWindow.Show();
+                this.Close();
             }
         }
 
