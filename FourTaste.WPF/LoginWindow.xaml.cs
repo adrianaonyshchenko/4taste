@@ -1,7 +1,6 @@
 using FourTaste.ApplicationCore.Services;
 using FourTaste.Infrastructure.Data;
 using FourTaste.Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
@@ -18,15 +17,14 @@ namespace FourTaste.WPF
         {
             InitializeComponent();
 
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseNpgsql("Host=ep-mute-sea-b5ks3hrm-pooler.c-7.us-east-2.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_a8u2btDTpHiX;Ssl Mode=Require;Trust Server Certificate=true")
-                .Options;
+            _authService = App.ServiceProvider?.GetRequiredService<AuthService>()
+                           ?? throw new InvalidOperationException("ServiceProvider не ініціалізовано.");
+        }
 
-            var context = new AppDbContext(options);
-            var repository = new UserRepository(context);
-            var logger = Log.Logger;
-
-            _authService = new AuthService(repository, logger);
+        public LoginWindow(AuthService authService)
+        {
+            InitializeComponent();
+            _authService = authService;
         }
 
         private void EmailTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -63,13 +61,13 @@ namespace FourTaste.WPF
             }
 
             var loggedInUser = loginResult.Value!;
+
             if (loggedInUser != null)
             {
                 SessionContext.CurrentUser = loggedInUser;
-
                 MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                var profileWindow = App.ServiceProvider?.GetService<ManageAllergiesWindow>() ?? new ManageAllergiesWindow();
+                var profileWindow = App.ServiceProvider?.GetService<UserProfileWindow>() ?? new UserProfileWindow();
                 profileWindow.Show();
                 this.Close();
             }
@@ -77,7 +75,7 @@ namespace FourTaste.WPF
 
         private void GoToRegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            var registerWindow = new RegisterWindow();
+            var registerWindow = App.ServiceProvider?.GetService<RegisterWindow>() ?? new RegisterWindow();
             registerWindow.Show();
             this.Close();
         }

@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Threading;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
@@ -12,12 +7,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace FourTaste.WPF
 {
-    using System.Windows;
-    using Serilog;
-
     public partial class App : Application
     {
         public static IServiceProvider? ServiceProvider { get; private set; }
@@ -50,7 +47,6 @@ namespace FourTaste.WPF
             {
                 disposable.Dispose();
             }
-
             Log.CloseAndFlush();
             base.OnExit(e);
         }
@@ -59,19 +55,26 @@ namespace FourTaste.WPF
         {
             services.AddSingleton<ILogger>(_ => Log.Logger);
 
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql("Host=ep-mute-sea-b5ks3hrm-pooler.c-7.us-east-2.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_a8u2btDTpHiX;Ssl Mode=Require;Trust Server Certificate=true"));
+            string connectionString = "Host=ep-mute-sea-b5ks3hrm-pooler.c-7.us-east-2.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_a8u2btDTpHiX;Ssl Mode=Require;Trust Server Certificate=true";
+
+            services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString), ServiceLifetime.Transient);
+            services.AddDbContextFactory<AppDbContext>(options => options.UseNpgsql(connectionString));
 
             services.AddScoped<IRepository<Allergy>, AllergyRepository>();
             services.AddScoped<IAllergyService, AllergyService>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<UserService>();
+            services.AddScoped<AuthService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<MealPlanRepository>();
+            services.AddScoped<IMealPlanRepository, MealPlanRepository>();
+            services.AddScoped<MealPlanService>();
 
             services.AddTransient<ManageAllergiesWindow>();
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
             services.AddTransient<MainWindow>();
+            services.AddTransient<UserProfileWindow>();
         }
 
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
