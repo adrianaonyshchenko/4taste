@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
@@ -134,6 +134,73 @@ namespace FourTaste.Tests
 
             Assert.True(result.IsSuccess);
             _mockRepository.Verify(r => r.UpdateStatusAsync(It.IsAny<int>(), It.IsAny<bool>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task GetCookingHistoryAsync_ShouldReturnCookedDishes_WhenValidUserId()
+        {
+            int userId = 1;
+            var history = new List<MealPlan>
+            {
+                new MealPlan { Id = 1, UserId = userId, RecipeName = "Паста", IsCooked = true, PlannedDate = DateTime.Today.AddDays(-1) },
+                new MealPlan { Id = 2, UserId = userId, RecipeName = "Піца", IsCooked = true, PlannedDate = DateTime.Today }
+            };
+
+            _mockRepository.Setup(r => r.GetCookingHistoryAsync(userId, null)).ReturnsAsync(history);
+
+            var result = await _service.GetCookingHistoryAsync(userId);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.Equal(2, result.Value.Count);
+            Assert.All(result.Value, p => Assert.True(p.IsCooked));
+            _mockRepository.Verify(r => r.GetCookingHistoryAsync(userId, null), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetCookingHistoryAsync_ShouldFilterByDate_WhenDateIsSpecified()
+        {
+            int userId = 1;
+            var targetDate = new DateTime(2026, 10, 18);
+            var history = new List<MealPlan>
+            {
+                new MealPlan { Id = 2, UserId = userId, RecipeName = "Піца", IsCooked = true, PlannedDate = targetDate }
+            };
+
+            _mockRepository.Setup(r => r.GetCookingHistoryAsync(userId, targetDate)).ReturnsAsync(history);
+
+            var result = await _service.GetCookingHistoryAsync(userId, targetDate);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.Single(result.Value);
+            Assert.Equal("Піца", result.Value[0].RecipeName);
+            _mockRepository.Verify(r => r.GetCookingHistoryAsync(userId, targetDate), Times.Once);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public async Task GetCookingHistoryAsync_ShouldReturnFailure_WhenUserIdIsInvalid(int invalidUserId)
+        {
+            var result = await _service.GetCookingHistoryAsync(invalidUserId);
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Користувач не визначений.", result.Error);
+            _mockRepository.Verify(r => r.GetCookingHistoryAsync(It.IsAny<int>(), It.IsAny<DateTime?>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task GetCookingHistoryAsync_ShouldReturnEmptyList_WhenNoDishesCooked()
+        {
+            int userId = 3;
+            _mockRepository.Setup(r => r.GetCookingHistoryAsync(userId, null)).ReturnsAsync(new List<MealPlan>());
+
+            var result = await _service.GetCookingHistoryAsync(userId);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.Empty(result.Value);
         }
     }
 }

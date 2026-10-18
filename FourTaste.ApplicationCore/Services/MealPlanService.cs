@@ -1,4 +1,4 @@
-﻿using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Results;
 using Serilog;
@@ -105,6 +105,19 @@ namespace FourTaste.ApplicationCore.Services
                 _logger.Error(ex, "Помилка при видаленні плану харчування {MealPlanId}", mealPlanId);
                 return Result.Failure($"Помилка: {ex.Message}");
             }
+        }
+
+        public async Task<Result<List<MealPlan>>> GetCookingHistoryAsync(int userId, DateTime? date = null)
+        {
+            if (userId <= 0)
+            {
+                _logger.Warning("Спроба отримати історію готування без валідного UserId: {UserId}", userId);
+                return Result<List<MealPlan>>.Failure("Користувач не визначений.");
+            }
+
+            var history = await _repository.GetCookingHistoryAsync(userId, date);
+            _logger.Information("Отримано історію готування для користувача {UserId} (дата: {Date}, {Count} страв)", userId, date?.ToShortDateString() ?? "всі", history.Count);
+            return Result<List<MealPlan>>.Success(history);
         }
     }
 }
