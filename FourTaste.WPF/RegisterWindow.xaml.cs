@@ -34,22 +34,31 @@ namespace FourTaste.WPF
 
         private async void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            string name = this.NameTextBox.Text;
-            string username = this.UsernameTextBox.Text;
-            string email = this.EmailTextBox.Text;
-            string password = this.PasswordBox.Password;
+            RegisterButton.IsEnabled = false;
 
-            var result = await this.userService.RegisterAsync(username, email, password, name);
-            if (result.IsFailure)
+            try
             {
-                MessageBox.Show(result.Error, "Помилка реєстрації", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+                string name = this.NameTextBox.Text;
+                string username = this.UsernameTextBox.Text;
+                string email = this.EmailTextBox.Text;
+                string password = this.PasswordBox.Password;
 
-            MessageBox.Show("Реєстрація успішна! Тепер увійдіть у систему.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-            var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
-            loginWindow.Show();
-            this.Close();
+                var result = await this.userService.RegisterAsync(username, email, password, name);
+                if (result.IsFailure)
+                {
+                    MessageBox.Show(result.Error, "Помилка реєстрації", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                MessageBox.Show("Реєстрація успішна! Тепер увійдіть у систему.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+                var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
+                loginWindow.Show();
+                this.Close();
+            }
+            finally
+            {
+                RegisterButton.IsEnabled = true;
+            }
         }
 
         private void LoginButton_Click(object sender, RoutedEventArgs e)

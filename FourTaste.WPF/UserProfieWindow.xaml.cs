@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using FourTaste.ApplicationCore.Results;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -9,11 +10,13 @@ namespace FourTaste.WPF
     public partial class UserProfileWindow : Window
     {
         private readonly MealPlanService _mealPlanService;
+        private readonly AuthService _authService;
         public UserProfileWindow()
         {
             InitializeComponent();
 
             _mealPlanService = App.ServiceProvider?.GetRequiredService<MealPlanService>()!;
+            _authService = App.ServiceProvider?.GetRequiredService<AuthService>()!;
 
             if (SessionContext.CurrentUser != null)
             {
@@ -23,10 +26,11 @@ namespace FourTaste.WPF
             MenuCalendar.SelectedDate = DateTime.Today;
         }
 
-        public UserProfileWindow(MealPlanService mealPlanService)
+        public UserProfileWindow(MealPlanService mealPlanService, AuthService authService)
         {
             InitializeComponent();
             _mealPlanService = mealPlanService;
+            _authService = authService;
 
             if (SessionContext.CurrentUser != null)
             {
@@ -74,27 +78,25 @@ namespace FourTaste.WPF
                 return;
             }
 
-            try
+            DateTime selectedDate = MenuCalendar.SelectedDate.Value;
+
+            var result = await _mealPlanService.AddCustomRecipeToPlanAsync(SessionContext.CurrentUser.ID, recipeName, selectedDate);
+
+            if (result.IsFailure)
             {
-                DateTime selectedDate = MenuCalendar.SelectedDate.Value;
-
-                await _mealPlanService.AddCustomRecipeToPlanAsync(SessionContext.CurrentUser.ID, recipeName, selectedDate);
-
-                MessageBox.Show($"Страву '{recipeName}' успішно збережено на {selectedDate:d MMMM}!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                if (recipeTextBox != null)
-                {
-                    recipeTextBox.Text = string.Empty;
-                }
-
-                var plans = await _mealPlanService.GetUserPlansForDateAsync(SessionContext.CurrentUser.ID, selectedDate);
-                PlannedRecipesListBox.ItemsSource = plans;
+                MessageBox.Show($"Помилка: {result.Error}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
             }
-            catch (Exception ex)
+
+            MessageBox.Show($"Страву '{recipeName}' успішно збережено на {selectedDate:d MMMM}!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            if (recipeTextBox != null)
             {
-                Log.Error(ex, "Помилка при додаванні плану страви");
-                MessageBox.Show($"Помилка: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                recipeTextBox.Text = string.Empty;
             }
+
+            var plans = await _mealPlanService.GetUserPlansForDateAsync(SessionContext.CurrentUser.ID, selectedDate);
+            PlannedRecipesListBox.ItemsSource = plans;
         }
 
         private void SaveAllergensButton_Click(object sender, RoutedEventArgs e)
@@ -138,27 +140,53 @@ namespace FourTaste.WPF
             MessageBox.Show("Відкрито 'Список 2'.", "Списки", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void LogoutButton_Click(object sender, RoutedEventArgs e)
+        private async void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            Log.Information("Користувач вийшов із системи.");
-            SessionContext.CurrentUser = null;
-            this.Close();
+            LogoutButton.IsEnabled = false;
+
+            try
+            {
+                var result = await _authService.LogoutAsync();
+
+                if (result.IsFailure)
+                {
+                    MessageBox.Show(result.Error, "Помилка виходу", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
+                loginWindow.Show();
+                this.Close();
+            }
+            finally
+            {
+                LogoutButton.IsEnabled = true;
+            }
         }
         private async void RecipeCheckBox_Click(object sender, RoutedEventArgs e)
         {
             if (sender is CheckBox checkBox && checkBox.DataContext is FourTaste.ApplicationCore.Entities.MealPlan mealPlan)
             {
-                try
+                if (SessionContext.CurrentUser == null)
                 {
-                    // Оновлюємо статус в базі даних через сервіс
-                    await _mealPlanService.UpdateMealPlanStatusAsync(mealPlan.Id, checkBox.IsChecked ?? false);
+                    MessageBox.Show("Користувач не авторизований.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    checkBox.IsChecked = mealPlan.IsCooked;
+                    return;
                 }
-                catch (Exception ex)
+
+                bool newStatus = checkBox.IsChecked ?? false;
+
+                var result = await _mealPlanService.UpdateMealPlanStatusAsync(mealPlan.Id, SessionContext.CurrentUser.ID, newStatus);
+
+                if (result.IsFailure)
                 {
-                    Log.Error(ex, "Помилка при оновленні статусу страви");
-                    MessageBox.Show($"Не вдалося оновити статус: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Не вдалося оновити статус: {result.Error}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    checkBox.IsChecked = mealPlan.IsCooked;
+                    return;
                 }
+
+                mealPlan.IsCooked = newStatus;
             }
         }
     }
-    }
+}

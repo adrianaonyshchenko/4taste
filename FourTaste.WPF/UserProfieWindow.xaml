@@ -4,7 +4,6 @@
         Title="Мій профіль" Height="730" Width="1100"
         WindowStartupLocation="CenterScreen" Background="#E3D1BD">
     <Window.Resources>
-        <!-- Повний кастомний шаблон для календаря без днів тижня -->
         <Style TargetType="Calendar">
             <Setter Property="Template">
                 <Setter.Value>
@@ -20,7 +19,6 @@
             </Setter>
         </Style>
 
-        <!-- Перевизначаємо саму панель місяця (прибираємо дні тижня П, В, С...) -->
         <Style TargetType="CalendarItem">
             <Setter Property="Margin" Value="0"/>
             <Setter Property="Template">
@@ -32,7 +30,6 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
-                            <!-- Зверху: Назва місяця/року зліва та стрілочки гортання справа -->
                             <Grid Grid.Row="0" Margin="5,0,5,10">
                                 <Button x:Name="PART_HeaderButton"
                                         HorizontalAlignment="Left"
@@ -48,7 +45,6 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Сітка тільки з квадратиків чисел (без рядка днів тижня) -->
                             <Grid x:Name="PART_MonthView" Grid.Row="1" Visibility="Visible">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="38"/>
@@ -76,7 +72,6 @@
             </Setter>
         </Style>
 
-        <!-- Стиль кожної комірки-квадратика -->
         <Style TargetType="CalendarDayButton">
             <Setter Property="MinWidth" Value="38"/>
             <Setter Property="MinHeight" Value="38"/>
@@ -116,7 +111,6 @@
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
 
-        <!-- ================= ЛІВА КОЛОНКА ================= -->
         <StackPanel Grid.Column="0">
             <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
                 <Border Width="70" Height="70" CornerRadius="35" Background="#EBB832" Margin="0,0,12,0">
@@ -161,9 +155,7 @@
             </Border>
         </StackPanel>
 
-        <!-- ========== ЦЕНТРАЛЬНА КОЛОНКА ========== -->
         <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-            <!-- Блок календаря -->
             <Border Background="#C4B4A4" CornerRadius="22" Width="330" Padding="15,10" Margin="0,0,0,20">
                 <Calendar x:Name="MenuCalendar"
                   SelectedDatesChanged="MenuCalendar_SelectedDatesChanged"
@@ -174,7 +166,6 @@
                   FontSize="12"/>
             </Border>
 
-            <!-- Кнопка "Мої продукти" -->
             <Button x:Name="MyProductsButton" Click="MyProductsButton_Click" Content="Мої продукти" Width="330" Height="48" Background="#4A3532" Foreground="White" FontWeight="Bold" FontSize="16" BorderBrush="Transparent">
                 <Button.Resources>
                     <Style TargetType="Border">
@@ -184,7 +175,6 @@
             </Button>
         </StackPanel>
 
-        <!-- ================= ПРАВА КОЛОНКА ================= -->
         <StackPanel Grid.Column="2" Margin="15,0,0,0">
             <Button x:Name="DeleteProfileButton" Click="DeleteProfileButton_Click" Content="Видалити профіль" Height="38" Background="#D8B5A8" Foreground="#D9534F" FontWeight="Bold" BorderBrush="Transparent" Margin="0,0,0,10">
                 <Button.Resources>
@@ -202,7 +192,6 @@
                 </Button.Resources>
             </Button>
 
-            <!-- Блок планування страви на обрану дату -->
             <Border Background="#C4B4A4" CornerRadius="22" Height="220" Margin="0,0,0,20" Padding="15">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -214,25 +203,35 @@
 
                     <TextBlock x:Name="SelectedDateTextBlock" Grid.Row="0" Text="4 вересня" HorizontalAlignment="Center" Foreground="#4A3532" FontWeight="Bold" FontSize="16" Margin="0,0,0,8"/>
 
-                    <!-- Поле вводу страви замість списку ID -->
                     <TextBox x:Name="RecipeTextBox" Grid.Row="1" Height="32" VerticalContentAlignment="Center" Padding="5,0" Margin="0,0,0,8" ToolTip="Введіть назву страви"/>
 
-                    <!-- Список збережених на цей день страв із чекбоксами -->
                     <ListBox x:Name="PlannedRecipesListBox" Grid.Row="2" Background="Transparent" BorderBrush="Transparent" Foreground="#4A3532" Margin="0,0,0,8">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" Margin="0,4">
                                     <CheckBox IsChecked="{Binding IsCooked, Mode=TwoWay}"
-                          Content="{Binding RecipeName}"
-                          Foreground="#4A3532"
-                          FontSize="14"
-                          VerticalContentAlignment="Center"
-                          Click="RecipeCheckBox_Click"/>
+                                              VerticalContentAlignment="Center"
+                                              Click="RecipeCheckBox_Click">
+                                        <TextBlock Text="{Binding RecipeName}" FontSize="14">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#4A3532"/>
+                                                    <Setter Property="TextDecorations" Value="None"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCooked}" Value="True">
+                                                            <Setter Property="TextDecorations" Value="Strikethrough"/>
+                                                            <Setter Property="Foreground" Value="#8A7975"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </CheckBox>
                                 </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    <!-- Кнопка збереження/додавання -->
+
                     <Button x:Name="AddRecipeButton" Grid.Row="3" Content="Зберегти страву" Click="AddRecipeButton_Click" Height="35" Background="#4A3532" Foreground="White" FontWeight="Bold" BorderBrush="Transparent">
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -251,7 +250,7 @@
                     </Style>
                 </Button.Resources>
             </Button>
-            <Button x:Name="List2Button" Click="List2Button_Click" Content="Список 1" Height="42" Background="#4A3532" Foreground="White" FontWeight="Bold" Margin="0,0,0,20" BorderBrush="Transparent">
+            <Button x:Name="List2Button" Click="List2Button_Click" Content="Список 2" Height="42" Background="#4A3532" Foreground="White" FontWeight="Bold" Margin="0,0,0,20" BorderBrush="Transparent">
                 <Button.Resources>
                     <Style TargetType="Border">
                         <Setter Property="CornerRadius" Value="18"/>

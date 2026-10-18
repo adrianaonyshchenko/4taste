@@ -49,27 +49,36 @@ namespace FourTaste.WPF
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            string email = EmailTextBox.Text;
-            string password = PasswordBox.Password;
+            LoginButton.IsEnabled = false;
 
-            var loginResult = await _authService.LoginAsync(email, password);
-
-            if (loginResult.IsFailure)
+            try
             {
-                MessageBox.Show(loginResult.Error, "Помилка входу", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                string email = EmailTextBox.Text;
+                string password = PasswordBox.Password;
+
+                var loginResult = await _authService.LoginAsync(email, password);
+
+                if (loginResult.IsFailure)
+                {
+                    MessageBox.Show(loginResult.Error, "Помилка входу", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var loggedInUser = loginResult.Value!;
+
+                if (loggedInUser != null)
+                {
+                    SessionContext.CurrentUser = loggedInUser;
+                    MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    var profileWindow = App.ServiceProvider?.GetService<UserProfileWindow>() ?? new UserProfileWindow();
+                    profileWindow.Show();
+                    this.Close();
+                }
             }
-
-            var loggedInUser = loginResult.Value!;
-
-            if (loggedInUser != null)
+            finally
             {
-                SessionContext.CurrentUser = loggedInUser;
-                MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                var profileWindow = App.ServiceProvider?.GetService<UserProfileWindow>() ?? new UserProfileWindow();
-                profileWindow.Show();
-                this.Close();
+                LoginButton.IsEnabled = true;
             }
         }
 
