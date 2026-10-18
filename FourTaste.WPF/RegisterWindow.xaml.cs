@@ -1,12 +1,7 @@
-using FourTaste.ApplicationCore.Services;
-using FourTaste.Infrastructure.Data;
-using FourTaste.Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Runtime.Intrinsics.X86;
 using System.Windows;
-
+using FourTaste.ApplicationCore.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FourTaste.WPF
 {
@@ -18,13 +13,13 @@ namespace FourTaste.WPF
         {
             InitializeComponent();
 
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseNpgsql("Host=ep-mute-sea-b5ks3hrm-pooler.c-7.us-east-2.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_a8u2btDTpHiX;Ssl Mode=Require;Trust Server Certificate=true")
-                .Options;
-            var context = new AppDbContext(options);
-            var repository = new UserRepository(context);
-            this.userService = new UserService(repository);
-
+            this.userService = App.ServiceProvider?.GetService<UserService>()
+                               ?? throw new InvalidOperationException("UserService не зареєстровано в контейнері.");
+        }
+        public RegisterWindow(UserService userService)
+        {
+            InitializeComponent();
+            this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
 
         private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
@@ -37,12 +32,6 @@ namespace FourTaste.WPF
             }
         }
 
-        public RegisterWindow(UserService userService)
-        {
-            InitializeComponent();
-            this.userService = userService;
-        }
-
         private async void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
             string name = this.NameTextBox.Text;
@@ -51,26 +40,21 @@ namespace FourTaste.WPF
             string password = this.PasswordBox.Password;
 
             var result = await this.userService.RegisterAsync(username, email, password, name);
-
             if (result.IsFailure)
             {
                 MessageBox.Show(result.Error, "Помилка реєстрації", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (result.IsSuccess)
-            {
-                MessageBox.Show("Реєстрація успішна! Тепер увійдіть у систему.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
-                loginWindow.Show();
-                this.Close();
-            }
+            MessageBox.Show("Реєстрація успішна! Тепер увійдіть у систему.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+            var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
+            loginWindow.Show();
+            this.Close();
         }
 
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            var loginWindow = new LoginWindow();
+            var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
             loginWindow.Show();
             this.Close();
         }

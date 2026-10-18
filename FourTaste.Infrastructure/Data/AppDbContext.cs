@@ -5,9 +5,10 @@ namespace FourTaste.Infrastructure.Data
 {
     public class AppDbContext : DbContext
     {
-        public DbSet<User> Users { get; set; }
-
-        public DbSet<Allergy> Allergies { get; set; }
+        public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Allergy> Allergies { get; set; } = null!;
+        public DbSet<MealPlan> MealPlans { get; set; } = null!;
+        public DbSet<Recipe> Recipes { get; set; } = null!; // Виправлено з object на DbSet<Recipe>
 
         public AppDbContext()
         {
