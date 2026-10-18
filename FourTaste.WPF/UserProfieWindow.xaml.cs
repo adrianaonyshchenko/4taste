@@ -99,6 +99,51 @@ namespace FourTaste.WPF
             PlannedRecipesListBox.ItemsSource = plans;
         }
 
+        // Обробник для нової кнопки видалення страви
+        private async void DeleteRecipeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!MenuCalendar.SelectedDate.HasValue)
+            {
+                MessageBox.Show("Будь ласка, оберіть дату в календарі.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (SessionContext.CurrentUser == null)
+            {
+                MessageBox.Show("Користувач не авторизований.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            if (PlannedRecipesListBox.SelectedItem is not FourTaste.ApplicationCore.Entities.MealPlan selectedMealPlan)
+            {
+                MessageBox.Show("Будь ласка, виберіть страву зі списку для видалення.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var confirmResult = MessageBox.Show($"Ви дійсно бажаєте видалити страву '{selectedMealPlan.RecipeName}'?", "Підтвердження видалення", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirmResult != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            // Викликаємо сервіс для видалення страви (використовуємо ID запису плану або метод видалення за ID)
+            var result = await _mealPlanService.DeleteMealPlanAsync(selectedMealPlan.Id, SessionContext.CurrentUser.ID);
+
+            if (result.IsFailure)
+            {
+                MessageBox.Show($"Не вдалося видалити страву: {result.Error}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            MessageBox.Show("Страву успішно видалено з меню!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            // Оновлюємо список страв для вибраної дати
+            DateTime selectedDate = MenuCalendar.SelectedDate.Value;
+            var plans = await _mealPlanService.GetUserPlansForDateAsync(SessionContext.CurrentUser.ID, selectedDate);
+            PlannedRecipesListBox.ItemsSource = plans;
+        }
+
         private void SaveAllergensButton_Click(object sender, RoutedEventArgs e)
         {
             Log.Information("Користувач натиснув 'Зберегти алергени'");

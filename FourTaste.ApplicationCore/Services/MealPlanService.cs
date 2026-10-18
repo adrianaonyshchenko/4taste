@@ -92,5 +92,19 @@ namespace FourTaste.ApplicationCore.Services
 
             return Result.Success();
         }
+
+        public async Task<Result> DeleteMealPlanAsync(int mealPlanId, int userId)
+        {
+            try
+            {
+                await _repository.DeleteAsync(mealPlanId);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Помилка при видаленні плану харчування {MealPlanId}", mealPlanId);
+                return Result.Failure($"Помилка: {ex.Message}");
+            }
+        }
     }
 }
