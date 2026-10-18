@@ -135,7 +135,8 @@
             </Border>
         </StackPanel>
 
-        <Button Grid.Row="3" 
+        <Button x:Name="RegisterButton"
+                Grid.Row="3" 
                 Content="Зареєструватися" 
                 Foreground="White" 
                 FontWeight="Medium"

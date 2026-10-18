@@ -44,5 +44,11 @@ namespace FourTaste.Infrastructure.Repositories
                 await context.SaveChangesAsync();
             }
         }
+
+        public async Task<MealPlan?> GetByIdAsync(int mealPlanId)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            return await context.MealPlans.FindAsync(mealPlanId);
+        }
     }
 }
