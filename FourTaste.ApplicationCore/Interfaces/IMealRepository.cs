@@ -11,5 +11,6 @@ namespace FourTaste.ApplicationCore.Interfaces
         Task<List<MealPlan>> GetPlansByUserAndDateAsync(int userId, DateTime date);
         Task UpdateStatusAsync(int mealPlanId, bool isCooked);
         Task<MealPlan?> GetByIdAsync(int mealPlanId);
+        Task DeleteAsync(int mealPlanId);
     }
 }

@@ -10,9 +10,9 @@
                     <ControlTemplate TargetType="Calendar">
                         <StackPanel x:Name="PART_Root" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <CalendarItem x:Name="PART_CalendarItem"
-                                          Background="{TemplateBinding Background}"
-                                          BorderBrush="{TemplateBinding BorderBrush}"
-                                          BorderThickness="{TemplateBinding BorderThickness}"/>
+                                         Background="{TemplateBinding Background}"
+                                         BorderBrush="{TemplateBinding BorderBrush}"
+                                         BorderThickness="{TemplateBinding BorderThickness}"/>
                         </StackPanel>
                     </ControlTemplate>
                 </Setter.Value>
@@ -192,12 +192,13 @@
                 </Button.Resources>
             </Button>
 
-            <Border Background="#C4B4A4" CornerRadius="22" Height="220" Margin="0,0,0,20" Padding="15">
+            <Border Background="#C4B4A4" CornerRadius="22" Height="265" Margin="0,0,0,20" Padding="15">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
@@ -232,7 +233,16 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
 
-                    <Button x:Name="AddRecipeButton" Grid.Row="3" Content="Зберегти страву" Click="AddRecipeButton_Click" Height="35" Background="#4A3532" Foreground="White" FontWeight="Bold" BorderBrush="Transparent">
+                    <Button x:Name="AddRecipeButton" Grid.Row="3" Content="Зберегти страву" Click="AddRecipeButton_Click" Height="35" Background="#4A3532" Foreground="White" FontWeight="Bold" BorderBrush="Transparent" Margin="0,0,0,6">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="14"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+
+                    <!-- Нова кнопка видалення страви -->
+                    <Button x:Name="DeleteRecipeButton" Grid.Row="4" Content="Видалити страву" Click="DeleteRecipeButton_Click" Height="35" Background="#D8B5A8" Foreground="#D9534F" FontWeight="Bold" BorderBrush="Transparent">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="14"/>

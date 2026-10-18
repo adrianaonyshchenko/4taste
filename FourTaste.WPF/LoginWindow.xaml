@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Вхід" Height="500" Width="600"
         WindowStartupLocation="CenterScreen"
-        Background="#E3D1BD">
+        Background="#DFC7A8">
 
     <Grid Margin="30">
         <Button x:Name="GoToRegisterButton" Content="Зареєструватися"

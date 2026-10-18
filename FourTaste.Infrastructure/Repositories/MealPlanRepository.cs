@@ -50,5 +50,17 @@ namespace FourTaste.Infrastructure.Repositories
             using var context = _contextFactory.CreateDbContext();
             return await context.MealPlans.FindAsync(mealPlanId);
         }
+
+        public async Task DeleteAsync(int mealPlanId)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            var plan = await context.MealPlans.FindAsync(mealPlanId);
+            if (plan != null)
+            {
+                context.MealPlans.Remove(plan);
+                await context.SaveChangesAsync();
+            }
+        }
+
     }
 }
