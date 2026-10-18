@@ -75,6 +75,8 @@ namespace FourTaste.WPF
             services.AddTransient<LoginWindow>();
             services.AddTransient<MainWindow>();
             services.AddTransient<UserProfileWindow>();
+            services.AddTransient<EditProfileWindow>();
+            services.AddTransient<CookingHistoryWindow>();
         }
 
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -62,5 +62,20 @@ namespace FourTaste.Infrastructure.Repositories
             }
         }
 
+        public async Task<List<MealPlan>> GetCookingHistoryAsync(int userId, DateTime? date = null)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            var query = context.MealPlans.Where(p => p.UserId == userId && p.IsCooked);
+
+            if (date.HasValue)
+            {
+                var utcDate = DateTime.SpecifyKind(date.Value.Date, DateTimeKind.Utc);
+                query = query.Where(p => p.PlannedDate.Date == utcDate.Date);
+            }
+
+            return await query
+                .OrderByDescending(p => p.PlannedDate)
+                .ToListAsync();
+        }
     }
 }
