@@ -4,46 +4,56 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Реєстрація - 4taste" Height="680" Width="500"
+        Title="Реєстрація - 4taste" Height="500" Width="600"
         WindowStartupLocation="CenterScreen"
         Background="#DFC7A8">
 
-    <Grid Margin="20">
+    <Grid Margin="30,20,30,25">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Button Grid.Row="0" Content="Увійти" 
-                Foreground="#5C3A21" 
-                Background="Transparent" 
-                BorderBrush="Transparent" 
-                FontWeight="Bold"
-                FontSize="15"
-                HorizontalAlignment="Right" 
-                VerticalAlignment="Top"
-                Cursor="Hand"
-                Click="LoginButton_Click"/>
+        <!-- Верхня панель з кнопкою Увійти -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Button Content="Увійти" 
+                    Foreground="#4A3532" 
+                    Background="#C4B4A4" 
+                    BorderBrush="Transparent" 
+                    FontWeight="Bold"
+                    FontSize="14"
+                    Width="90"
+                    Height="32"
+                    HorizontalAlignment="Right" 
+                    VerticalAlignment="Center"
+                    Cursor="Hand"
+                    Click="LoginButton_Click">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="14"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+        </Grid>
 
-        <Image Grid.Row="1" Source="/logo.png" Width="140" Height="140" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,5,0,15"/>
+        <!-- Основний вміст у вигляді горизонтальних колон або центру -->
+        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Width="360">
 
-        <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" Width="340">
+            <Image Source="/logo.png" Width="90" Height="90" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,15"/>
 
-            <Border Background="#8C7365" CornerRadius="22" Height="48" Padding="18,0" Margin="0,0,0,12">
+            <Border Background="#C4B4A4" CornerRadius="22" Height="45" Padding="15,0" Margin="0,0,0,12">
                 <Grid>
                     <TextBox x:Name="NameTextBox" 
                              Background="Transparent" 
                              BorderBrush="Transparent" 
-                             Foreground="#F5EDEA"
-                             CaretBrush="#F5EDEA"
+                             Foreground="#4A3532"
+                             CaretBrush="#4A3532"
                              VerticalContentAlignment="Center" 
-                             FontSize="15"/>
+                             FontSize="14"/>
                     <TextBlock Text="Ім'я" 
-                               Foreground="#D6C5B3" 
+                               Foreground="#7A6865" 
                                VerticalAlignment="Center" 
-                               FontSize="15"
+                               FontSize="14"
                                IsHitTestVisible="False">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -59,19 +69,19 @@
                 </Grid>
             </Border>
 
-            <Border Background="#8C7365" CornerRadius="22" Height="48" Padding="18,0" Margin="0,0,0,12">
+            <Border Background="#C4B4A4" CornerRadius="22" Height="45" Padding="15,0" Margin="0,0,0,12">
                 <Grid>
                     <TextBox x:Name="UsernameTextBox" 
                              Background="Transparent" 
                              BorderBrush="Transparent" 
-                             Foreground="#F5EDEA"
-                             CaretBrush="#F5EDEA"
+                             Foreground="#4A3532"
+                             CaretBrush="#4A3532"
                              VerticalContentAlignment="Center" 
-                             FontSize="15"/>
+                             FontSize="14"/>
                     <TextBlock Text="Нікнейм" 
-                               Foreground="#D6C5B3" 
+                               Foreground="#7A6865" 
                                VerticalAlignment="Center" 
-                               FontSize="15"
+                               FontSize="14"
                                IsHitTestVisible="False">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -87,19 +97,19 @@
                 </Grid>
             </Border>
 
-            <Border Background="#8C7365" CornerRadius="22" Height="48" Padding="18,0" Margin="0,0,0,12">
+            <Border Background="#C4B4A4" CornerRadius="22" Height="45" Padding="15,0" Margin="0,0,0,12">
                 <Grid>
                     <TextBox x:Name="EmailTextBox" 
                              Background="Transparent" 
                              BorderBrush="Transparent" 
-                             Foreground="#F5EDEA"
-                             CaretBrush="#F5EDEA"
+                             Foreground="#4A3532"
+                             CaretBrush="#4A3532"
                              VerticalContentAlignment="Center" 
-                             FontSize="15"/>
+                             FontSize="14"/>
                     <TextBlock Text="Електронна пошта" 
-                               Foreground="#D6C5B3" 
+                               Foreground="#7A6865" 
                                VerticalAlignment="Center" 
-                               FontSize="15"
+                               FontSize="14"
                                IsHitTestVisible="False">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -115,52 +125,51 @@
                 </Grid>
             </Border>
 
-            <Border Background="#8C7365" CornerRadius="22" Height="48" Padding="18,0">
+            <Border Background="#C4B4A4" CornerRadius="22" Height="45" Padding="15,0" Margin="0,0,0,15">
                 <Grid>
                     <PasswordBox x:Name="PasswordBox" 
                                  Background="Transparent" 
                                  BorderBrush="Transparent" 
-                                 Foreground="#F5EDEA"
-                                 CaretBrush="#F5EDEA"
+                                 Foreground="#4A3532"
+                                 CaretBrush="#4A3532"
                                  VerticalContentAlignment="Center" 
-                                 FontSize="15"
+                                 FontSize="14"
                                  PasswordChanged="PasswordBox_PasswordChanged"/>
                     <TextBlock x:Name="PasswordPlaceholder" 
                                Text="Пароль" 
-                               Foreground="#D6C5B3" 
+                               Foreground="#7A6865" 
                                VerticalAlignment="Center" 
-                               FontSize="15"
+                               FontSize="14"
                                IsHitTestVisible="False"/>
                 </Grid>
             </Border>
-        </StackPanel>
 
-        <Button Grid.Row="3" 
-                Content="Зареєструватися" 
-                Foreground="White" 
-                FontWeight="Medium"
-                FontSize="15"
-                Height="48" 
-                Width="340"
-                HorizontalAlignment="Center"
-                Margin="0,15,0,0"
-                Click="RegisterButton_Click"
-                Cursor="Hand"
-                BorderBrush="Transparent">
-            <Button.Style>
-                <Style TargetType="Button">
-                    <Setter Property="Background" Value="#5C3A21"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="Button">
-                                <Border Background="{TemplateBinding Background}" CornerRadius="22">
-                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </Button.Style>
-        </Button>
+            <Button x:Name="RegisterButton"
+                    Content="Зареєструватися" 
+                    Foreground="White" 
+                    FontWeight="Bold"
+                    FontSize="15"
+                    Height="45" 
+                    Width="360"
+                    HorizontalAlignment="Center"
+                    Click="RegisterButton_Click"
+                    Cursor="Hand"
+                    BorderBrush="Transparent">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#4A3532"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="22">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </StackPanel>
     </Grid>
 </Window>

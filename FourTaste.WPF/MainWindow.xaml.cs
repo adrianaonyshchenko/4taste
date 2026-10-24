@@ -1,23 +1,24 @@
-using System;
-using System.Windows;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
-using FourTaste.Infrastructure.Data;
-using FourTaste.Infrastructure.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using System;
+using System.Windows;
 
 namespace FourTaste.WPF
 {
-    using System;
-    using System.Windows;
-    using Serilog;
-
     public partial class MainWindow : Window
     {
+        private readonly IAuthService? _authService;
         public MainWindow()
         {
-            this.InitializeComponent();
+            InitializeComponent();
+            _authService = App.ServiceProvider?.GetService<IAuthService>();
+        }
+        public MainWindow(IAuthService authService)
+        {
+            InitializeComponent();
+            _authService = authService;
         }
 
         private async void LogoutButton_Click(object sender, RoutedEventArgs e)
@@ -28,17 +29,21 @@ namespace FourTaste.WPF
                 return;
             }
 
-            var authService = App.ServiceProvider?.GetService<IAuthService>()
-                ?? new AuthService(new UserRepository(new AppDbContext()), Serilog.Log.Logger);
+            var authService = _authService ?? App.ServiceProvider?.GetService<IAuthService>();
 
-            var result = await authService.LogoutAsync(SessionContext.CurrentUser.ID);
-            if (result.IsFailure)
+            if (authService != null)
             {
-                MessageBox.Show(result.Error, "Помилка виходу");
-                return;
+                var result = await authService.LogoutAsync(SessionContext.CurrentUser.ID);
+                if (result.IsFailure)
+                {
+                    MessageBox.Show(result.Error, "Помилка виходу");
+                    return;
+                }
             }
 
-            var loginWindow = new LoginWindow();
+            SessionContext.CurrentUser = null;
+
+            var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
             loginWindow.Show();
             this.Close();
         }
