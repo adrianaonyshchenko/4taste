@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,18 +13,22 @@ namespace FourTaste.WPF
     public partial class CookingHistoryWindow : Window
     {
         private readonly MealPlanService mealPlanService;
+        private readonly IRecipeService recipeService;
 
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
         public CookingHistoryWindow()
-            : this(App.ServiceProvider?.GetService<MealPlanService>() ?? throw new InvalidOperationException("MealPlanService не зареєстровано."))
+            : this(
+                App.ServiceProvider?.GetService<MealPlanService>() ?? throw new InvalidOperationException("MealPlanService не зареєстровано."),
+                App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService не зареєстровано."))
         {
         }
 
-        public CookingHistoryWindow(MealPlanService mealPlanService)
+        public CookingHistoryWindow(MealPlanService mealPlanService, IRecipeService recipeService)
         {
             this.InitializeComponent();
             this.mealPlanService = mealPlanService ?? throw new ArgumentNullException(nameof(mealPlanService));
+            this.recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -89,6 +95,11 @@ namespace FourTaste.WPF
             var profileWindow = App.ServiceProvider?.GetService<UserProfileWindow>() ?? new UserProfileWindow();
             profileWindow.Show();
             this.Close();
+        }
+        private void AddRecipeButton_Click(object sender, MouseButtonEventArgs e)
+        {
+            var createRecipeWindow = new CreateRecipeWindow(this.recipeService, this.CurrentUserId);
+            createRecipeWindow.ShowDialog();
         }
     }
 }
