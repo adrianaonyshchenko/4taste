@@ -14,7 +14,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- 1. Верхній рядок: Логотип, Пошуковий рядок, Кружечок "Мій профіль" -->
         <Grid Grid.Row="0" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -22,7 +21,6 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Логотип та бренд -->
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                 <Image Source="logo.png" Height="48" Width="48" Margin="0,0,8,0" Stretch="Uniform"/>
                 <TextBlock Text="4taste"
@@ -32,7 +30,6 @@
                            VerticalAlignment="Center"/>
             </StackPanel>
 
-            <!-- Пошуковий рядок (як на макеті зі скріншота) -->
             <Border Grid.Column="1"
                     Background="#F4EAE0"
                     BorderBrush="#C4B4A4"
@@ -117,7 +114,6 @@
                 </Grid>
             </Border>
 
-            <!-- Кружечок Мій профіль -->
             <Button Grid.Column="2"
                     x:Name="ProfileButton"
                     Click="ProfileButton_Click"
@@ -150,9 +146,7 @@
             </Button>
         </Grid>
 
-        <!-- 2. Рядок кнопок дій та кімнат (шаблони з макета) -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
-            <!-- Кнопка "+ Додати рецепт" -->
             <Border x:Name="AddRecipeButton"
                     Width="110" Height="64"
                     Background="#EBB832"
@@ -166,7 +160,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- Кнопка "+ Створити кімнату" -->
             <Border Width="120" Height="64"
                     Background="#BCA99B"
                     CornerRadius="18"
@@ -177,7 +170,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- Кнопка "Назва кімнати 1" -->
             <Border Width="120" Height="64"
                     Background="#877063"
                     CornerRadius="18"
@@ -185,7 +177,6 @@
                 <TextBlock Text="Назва&#10;кімнати 1" TextAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="White" LineHeight="15"/>
             </Border>
 
-            <!-- Кнопка "Назва кімнати 2" -->
             <Border Width="120" Height="64"
                     Background="#877063"
                     CornerRadius="18">
@@ -193,7 +184,6 @@
             </Border>
         </StackPanel>
 
-        <!-- 3. Підзаголовок: "Історія рецептів" та кнопка "Популярні рецепти" -->
         <Grid Grid.Row="2" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                 <TextBlock Text="Історія рецептів"
@@ -234,7 +224,6 @@
             </Button>
         </Grid>
 
-        <!-- 4. Основний контент: сітка карток історії рецептів -->
         <Grid Grid.Row="3">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <ListBox x:Name="CookingHistoryListBox"
@@ -242,6 +231,11 @@
                          BorderBrush="Transparent"
                          BorderThickness="0"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                 MouseDoubleClick="CookingHistoryListBox_MouseDoubleClick"
+                 Background="Transparent"
+                 BorderBrush="Transparent"
+                 BorderThickness="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
@@ -273,7 +267,6 @@
                                     Padding="15"
                                     Margin="8,6">
                                 <StackPanel>
-                                    <!-- Фото рецепту (шаблон) -->
                                     <Border Height="120"
                                             Background="#DDD4C8"
                                             CornerRadius="14"
@@ -286,7 +279,6 @@
                                                    VerticalAlignment="Center"/>
                                     </Border>
 
-                                    <!-- Назва рецепту (поле назви) -->
                                     <TextBlock Text="{Binding RecipeName}"
                                                Foreground="White"
                                                FontWeight="Bold"
@@ -294,7 +286,6 @@
                                                TextWrapping="Wrap"
                                                Margin="2,0,0,8"/>
 
-                                    <!-- ДНК рецепту (шаблонні пігулки) -->
                                     <WrapPanel Margin="0,0,0,2">
                                         <Border Background="#DDD4C8" CornerRadius="10" Padding="10,4" Margin="0,0,6,6">
                                             <TextBlock Text="ДНК рецепту" Foreground="#4A3532" FontSize="11" FontWeight="Medium"/>

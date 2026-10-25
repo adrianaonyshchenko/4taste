@@ -229,12 +229,16 @@ namespace FourTaste.WPF
             this.Close();
         }
 
-        private void AddRecipeButton_Click(object sender, MouseButtonEventArgs e)
+        private async void AddRecipeButton_Click(object sender, MouseButtonEventArgs e)
         {
             var createRecipeWindow = new CreateRecipeWindow(this.recipeService, this.CurrentUserId);
-            createRecipeWindow.ShowDialog();
+            if (createRecipeWindow.ShowDialog() == true)
+            {
+                await this.LoadPublicRecipesAsync();
 
-            _ = this.LoadPublicRecipesAsync();
+                var detailsWindow = new RecipeDetailsWindow(this.recipeService, createRecipeWindow.CreatedRecipeId);
+                detailsWindow.ShowDialog();
+            }
         }
 
         private void CookingHistoryButton_Click(object sender, RoutedEventArgs e)
@@ -242,6 +246,17 @@ namespace FourTaste.WPF
             var historyWindow = App.ServiceProvider?.GetService<CookingHistoryWindow>() ?? new CookingHistoryWindow();
             historyWindow.Show();
             this.Close();
+        }
+
+        private void RecipesListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (this.RecipesListBox.SelectedItem is Recipe selectedRecipe)
+            {
+                var detailsWindow = new RecipeDetailsWindow(this.recipeService, selectedRecipe.Id);
+                detailsWindow.ShowDialog();
+
+                this.RecipesListBox.SelectedItem = null;
+            }
         }
     }
 }

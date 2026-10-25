@@ -162,5 +162,25 @@ namespace FourTaste.WPF
             userProfileWindow.Show();
             this.Close();
         }
+
+        private void RecipesListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (this.RecipesListBox.SelectedItem is Recipe selectedRecipe)
+            {
+                var detailsWindow = new RecipeDetailsWindow(_recipeService, selectedRecipe.Id);
+                detailsWindow.ShowDialog();
+
+                this.RecipesListBox.SelectedItem = null;
+            }
+        }
+
+        private void RecipeCard_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Border border && border.DataContext is Recipe selectedRecipe)
+            {
+                var detailsWindow = new RecipeDetailsWindow(_recipeService, selectedRecipe.Id);
+                detailsWindow.ShowDialog();
+            }
+        }
     }
 }
