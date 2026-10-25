@@ -1,17 +1,16 @@
-using FourTaste.ApplicationCore.Services;
-using FourTaste.Infrastructure.Data;
-using FourTaste.Infrastructure.Repositories;
-using Microsoft.Extensions.DependencyInjection;
-using Serilog;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using FourTaste.ApplicationCore.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FourTaste.WPF
 {
     public partial class LoginWindow : Window
     {
         private readonly AuthService _authService;
+        private bool isPasswordVisible;
+        private bool isSyncingPassword;
 
         public LoginWindow()
         {
@@ -39,12 +38,82 @@ namespace FourTaste.WPF
 
         private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
         {
-            if (PasswordPlaceholder != null)
+            if (this.isSyncingPassword)
             {
-                PasswordPlaceholder.Visibility = PasswordBox.Password.Length > 0
+                return;
+            }
+
+            this.isSyncingPassword = true;
+            try
+            {
+                this.PasswordTextBox.Text = this.PasswordBox.Password;
+                this.UpdatePasswordPlaceholder();
+            }
+            finally
+            {
+                this.isSyncingPassword = false;
+            }
+        }
+
+        private void PasswordTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (this.isSyncingPassword)
+            {
+                return;
+            }
+
+            this.isSyncingPassword = true;
+            try
+            {
+                this.PasswordBox.Password = this.PasswordTextBox.Text;
+                this.UpdatePasswordPlaceholder();
+            }
+            finally
+            {
+                this.isSyncingPassword = false;
+            }
+        }
+
+        private void UpdatePasswordPlaceholder()
+        {
+            if (this.PasswordPlaceholder != null)
+            {
+                string currentPassword = this.isPasswordVisible ? this.PasswordTextBox.Text : this.PasswordBox.Password;
+                this.PasswordPlaceholder.Visibility = currentPassword.Length > 0
                     ? Visibility.Collapsed
                     : Visibility.Visible;
             }
+        }
+
+        private void TogglePasswordButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.isPasswordVisible = !this.isPasswordVisible;
+
+            if (this.isPasswordVisible)
+            {
+                this.PasswordTextBox.Text = this.PasswordBox.Password;
+                this.PasswordBox.Visibility = Visibility.Collapsed;
+                this.PasswordTextBox.Visibility = Visibility.Visible;
+                this.PasswordTextBox.Focus();
+                this.PasswordTextBox.CaretIndex = this.PasswordTextBox.Text.Length;
+
+                this.EyeIcon.Visibility = Visibility.Collapsed;
+                this.EyeSlashIcon.Visibility = Visibility.Visible;
+                this.TogglePasswordButton.ToolTip = "Приховати пароль";
+            }
+            else
+            {
+                this.PasswordBox.Password = this.PasswordTextBox.Text;
+                this.PasswordTextBox.Visibility = Visibility.Collapsed;
+                this.PasswordBox.Visibility = Visibility.Visible;
+                this.PasswordBox.Focus();
+
+                this.EyeIcon.Visibility = Visibility.Visible;
+                this.EyeSlashIcon.Visibility = Visibility.Collapsed;
+                this.TogglePasswordButton.ToolTip = "Показати пароль";
+            }
+
+            this.UpdatePasswordPlaceholder();
         }
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -54,7 +123,7 @@ namespace FourTaste.WPF
             try
             {
                 string email = EmailTextBox.Text;
-                string password = PasswordBox.Password;
+                string password = this.isPasswordVisible ? this.PasswordTextBox.Text : this.PasswordBox.Password;
 
                 var loginResult = await _authService.LoginAsync(email, password);
 
