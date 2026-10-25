@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
-using FourTaste.ApplicationCore.Results;
 using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Results;
 using FourTaste.ApplicationCore.Services;
 using Moq;
 using Serilog;
@@ -53,7 +53,7 @@ namespace FourTaste.Tests
 
             var existingPlans = new List<MealPlan>
             {
-                new MealPlan { Id = 1, UserId = userId, RecipeName = "Борщ", PlannedDate = targetDate }
+                new MealPlan { Id = 1, UserId = userId, RecipeName = "Борщ", PlannedDate = targetDate },
             };
 
             _mockRepository.Setup(r => r.GetPlansByUserAndDateAsync(userId, targetDate))
@@ -143,7 +143,7 @@ namespace FourTaste.Tests
             var history = new List<MealPlan>
             {
                 new MealPlan { Id = 1, UserId = userId, RecipeName = "Паста", IsCooked = true, PlannedDate = DateTime.Today.AddDays(-1) },
-                new MealPlan { Id = 2, UserId = userId, RecipeName = "Піца", IsCooked = true, PlannedDate = DateTime.Today }
+                new MealPlan { Id = 2, UserId = userId, RecipeName = "Піца", IsCooked = true, PlannedDate = DateTime.Today },
             };
 
             _mockRepository.Setup(r => r.GetCookingHistoryAsync(userId, null)).ReturnsAsync(history);
@@ -164,7 +164,7 @@ namespace FourTaste.Tests
             var targetDate = new DateTime(2026, 10, 18);
             var history = new List<MealPlan>
             {
-                new MealPlan { Id = 2, UserId = userId, RecipeName = "Піца", IsCooked = true, PlannedDate = targetDate }
+                new MealPlan { Id = 2, UserId = userId, RecipeName = "Піца", IsCooked = true, PlannedDate = targetDate },
             };
 
             _mockRepository.Setup(r => r.GetCookingHistoryAsync(userId, targetDate)).ReturnsAsync(history);
@@ -201,6 +201,76 @@ namespace FourTaste.Tests
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Value);
             Assert.Empty(result.Value);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task SearchCookingHistoryAsync_NullOrWhitespace_ReturnsAll(string? query)
+        {
+            int userId = 1;
+            var history = new List<MealPlan>
+            {
+                new MealPlan { Id = 1, UserId = userId, RecipeName = "рис", IsCooked = true },
+                new MealPlan { Id = 2, UserId = userId, RecipeName = "сінабони", IsCooked = true },
+                new MealPlan { Id = 3, UserId = userId, RecipeName = "макарони", IsCooked = true },
+            };
+
+            _mockRepository.Setup(r => r.GetCookingHistoryAsync(userId, null)).ReturnsAsync(history);
+
+            var result = await _service.SearchCookingHistoryAsync(userId, query);
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal(3, result.Value!.Count);
+        }
+
+        [Fact]
+        public async Task SearchCookingHistoryAsync_ByRecipeName_ReturnsMatches()
+        {
+            int userId = 1;
+            var history = new List<MealPlan>
+            {
+                new MealPlan { Id = 1, UserId = userId, RecipeName = "рис з овочами", IsCooked = true },
+                new MealPlan { Id = 2, UserId = userId, RecipeName = "сінабони", IsCooked = true },
+                new MealPlan { Id = 3, UserId = userId, RecipeName = "макарони по-флотськи", IsCooked = true },
+            };
+
+            _mockRepository.Setup(r => r.GetCookingHistoryAsync(userId, null)).ReturnsAsync(history);
+
+            var result = await _service.SearchCookingHistoryAsync(userId, "СІНАБ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value!);
+            Assert.Equal("сінабони", result.Value![0].RecipeName);
+        }
+
+        [Fact]
+        public async Task SearchCookingHistoryAsync_NoMatch_ReturnsEmptyList()
+        {
+            int userId = 1;
+            var history = new List<MealPlan>
+            {
+                new MealPlan { Id = 1, UserId = userId, RecipeName = "рис", IsCooked = true },
+            };
+
+            _mockRepository.Setup(r => r.GetCookingHistoryAsync(userId, null)).ReturnsAsync(history);
+
+            var result = await _service.SearchCookingHistoryAsync(userId, "борщ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value!);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public async Task SearchCookingHistoryAsync_InvalidUserId_ReturnsFailure(int invalidUserId)
+        {
+            var result = await _service.SearchCookingHistoryAsync(invalidUserId, "тест");
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Користувач не визначений.", result.Error);
         }
     }
 }

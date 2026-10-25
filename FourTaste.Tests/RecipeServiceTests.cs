@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using Serilog;
-using Moq;
-using Xunit;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
+using Moq;
+using Serilog;
+using Xunit;
 
 namespace FourTaste.Tests
 {
@@ -30,7 +30,7 @@ namespace FourTaste.Tests
             var ingredients = new List<string> { "Цукор" };
             var steps = new List<string> { "Змішати інгредієнти" };
 
-            var result = await _service.CreateRecipeAsync("", "00:15", "Десерти", "Українська", true, 1, ingredients, steps);
+            var result = await _service.CreateRecipeAsync(string.Empty, "00:15", "Десерти", "Українська", true, 1, ingredients, steps);
 
             Assert.True(result.IsFailure);
             Assert.Equal("Назва рецепта не може бути порожньою.", result.Error);
@@ -57,7 +57,7 @@ namespace FourTaste.Tests
             var mockRecipes = new List<Recipe>
             {
                 new Recipe { Id = 1, Title = "Борщ", IsPublic = true },
-                new Recipe { Id = 2, Title = "Вареники", IsPublic = true }
+                new Recipe { Id = 2, Title = "Вареники", IsPublic = true },
             };
 
             _repositoryMock.Setup(r => r.GetPublicRecipesAsync())
@@ -78,7 +78,7 @@ namespace FourTaste.Tests
             int userId = 5;
             var mockRecipes = new List<Recipe>
             {
-                new Recipe { Id = 10, Title = "Мій секретний пиріг", UserId = userId }
+                new Recipe { Id = 10, Title = "Мій секретний пиріг", UserId = userId },
             };
 
             _repositoryMock.Setup(r => r.GetRecipesByUserIdAsync(userId))
@@ -147,7 +147,8 @@ namespace FourTaste.Tests
         [Fact]
         public async Task GetRecipeDetails_PrivateRecipeForGuest_ReturnsFailure()
         {
-            _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new Recipe { Id = 1, IsPublic = false, UserId = 5 });
+            var recipe = new Recipe { Id = 1, IsPublic = false, UserId = 5 };
+            _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(recipe);
 
             var result = await _service.GetRecipeDetailsAsync(1, null);
 
@@ -186,6 +187,221 @@ namespace FourTaste.Tests
 
             Assert.True(result.IsFailure);
             _repositoryMock.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task SearchPublicRecipes_NullOrWhitespaceQuery_ReturnsAllPublicRecipes(string? query)
+        {
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Борщ", IsPublic = true, UserId = 1 },
+                new Recipe { Id = 2, Title = "Вареники", IsPublic = true, UserId = 2 },
+            };
+            _repositoryMock.Setup(r => r.GetPublicRecipesAsync()).ReturnsAsync(mockRecipes);
+
+            var result = await _service.SearchPublicRecipesAsync(query);
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal(2, result.Value!.Count);
+        }
+
+        [Fact]
+        public async Task SearchPublicRecipes_ByTitle_MatchesCaseInsensitiveAndPartial()
+        {
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Український борщ", IsPublic = true, UserId = 1 },
+                new Recipe { Id = 2, Title = "Вареники з вишнею", IsPublic = true, UserId = 2 },
+            };
+            _repositoryMock.Setup(r => r.GetPublicRecipesAsync()).ReturnsAsync(mockRecipes);
+
+            var result = await _service.SearchPublicRecipesAsync("бОРщ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value!);
+            Assert.Equal("Український борщ", result.Value![0].Title);
+        }
+
+        [Fact]
+        public async Task SearchPublicRecipes_ByAuthorName_MatchesAuthor()
+        {
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Борщ", IsPublic = true, UserId = 10 },
+                new Recipe { Id = 2, Title = "Вареники", IsPublic = true, UserId = 20 },
+            };
+            var mockUsers = new List<User>
+            {
+                new User { ID = 10, Name = "Оксана Шевченко", Username = "oksana" },
+                new User { ID = 20, Name = "Іван Франко", Username = "ivan" },
+            };
+
+            _repositoryMock.Setup(r => r.GetPublicRecipesAsync()).ReturnsAsync(mockRecipes);
+            _userRepositoryMock.Setup(r => r.ListAsync()).ReturnsAsync(mockUsers);
+
+            var result = await _service.SearchPublicRecipesAsync("Оксана");
+
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value!);
+            Assert.Equal("Борщ", result.Value![0].Title);
+            Assert.Equal("Оксана Шевченко", result.Value![0].AuthorName);
+        }
+
+        [Fact]
+        public async Task SearchPublicRecipes_ByAuthorUsernameWithAtSign_MatchesAuthor()
+        {
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Борщ", IsPublic = true, UserId = 10 },
+                new Recipe { Id = 2, Title = "Вареники", IsPublic = true, UserId = 20 },
+            };
+            var mockUsers = new List<User>
+            {
+                new User { ID = 10, Name = "Оксана Шевченко", Username = "oksana_chef" },
+                new User { ID = 20, Name = "Іван Франко", Username = "ivan_cook" },
+            };
+
+            _repositoryMock.Setup(r => r.GetPublicRecipesAsync()).ReturnsAsync(mockRecipes);
+            _userRepositoryMock.Setup(r => r.ListAsync()).ReturnsAsync(mockUsers);
+
+            var result = await _service.SearchPublicRecipesAsync("@oksana_chef");
+
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value!);
+            Assert.Equal("Борщ", result.Value![0].Title);
+            Assert.Equal("oksana_chef", result.Value![0].AuthorUsername);
+        }
+
+        [Fact]
+        public async Task SearchPublicRecipes_FilterTitleOnly_DoesNotMatchAuthor()
+        {
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Борщ", IsPublic = true, UserId = 10 },
+            };
+            var mockUsers = new List<User>
+            {
+                new User { ID = 10, Name = "Оксана", Username = "oksana" },
+            };
+
+            _repositoryMock.Setup(r => r.GetPublicRecipesAsync()).ReturnsAsync(mockRecipes);
+            _userRepositoryMock.Setup(r => r.ListAsync()).ReturnsAsync(mockUsers);
+
+            var result = await _service.SearchPublicRecipesAsync("Оксана", RecipeSearchFilter.TitleOnly);
+
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value!);
+        }
+
+        [Fact]
+        public async Task SearchPublicRecipes_FilterAuthorOnly_DoesNotMatchTitle()
+        {
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Борщ", IsPublic = true, UserId = 10 },
+            };
+            var mockUsers = new List<User>
+            {
+                new User { ID = 10, Name = "Оксана", Username = "oksana" },
+            };
+
+            _repositoryMock.Setup(r => r.GetPublicRecipesAsync()).ReturnsAsync(mockRecipes);
+            _userRepositoryMock.Setup(r => r.ListAsync()).ReturnsAsync(mockUsers);
+
+            var result = await _service.SearchPublicRecipesAsync("Борщ", RecipeSearchFilter.AuthorOnly);
+
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value!);
+        }
+
+        [Fact]
+        public async Task SearchPublicRecipes_NoMatch_ReturnsEmptyList()
+        {
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Борщ", IsPublic = true, UserId = 10 },
+            };
+            _repositoryMock.Setup(r => r.GetPublicRecipesAsync()).ReturnsAsync(mockRecipes);
+
+            var result = await _service.SearchPublicRecipesAsync("Піца");
+
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value!);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task SearchUserRecipes_NullOrWhitespace_ReturnsAll(string? query)
+        {
+            int userId = 5;
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Пиріг", UserId = userId },
+                new Recipe { Id = 2, Title = "Кекс", UserId = userId },
+            };
+            _repositoryMock.Setup(r => r.GetRecipesByUserIdAsync(userId)).ReturnsAsync(mockRecipes);
+
+            var result = await _service.SearchUserRecipesAsync(userId, query);
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal(2, result.Value!.Count);
+        }
+
+        [Fact]
+        public async Task SearchUserRecipes_ByTitle_MatchesCaseInsensitive()
+        {
+            int userId = 5;
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Шоколадний пиріг", UserId = userId },
+                new Recipe { Id = 2, Title = "Ванільний кекс", UserId = userId },
+            };
+            _repositoryMock.Setup(r => r.GetRecipesByUserIdAsync(userId)).ReturnsAsync(mockRecipes);
+
+            var result = await _service.SearchUserRecipesAsync(userId, "ПИРІГ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value!);
+            Assert.Equal("Шоколадний пиріг", result.Value![0].Title);
+        }
+
+        [Fact]
+        public async Task SearchUserRecipes_ByCategoryOrCuisine_Matches()
+        {
+            int userId = 5;
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Борщ", Category = "Перші страви", Cuisine = "Українська", UserId = userId },
+                new Recipe { Id = 2, Title = "Піца", Category = "Випічка", Cuisine = "Італійська", UserId = userId },
+            };
+            _repositoryMock.Setup(r => r.GetRecipesByUserIdAsync(userId)).ReturnsAsync(mockRecipes);
+
+            var result = await _service.SearchUserRecipesAsync(userId, "Італійська");
+
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value!);
+            Assert.Equal("Піца", result.Value![0].Title);
+        }
+
+        [Fact]
+        public async Task SearchUserRecipes_NoMatch_ReturnsEmptyList()
+        {
+            int userId = 5;
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Борщ", UserId = userId },
+            };
+            _repositoryMock.Setup(r => r.GetRecipesByUserIdAsync(userId)).ReturnsAsync(mockRecipes);
+
+            var result = await _service.SearchUserRecipesAsync(userId, "Суші");
+
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value!);
         }
     }
 }
