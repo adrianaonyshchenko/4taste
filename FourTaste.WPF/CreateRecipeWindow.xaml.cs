@@ -12,7 +12,6 @@ namespace FourTaste.WPF
     {
         private readonly IRecipeService _recipeService;
         private readonly int _currentUserId;
-
         private readonly List<string> _ingredientsList = new List<string>();
         private readonly List<string> _stepsList = new List<string>();
         private byte[]? _selectedPhoto;
@@ -23,27 +22,22 @@ namespace FourTaste.WPF
             InitializeComponent();
             _recipeService = recipeService;
             _currentUserId = currentUserId;
-
             IngredientsListBox.ItemsSource = _ingredientsList;
             StepsListBox.ItemsSource = _stepsList;
-
             CategoryComboBox.ItemsSource = new List<string>
             {
                 "Сніданок", "Обід", "Вечеря", "Супи та бульйони", "Основні страви",
                 "Салати", "Закуски", "Десерти та випічка", "Напої та коктейлі", "Інше"
             };
-
             CuisineComboBox.ItemsSource = new List<string>
             {
                 "Українська", "Польська", "Італійська", "Японська", "Мексиканська",
                 "Французька", "Американська", "Грузинська", "Китайська", "Інша"
             };
-
             if (AddIngredientButton != null)
             {
                 AddIngredientButton.Click += AddIngredientButton_Click;
             }
-
             if (AddStepButton != null)
             {
                 AddStepButton.Click += AddStepButton_Click;
@@ -76,18 +70,15 @@ namespace FourTaste.WPF
             {
                 Filter = "Image Files (*.jpg; *.jpeg; *.png)|*.jpg;*.jpeg;*.png|All files (*.*)|*.*"
             };
-
             if (openFileDialog.ShowDialog() == true)
             {
                 _selectedPhoto = File.ReadAllBytes(openFileDialog.FileName);
-
                 var template = (Button)sender;
                 var imageChild = FindVisualChild<Image>(template);
                 if (imageChild != null)
                 {
                     imageChild.Source = new BitmapImage(new Uri(openFileDialog.FileName));
                 }
-
                 MessageBox.Show("Фото успішно вибрано!", "Фото", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
@@ -102,7 +93,6 @@ namespace FourTaste.WPF
                 {
                     return result;
                 }
-
                 var descendant = FindVisualChild<T>(child);
                 if (descendant != null)
                 {
@@ -114,29 +104,40 @@ namespace FourTaste.WPF
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            string title = TitleTextBox.Text;
-            string time = TimeTextBox.Text;
-            string category = CategoryComboBox.Text;
-            string cuisine = CuisineComboBox.Text;
-            bool isPrivate = StatusCheckBox.IsChecked ?? false;
-            bool isPublic = !isPrivate;
+            SaveButton.IsEnabled = false;
 
-            List<string> ingredients = GetIngredientsFromUI();
-            List<string> steps = GetStepsFromUI();
-
-            var result = await _recipeService.CreateRecipeAsync(
-                title, time, category, cuisine, isPublic, _currentUserId, ingredients, steps, _selectedPhoto);
-
-            if (result.IsFailure)
+            try
             {
-                MessageBox.Show(result.Error, "Помилка валідації", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+                string title = TitleTextBox.Text;
+                string time = TimeTextBox.Text;
+                string category = CategoryComboBox.Text;
+                string cuisine = CuisineComboBox.Text;
+                bool isPrivate = StatusCheckBox.IsChecked ?? false;
+                bool isPublic = !isPrivate;
+                List<string> ingredients = GetIngredientsFromUI();
+                List<string> steps = GetStepsFromUI();
 
-            CreatedRecipeId = result.Value;
-            MessageBox.Show("Рецепт успішно створено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-            this.DialogResult = true;
-            this.Close();
+                var result = await _recipeService.CreateRecipeAsync(
+                    title, time, category, cuisine, isPublic, _currentUserId, ingredients, steps, _selectedPhoto);
+
+                if (result.IsFailure)
+                {
+                    MessageBox.Show(result.Error, "Помилка валідації", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                CreatedRecipeId = result.Value;
+                MessageBox.Show("Рецепт успішно створено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+                this.DialogResult = true;
+                this.Close();
+            }
+            finally
+            {
+                if (SaveButton != null)
+                {
+                    SaveButton.IsEnabled = true;
+                }
+            }
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
