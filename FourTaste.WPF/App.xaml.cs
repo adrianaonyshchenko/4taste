@@ -36,6 +36,7 @@ namespace FourTaste.WPF
 
             var services = new ServiceCollection();
             ConfigureServices(services);
+
             ServiceProvider = services.BuildServiceProvider();
 
             base.OnStartup(e);
@@ -47,14 +48,16 @@ namespace FourTaste.WPF
             {
                 disposable.Dispose();
             }
+
             Log.CloseAndFlush();
             base.OnExit(e);
         }
 
         private static void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<ILogger>(_ => Log.Logger);
+            services.AddLogging();
 
+            services.AddSingleton<ILogger>(_ => Log.Logger);
             string connectionString = "Host=ep-mute-sea-b5ks3hrm-pooler.c-7.us-east-2.aws.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_a8u2btDTpHiX;Ssl Mode=Require;Trust Server Certificate=true";
 
             services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString), ServiceLifetime.Transient);
@@ -70,6 +73,10 @@ namespace FourTaste.WPF
             services.AddScoped<IMealPlanRepository, MealPlanRepository>();
             services.AddScoped<MealPlanService>();
 
+            // Змінено на AddScoped для уникнення проблем з потоками EF Core
+            services.AddScoped<IRecipeRepository, RecipeRepository>();
+            services.AddScoped<IRecipeService, RecipeService>();
+
             services.AddTransient<ManageAllergiesWindow>();
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
@@ -77,6 +84,7 @@ namespace FourTaste.WPF
             services.AddTransient<UserProfileWindow>();
             services.AddTransient<EditProfileWindow>();
             services.AddTransient<CookingHistoryWindow>();
+            services.AddTransient<CreateRecipeWindow>();
         }
 
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

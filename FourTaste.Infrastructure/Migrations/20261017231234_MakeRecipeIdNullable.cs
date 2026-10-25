@@ -19,12 +19,6 @@ namespace FourTaste.Infrastructure.Migrations
                 oldClrType: typeof(int),
                 oldType: "integer");
 
-            migrationBuilder.AddColumn<string>(
-                name: "RecipeName",
-                table: "MealPlans",
-                type: "text",
-                nullable: true);
-
             migrationBuilder.CreateTable(
                 name: "Recipes",
                 columns: table => new

@@ -1,0 +1,151 @@
+﻿<Window x:Class="FourTaste.WPF.CreateRecipeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Створення рецепту" Height="680" Width="920"
+        Background="#EADCC9" WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <!-- Стиль для красивих овальних/заокруглених кнопок -->
+        <Style x:Key="RoundedButtonStyle" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="18" Padding="10,5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="25">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок вікна -->
+        <TextBlock Text="Створення рецепту" FontSize="20" FontWeight="Bold" Foreground="#4A352F" Margin="0,0,0,12"/>
+
+        <!-- Велика основна картка -->
+        <Border Grid.Row="1" Background="#B89F8B" CornerRadius="18" Padding="20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="280"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ЛІВА КОЛОНКА: Фото зверху, Інгредієнти знизу -->
+                <Grid Grid.Column="0" Margin="0,0,20,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="140"/>
+                        <RowDefinition Height="15"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Блок фото з підтримкою прев'ю -->
+                    <Button Grid.Row="0" Background="#E3D7CB" Cursor="Hand" Click="UploadPhotoButton_Click" BorderBrush="Transparent">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="12">
+                                    <Grid>
+                                        <!-- Текст, який видно, поки фото не вибрано -->
+                                        <TextBlock x:Name="PlaceholderText" Text="Додайте фото" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#7A685D" FontSize="14"/>
+                                        <!-- Елемент для відображення самої картинки -->
+                                        <Image x:Name="PhotoPreviewImage" Stretch="UniformToFill"/>
+                                    </Grid>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+
+                    <!-- Блок інгредієнтів -->
+                    <Border Grid.Row="2" Background="#E3D7CB" CornerRadius="12" Padding="15">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Інгредієнти" FontWeight="Bold" Foreground="#4A352F" FontSize="14"/>
+                            <ListBox x:Name="IngredientsListBox" Grid.Row="1" Background="Transparent" BorderBrush="Transparent" Margin="0,5,0,5"/>
+                            <Button x:Name="AddIngredientButton" Grid.Row="2" Content="+ додати" Background="Transparent" BorderBrush="Transparent" HorizontalAlignment="Left" Foreground="#7A685D" Cursor="Hand" FontWeight="Bold"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- ПРАВА КОЛОНКА: Назва/параметри зверху, Порядок приготування знизу -->
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="15"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Верхня права частина: Назва та поля -->
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="Введіть назву" Foreground="#7A685D" FontSize="15" Margin="0,0,0,8"/>
+
+                        <!-- Заокруглене поле для назви -->
+                        <Border Background="#D5C4B4" CornerRadius="8" Padding="2" Margin="0,0,0,12">
+                            <TextBox x:Name="TitleTextBox" FontSize="15" Foreground="#4A352F" Background="Transparent" BorderBrush="Transparent" Padding="6"/>
+                        </Border>
+
+                        <!-- Параметри в рядок -->
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="Час приготування" Width="130" VerticalAlignment="Center" Foreground="#4A352F"/>
+                                <Border Background="#E3D7CB" CornerRadius="6" Padding="4">
+                                    <TextBox x:Name="TimeTextBox" Text="00:00" Width="60" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="Категорія" Width="130" VerticalAlignment="Center" Foreground="#4A352F"/>
+                                <ComboBox x:Name="CategoryComboBox" Width="130" Background="#E3D7CB"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <TextBlock Text="Країна" Width="130" VerticalAlignment="Center" Foreground="#4A352F"/>
+                                <ComboBox x:Name="CuisineComboBox" Width="130" Background="#E3D7CB"/>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                                <TextBlock Text="Статус" Width="130" VerticalAlignment="Center" Foreground="#4A352F"/>
+                                <CheckBox x:Name="StatusCheckBox" Content="приватний" VerticalAlignment="Center" Foreground="#4A352F"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Нижній правий блок: Порядок приготування -->
+                    <Border Grid.Row="2" Background="#947A66" CornerRadius="12" Padding="15">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Порядок приготування" FontWeight="Bold" Foreground="#FFF" FontSize="14"/>
+                            <ListBox x:Name="StepsListBox" Grid.Row="1" Background="Transparent" BorderBrush="Transparent" Margin="0,5,0,5"/>
+                            <Button x:Name="AddStepButton" Grid.Row="2" Content="+ додати крок" Background="Transparent" BorderBrush="Transparent" HorizontalAlignment="Left" Foreground="#FFF" Cursor="Hand" FontWeight="Bold"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- НИЖНІ КНОПКИ: Вийти та Зберегти (гарні овальні) -->
+        <Grid Grid.Row="2" Margin="0,15,0,0">
+            <Button x:Name="CancelButton" Content="Вийти" Width="110" Height="38" HorizontalAlignment="Left"
+                    Background="#B89F8B" Foreground="#4A352F" FontWeight="Bold"
+                    Style="{StaticResource RoundedButtonStyle}" Click="CancelButton_Click"/>
+
+            <Button x:Name="SaveButton" Content="Зберегти" Width="130" Height="38" HorizontalAlignment="Right"
+                    Background="#542E2B" Foreground="#FFF" FontWeight="Bold"
+                    Style="{StaticResource RoundedButtonStyle}" Click="SaveButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>
