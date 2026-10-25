@@ -21,5 +21,21 @@ namespace FourTaste.Infrastructure.Repositories
             context.Recipes.Add(recipe);
             await context.SaveChangesAsync();
         }
+
+        public async Task<List<Recipe>> GetPublicRecipesAsync()
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Recipes
+                .Where(r => r.IsPublic == true)
+                .ToListAsync();
+        }
+
+        public async Task<List<Recipe>> GetRecipesByUserIdAsync(int userId)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Recipes
+                .Where(r => r.UserId == userId)
+                .ToListAsync();
+        }
     }
 }

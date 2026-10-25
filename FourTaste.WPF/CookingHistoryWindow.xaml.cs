@@ -101,5 +101,19 @@ namespace FourTaste.WPF
             var createRecipeWindow = new CreateRecipeWindow(this.recipeService, this.CurrentUserId);
             createRecipeWindow.ShowDialog();
         }
+
+        private void CookingHistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            var historyWindow = App.ServiceProvider?.GetService<CookingHistoryWindow>() ?? new CookingHistoryWindow();
+            historyWindow.Show();
+            this.Close();
+        }
+
+        private void PublicRecipesButton_Click(object sender, RoutedEventArgs e)
+        {
+            var publicRecipesWindow = App.ServiceProvider?.GetService<PublicRecipesWindow>() ?? new PublicRecipesWindow(this.recipeService);
+            publicRecipesWindow.Show();
+            this.Close();
+        }
     }
 }
