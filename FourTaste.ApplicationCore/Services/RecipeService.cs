@@ -203,28 +203,21 @@ namespace FourTaste.ApplicationCore.Services
                 return;
             }
 
-            try
-            {
-                var users = await _userRepository.ListAsync();
-                var userMap = users?.ToDictionary(u => u.ID, u => u) ?? new Dictionary<int, User>();
+            var users = await _userRepository.ListAsync();
+            var userMap = users?.ToDictionary(u => u.ID, u => u) ?? new Dictionary<int, User>();
 
-                foreach (var recipe in recipes)
-                {
-                    if (userMap.TryGetValue(recipe.UserId, out var author) && author != null)
-                    {
-                        recipe.AuthorUsername = author.Username ?? string.Empty;
-                        recipe.AuthorName = string.IsNullOrWhiteSpace(author.Name) ? (author.Username ?? string.Empty) : author.Name;
-                    }
-                    else
-                    {
-                        recipe.AuthorUsername = string.Empty;
-                        recipe.AuthorName = "Невідомий автор";
-                    }
-                }
-            }
-            catch (Exception ex)
+            foreach (var recipe in recipes)
             {
-                _logger.Warning(ex, "Не вдалося отримати авторів для рецептів.");
+                if (userMap.TryGetValue(recipe.UserId, out var author) && author != null)
+                {
+                    recipe.AuthorUsername = author.Username ?? string.Empty;
+                    recipe.AuthorName = string.IsNullOrWhiteSpace(author.Name) ? (author.Username ?? string.Empty) : author.Name;
+                }
+                else
+                {
+                    recipe.AuthorUsername = string.Empty;
+                    recipe.AuthorName = "Невідомий автор";
+                }
             }
         }
     }

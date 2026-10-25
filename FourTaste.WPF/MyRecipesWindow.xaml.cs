@@ -8,7 +8,6 @@ using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace FourTaste.WPF
 {
@@ -16,23 +15,20 @@ namespace FourTaste.WPF
     {
         private readonly IRecipeService recipeService;
         private readonly int currentUserId;
-        private readonly ILogger<MyRecipesWindow>? logger;
         private List<Recipe> allMyRecipes = new ();
 
         public MyRecipesWindow()
             : this(
                 App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService не зареєстровано."),
-                SessionContext.CurrentUser?.ID ?? 0,
-                App.ServiceProvider?.GetService<ILogger<MyRecipesWindow>>())
+                SessionContext.CurrentUser?.ID ?? 0)
         {
         }
 
-        public MyRecipesWindow(IRecipeService recipeService, int currentUserId, ILogger<MyRecipesWindow>? logger = null)
+        public MyRecipesWindow(IRecipeService recipeService, int currentUserId)
         {
             this.InitializeComponent();
             this.recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
             this.currentUserId = currentUserId;
-            this.logger = logger;
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -42,24 +38,15 @@ namespace FourTaste.WPF
 
         private async Task LoadMyRecipesAsync()
         {
-            try
+            var result = await this.recipeService.GetRecipesByUserIdAsync(this.currentUserId);
+            if (result.IsFailure)
             {
-                var result = await this.recipeService.GetRecipesByUserIdAsync(this.currentUserId);
-                if (result.IsSuccess)
-                {
-                    this.allMyRecipes = result.Value ?? new List<Recipe>();
-                    this.ApplyFilter();
-                }
-                else
-                {
-                    MessageBox.Show(result.Error, "Помилка завантаження", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
+                MessageBox.Show(result.Error, "Помилка завантаження", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
-            {
-                this.logger?.LogError(ex, "Помилка під час завантаження моїх рецептів.");
-                MessageBox.Show($"Сталася помилка: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+
+            this.allMyRecipes = result.Value ?? new List<Recipe>();
+            this.ApplyFilter();
         }
 
         private void ApplyFilter()

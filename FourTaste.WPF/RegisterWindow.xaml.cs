@@ -15,7 +15,7 @@ namespace FourTaste.WPF
 
         public RegisterWindow()
         {
-            InitializeComponent();
+            this.InitializeComponent();
 
             this.userService = App.ServiceProvider?.GetService<UserService>()
                                ?? throw new InvalidOperationException("UserService не зареєстровано в контейнері.");
@@ -23,7 +23,7 @@ namespace FourTaste.WPF
 
         public RegisterWindow(UserService userService)
         {
-            InitializeComponent();
+            this.InitializeComponent();
             this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
 
@@ -35,15 +35,9 @@ namespace FourTaste.WPF
             }
 
             this.isSyncingPassword = true;
-            try
-            {
-                this.PasswordTextBox.Text = this.PasswordBox.Password;
-                this.UpdatePasswordPlaceholder();
-            }
-            finally
-            {
-                this.isSyncingPassword = false;
-            }
+            this.PasswordTextBox.Text = this.PasswordBox.Password;
+            this.UpdatePasswordPlaceholder();
+            this.isSyncingPassword = false;
         }
 
         private void PasswordTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -54,15 +48,9 @@ namespace FourTaste.WPF
             }
 
             this.isSyncingPassword = true;
-            try
-            {
-                this.PasswordBox.Password = this.PasswordTextBox.Text;
-                this.UpdatePasswordPlaceholder();
-            }
-            finally
-            {
-                this.isSyncingPassword = false;
-            }
+            this.PasswordBox.Password = this.PasswordTextBox.Text;
+            this.UpdatePasswordPlaceholder();
+            this.isSyncingPassword = false;
         }
 
         private void UpdatePasswordPlaceholder()
@@ -109,7 +97,7 @@ namespace FourTaste.WPF
 
         private async void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            RegisterButton.IsEnabled = false;
+            this.RegisterButton.IsEnabled = false;
 
             try
             {
@@ -165,7 +153,7 @@ namespace FourTaste.WPF
             }
             finally
             {
-                RegisterButton.IsEnabled = true;
+                this.RegisterButton.IsEnabled = true;
             }
         }
 

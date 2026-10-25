@@ -8,29 +8,29 @@ namespace FourTaste.WPF
 {
     public partial class LoginWindow : Window
     {
-        private readonly AuthService _authService;
+        private readonly AuthService authService;
         private bool isPasswordVisible;
         private bool isSyncingPassword;
 
         public LoginWindow()
         {
-            InitializeComponent();
+            this.InitializeComponent();
 
-            _authService = App.ServiceProvider?.GetRequiredService<AuthService>()
-                           ?? throw new InvalidOperationException("ServiceProvider не ініціалізовано.");
+            this.authService = App.ServiceProvider?.GetRequiredService<AuthService>()
+                               ?? throw new InvalidOperationException("ServiceProvider не ініціалізовано.");
         }
 
         public LoginWindow(AuthService authService)
         {
-            InitializeComponent();
-            _authService = authService;
+            this.InitializeComponent();
+            this.authService = authService ?? throw new ArgumentNullException(nameof(authService));
         }
 
         private void EmailTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (EmailPlaceholder != null)
+            if (this.EmailPlaceholder != null)
             {
-                EmailPlaceholder.Visibility = EmailTextBox.Text.Length > 0
+                this.EmailPlaceholder.Visibility = this.EmailTextBox.Text.Length > 0
                     ? Visibility.Collapsed
                     : Visibility.Visible;
             }
@@ -44,15 +44,9 @@ namespace FourTaste.WPF
             }
 
             this.isSyncingPassword = true;
-            try
-            {
-                this.PasswordTextBox.Text = this.PasswordBox.Password;
-                this.UpdatePasswordPlaceholder();
-            }
-            finally
-            {
-                this.isSyncingPassword = false;
-            }
+            this.PasswordTextBox.Text = this.PasswordBox.Password;
+            this.UpdatePasswordPlaceholder();
+            this.isSyncingPassword = false;
         }
 
         private void PasswordTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -63,15 +57,9 @@ namespace FourTaste.WPF
             }
 
             this.isSyncingPassword = true;
-            try
-            {
-                this.PasswordBox.Password = this.PasswordTextBox.Text;
-                this.UpdatePasswordPlaceholder();
-            }
-            finally
-            {
-                this.isSyncingPassword = false;
-            }
+            this.PasswordBox.Password = this.PasswordTextBox.Text;
+            this.UpdatePasswordPlaceholder();
+            this.isSyncingPassword = false;
         }
 
         private void UpdatePasswordPlaceholder()
@@ -118,14 +106,14 @@ namespace FourTaste.WPF
 
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            LoginButton.IsEnabled = false;
+            this.LoginButton.IsEnabled = false;
 
             try
             {
-                string email = EmailTextBox.Text;
+                string email = this.EmailTextBox.Text;
                 string password = this.isPasswordVisible ? this.PasswordTextBox.Text : this.PasswordBox.Password;
 
-                var loginResult = await _authService.LoginAsync(email, password);
+                var loginResult = await this.authService.LoginAsync(email, password);
 
                 if (loginResult.IsFailure)
                 {
@@ -147,7 +135,7 @@ namespace FourTaste.WPF
             }
             finally
             {
-                LoginButton.IsEnabled = true;
+                this.LoginButton.IsEnabled = true;
             }
         }
 
