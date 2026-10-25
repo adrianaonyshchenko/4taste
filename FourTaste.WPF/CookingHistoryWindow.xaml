@@ -227,15 +227,11 @@
         <Grid Grid.Row="3">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <ListBox x:Name="CookingHistoryListBox"
+                         MouseDoubleClick="CookingHistoryListBox_MouseDoubleClick"
                          Background="Transparent"
                          BorderBrush="Transparent"
                          BorderThickness="0"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                 MouseDoubleClick="CookingHistoryListBox_MouseDoubleClick"
-                 Background="Transparent"
-                 BorderBrush="Transparent"
-                 BorderThickness="0"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
                             <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
