@@ -53,12 +53,6 @@ namespace FourTaste.ApplicationCore.Services
                 return Result<int>.Failure("Додайте кроки приготування.");
             }
 
-            if (photo is { Length: > MaxPhotoSizeBytes })
-            {
-                _logger.Warning("Помилка валідації: фото завелике ({Size} байт).", photo.Length);
-                return Result<int>.Failure("Фото завелике (максимум 5 МБ).");
-            }
-
             var recipe = new Recipe
             {
                 Title = title.Trim(),
@@ -67,7 +61,7 @@ namespace FourTaste.ApplicationCore.Services
                 Cuisine = cuisine,
                 IsPublic = isPublic,
                 UserId = userId,
-                Photo = photo,
+                Photo = photo
             };
 
             foreach (var ingName in ingredients)
@@ -119,6 +113,7 @@ namespace FourTaste.ApplicationCore.Services
                 AuthorName = author?.Username ?? "Невідомий автор",
             });
         }
+
         public async Task<Result<List<Recipe>>> GetPublicRecipesAsync()
         {
             var recipes = await _recipeRepository.GetPublicRecipesAsync();

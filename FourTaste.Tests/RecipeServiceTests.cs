@@ -92,6 +92,9 @@ namespace FourTaste.Tests
             Assert.Equal(userId, result.Value[0].UserId);
             Assert.Equal("Мій секретний пиріг", result.Value[0].Title);
             _repositoryMock.Verify(r => r.GetRecipesByUserIdAsync(userId), Times.Once);
+        }
+
+        [Fact]
         public async Task CreateRecipe_WithTooLargePhoto_ReturnsFailure()
         {
             var photo = new byte[(5 * 1024 * 1024) + 1];
