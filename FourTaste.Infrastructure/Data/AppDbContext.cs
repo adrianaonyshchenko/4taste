@@ -5,10 +5,9 @@ namespace FourTaste.Infrastructure.Data
 {
     public class AppDbContext : DbContext
     {
-        public DbSet<User> Users { get; set; } = null!;
-        public DbSet<Allergy> Allergies { get; set; } = null!;
-        public DbSet<MealPlan> MealPlans { get; set; } = null!;
-        public DbSet<Recipe> Recipes { get; set; } = null!; // Виправлено з object на DbSet<Recipe>
+        public DbSet<User> Users { get; set; }
+
+        public DbSet<Allergy> Allergies { get; set; }
 
         public AppDbContext()
         {
@@ -16,7 +15,6 @@ namespace FourTaste.Infrastructure.Data
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
-            Database.EnsureCreated();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
