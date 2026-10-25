@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Windows;
-using FourTaste.ApplicationCore.Entities;
+﻿using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
 
 namespace FourTaste.WPF
 {
@@ -66,6 +67,26 @@ namespace FourTaste.WPF
             var userProfileWindow = App.ServiceProvider?.GetService<UserProfileWindow>() ?? new UserProfileWindow();
             userProfileWindow.Show();
             this.Close();
+        }
+
+        private void RecipesListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (this.RecipesListBox.SelectedItem is Recipe selectedRecipe)
+            {
+                var detailsWindow = new RecipeDetailsWindow(_recipeService, selectedRecipe.Id);
+                detailsWindow.ShowDialog();
+
+                this.RecipesListBox.SelectedItem = null;
+            }
+        }
+
+        private void RecipeCard_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Border border && border.DataContext is Recipe selectedRecipe)
+            {
+                var detailsWindow = new RecipeDetailsWindow(_recipeService, selectedRecipe.Id);
+                detailsWindow.ShowDialog();
+            }
         }
     }
 }
