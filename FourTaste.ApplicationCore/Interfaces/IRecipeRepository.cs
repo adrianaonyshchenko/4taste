@@ -6,5 +6,6 @@ namespace FourTaste.ApplicationCore.Interfaces
     public interface IRecipeRepository
     {
         Task AddAsync(Recipe recipe);
+        Task<Recipe?> GetByIdAsync(int recipeId);
     }
 }
