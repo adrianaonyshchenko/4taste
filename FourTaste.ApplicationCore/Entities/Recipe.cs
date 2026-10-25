@@ -10,8 +10,8 @@ namespace FourTaste.ApplicationCore.Entities
         public string Category { get; set; } = string.Empty;    
         public string Cuisine { get; set; } = string.Empty;     
         public bool IsPublic { get; set; }                      
-        public int UserId { get; set; }                         
-
+        public int UserId { get; set; }
+        public byte[]? Photo { get; set; }
         public List<Ingredient> Ingredients { get; set; } = new ();
         public List<RecipeStep> Steps { get; set; } = new ();
     }

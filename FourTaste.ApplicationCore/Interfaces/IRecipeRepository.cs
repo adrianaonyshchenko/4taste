@@ -10,5 +10,6 @@ namespace FourTaste.ApplicationCore.Interfaces
         Task<List<Recipe>> GetPublicRecipesAsync();
 
         Task<List<Recipe>> GetRecipesByUserIdAsync(int userId);
+        Task<Recipe?> GetByIdAsync(int recipeId);
     }
 }

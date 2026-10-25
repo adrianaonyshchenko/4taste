@@ -36,6 +36,14 @@ namespace FourTaste.Infrastructure.Repositories
             return await context.Recipes
                 .Where(r => r.UserId == userId)
                 .ToListAsync();
+        public async Task<Recipe?> GetByIdAsync(int recipeId)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Recipes
+                .AsNoTracking()
+                .Include(r => r.Ingredients)
+                .Include(r => r.Steps.OrderBy(s => s.StepNumber))
+                .FirstOrDefaultAsync(r => r.Id == recipeId);
         }
     }
 }
