@@ -99,7 +99,12 @@ namespace FourTaste.WPF
         private void AddRecipeButton_Click(object sender, MouseButtonEventArgs e)
         {
             var createRecipeWindow = new CreateRecipeWindow(this.recipeService, this.CurrentUserId);
-            createRecipeWindow.ShowDialog();
+
+            if (createRecipeWindow.ShowDialog() == true)
+            {
+                var detailsWindow = new RecipeDetailsWindow(this.recipeService, createRecipeWindow.CreatedRecipeId);
+                detailsWindow.Show();
+            }
         }
 
         private void CookingHistoryButton_Click(object sender, RoutedEventArgs e)
@@ -114,6 +119,27 @@ namespace FourTaste.WPF
             var publicRecipesWindow = App.ServiceProvider?.GetService<PublicRecipesWindow>() ?? new PublicRecipesWindow(this.recipeService);
             publicRecipesWindow.Show();
             this.Close();
+        }
+
+        private void CookingHistoryListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (this.CookingHistoryListBox.SelectedItem is not MealPlan meal)
+            {
+                return;
+            }
+
+            if (meal.RecipeId is not int recipeId)
+            {
+                MessageBox.Show(
+                    "Ця страва додана вручну в календарі, тому для неї немає збереженого рецепта в каталозі.",
+                    "Рецепт недоступний",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var detailsWindow = new RecipeDetailsWindow(this.recipeService, recipeId);
+            detailsWindow.Show();
         }
     }
 }
