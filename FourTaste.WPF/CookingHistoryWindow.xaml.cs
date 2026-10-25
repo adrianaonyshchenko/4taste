@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -14,6 +15,7 @@ namespace FourTaste.WPF
     {
         private readonly MealPlanService mealPlanService;
         private readonly IRecipeService recipeService;
+        private List<MealPlan> allCookedMeals = new ();
 
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
@@ -75,19 +77,114 @@ namespace FourTaste.WPF
                 return;
             }
 
-            var cookedMeals = result.Value ?? new List<MealPlan>();
-            this.CookingHistoryListBox.ItemsSource = cookedMeals;
+            this.allCookedMeals = result.Value ?? new List<MealPlan>();
+            this.ApplyFilter();
+        }
 
-            if (cookedMeals.Count == 0)
+        private void ApplyFilter()
+        {
+            if (this.CookingHistoryListBox == null || this.SearchTextBox == null)
             {
-                this.CookingHistoryListBox.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            string rawText = this.SearchTextBox.Text;
+            bool hasText = !string.IsNullOrEmpty(rawText);
+
+            if (this.SearchPlaceholderTextBlock != null)
+            {
+                this.SearchPlaceholderTextBlock.Visibility = hasText ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            if (this.ClearSearchButton != null)
+            {
+                this.ClearSearchButton.Visibility = hasText ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            string query = rawText.Trim();
+
+            if (string.IsNullOrEmpty(query))
+            {
+                if (this.ResultsCountTextBlock != null)
+                {
+                    this.ResultsCountTextBlock.Visibility = Visibility.Collapsed;
+                }
+
+                if (this.allCookedMeals.Count == 0)
+                {
+                    this.EmptyHistoryTextBlock.Text = "Ви ще не позначили жодної страви як приготовлену.\nЩоб додати страву до історії, відмітьте її у меню на календарі.";
+                    this.EmptyHistoryTextBlock.Visibility = Visibility.Visible;
+                    this.CookingHistoryListBox.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    this.CookingHistoryListBox.ItemsSource = this.allCookedMeals;
+                    this.CookingHistoryListBox.Visibility = Visibility.Visible;
+                    this.EmptyHistoryTextBlock.Visibility = Visibility.Collapsed;
+                }
+
+                return;
+            }
+
+            var filtered = this.allCookedMeals.Where(m =>
+                !string.IsNullOrEmpty(m.RecipeName) &&
+                m.RecipeName.Contains(query, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+
+            if (this.ResultsCountTextBlock != null)
+            {
+                this.ResultsCountTextBlock.Text = $"Знайдено: {filtered.Count}";
+                this.ResultsCountTextBlock.Visibility = Visibility.Visible;
+            }
+
+            if (filtered.Count == 0)
+            {
+                this.EmptyHistoryTextBlock.Text = $"За запитом «{query}» страв не знайдено.\nСпробуйте змінити пошуковий запит.";
                 this.EmptyHistoryTextBlock.Visibility = Visibility.Visible;
+                this.CookingHistoryListBox.Visibility = Visibility.Collapsed;
             }
             else
             {
+                this.CookingHistoryListBox.ItemsSource = filtered;
                 this.CookingHistoryListBox.Visibility = Visibility.Visible;
                 this.EmptyHistoryTextBlock.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private void SearchTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            this.ApplyFilter();
+        }
+
+        private void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                this.ApplyFilter();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                this.ClearSearch();
+                e.Handled = true;
+            }
+        }
+
+        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.ApplyFilter();
+        }
+
+        private void ClearSearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.ClearSearch();
+        }
+
+        private void ClearSearch()
+        {
+            this.SearchTextBox.Text = string.Empty;
+            this.SearchTextBox.Focus();
+            this.ApplyFilter();
         }
 
         private void ProfileButton_Click(object sender, RoutedEventArgs e)
@@ -96,15 +193,13 @@ namespace FourTaste.WPF
             profileWindow.Show();
             this.Close();
         }
+
         private void AddRecipeButton_Click(object sender, MouseButtonEventArgs e)
         {
             var createRecipeWindow = new CreateRecipeWindow(this.recipeService, this.CurrentUserId);
+            createRecipeWindow.ShowDialog();
 
-            if (createRecipeWindow.ShowDialog() == true)
-            {
-                var detailsWindow = new RecipeDetailsWindow(this.recipeService, createRecipeWindow.CreatedRecipeId);
-                detailsWindow.Show();
-            }
+            _ = this.LoadCookingHistoryAsync();
         }
 
         private void CookingHistoryButton_Click(object sender, RoutedEventArgs e)

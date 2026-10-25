@@ -1,10 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Results;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace FourTaste.ApplicationCore.Services
 {
@@ -38,7 +39,7 @@ namespace FourTaste.ApplicationCore.Services
                 UserId = userId,
                 RecipeName = recipeName.Trim(),
                 PlannedDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc),
-                IsCooked = false
+                IsCooked = false,
             };
 
             var created = await _repository.AddAsync(mealPlan);
@@ -110,6 +111,35 @@ namespace FourTaste.ApplicationCore.Services
             var history = await _repository.GetCookingHistoryAsync(userId, date);
             _logger.Information("Отримано історію готування для користувача {UserId} (дата: {Date}, {Count} страв)", userId, date?.ToShortDateString() ?? "всі", history.Count);
             return Result<List<MealPlan>>.Success(history);
+        }
+
+        public async Task<Result<List<MealPlan>>> SearchCookingHistoryAsync(int userId, string? searchTerm)
+        {
+            if (userId <= 0)
+            {
+                _logger.Warning("Спроба пошуку в історії готування без валідного UserId: {UserId}", userId);
+                return Result<List<MealPlan>>.Failure("Користувач не визначений.");
+            }
+
+            var historyResult = await GetCookingHistoryAsync(userId);
+            if (historyResult.IsFailure)
+            {
+                return historyResult;
+            }
+
+            var history = historyResult.Value ?? new List<MealPlan>();
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                return Result<List<MealPlan>>.Success(history);
+            }
+
+            var query = searchTerm.Trim();
+            var filtered = history
+                .Where(m => !string.IsNullOrEmpty(m.RecipeName) && m.RecipeName.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            _logger.Information("Знайдено {Count} страв в історії готування за запитом '{SearchTerm}'", filtered.Count, searchTerm);
+            return Result<List<MealPlan>>.Success(filtered);
         }
     }
 }

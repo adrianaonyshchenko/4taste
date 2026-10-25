@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,40 +10,101 @@ namespace FourTaste.WPF
     public partial class RegisterWindow : Window
     {
         private readonly UserService userService;
+        private bool isPasswordVisible;
+        private bool isSyncingPassword;
 
         public RegisterWindow()
         {
-            InitializeComponent();
+            this.InitializeComponent();
 
             this.userService = App.ServiceProvider?.GetService<UserService>()
                                ?? throw new InvalidOperationException("UserService не зареєстровано в контейнері.");
         }
+
         public RegisterWindow(UserService userService)
         {
-            InitializeComponent();
+            this.InitializeComponent();
             this.userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
 
         private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
         {
-            if (PasswordPlaceholder != null)
+            if (this.isSyncingPassword)
             {
-                PasswordPlaceholder.Visibility = string.IsNullOrEmpty(PasswordBox.Password)
+                return;
+            }
+
+            this.isSyncingPassword = true;
+            this.PasswordTextBox.Text = this.PasswordBox.Password;
+            this.UpdatePasswordPlaceholder();
+            this.isSyncingPassword = false;
+        }
+
+        private void PasswordTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (this.isSyncingPassword)
+            {
+                return;
+            }
+
+            this.isSyncingPassword = true;
+            this.PasswordBox.Password = this.PasswordTextBox.Text;
+            this.UpdatePasswordPlaceholder();
+            this.isSyncingPassword = false;
+        }
+
+        private void UpdatePasswordPlaceholder()
+        {
+            if (this.PasswordPlaceholder != null)
+            {
+                string currentPassword = this.isPasswordVisible ? this.PasswordTextBox.Text : this.PasswordBox.Password;
+                this.PasswordPlaceholder.Visibility = string.IsNullOrEmpty(currentPassword)
                     ? Visibility.Visible
                     : Visibility.Collapsed;
             }
         }
 
+        private void TogglePasswordButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.isPasswordVisible = !this.isPasswordVisible;
+
+            if (this.isPasswordVisible)
+            {
+                this.PasswordTextBox.Text = this.PasswordBox.Password;
+                this.PasswordBox.Visibility = Visibility.Collapsed;
+                this.PasswordTextBox.Visibility = Visibility.Visible;
+                this.PasswordTextBox.Focus();
+                this.PasswordTextBox.CaretIndex = this.PasswordTextBox.Text.Length;
+
+                this.EyeIcon.Visibility = Visibility.Collapsed;
+                this.EyeSlashIcon.Visibility = Visibility.Visible;
+                this.TogglePasswordButton.ToolTip = "Приховати пароль";
+            }
+            else
+            {
+                this.PasswordBox.Password = this.PasswordTextBox.Text;
+                this.PasswordTextBox.Visibility = Visibility.Collapsed;
+                this.PasswordBox.Visibility = Visibility.Visible;
+                this.PasswordBox.Focus();
+
+                this.EyeIcon.Visibility = Visibility.Visible;
+                this.EyeSlashIcon.Visibility = Visibility.Collapsed;
+                this.TogglePasswordButton.ToolTip = "Показати пароль";
+            }
+
+            this.UpdatePasswordPlaceholder();
+        }
+
         private async void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            RegisterButton.IsEnabled = false;
+            this.RegisterButton.IsEnabled = false;
 
             try
             {
                 string name = this.NameTextBox.Text?.Trim() ?? string.Empty;
                 string username = this.UsernameTextBox.Text?.Trim() ?? string.Empty;
                 string email = this.EmailTextBox.Text?.Trim() ?? string.Empty;
-                string password = this.PasswordBox.Password;
+                string password = this.isPasswordVisible ? this.PasswordTextBox.Text : this.PasswordBox.Password;
 
                 if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(username) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
                 {
@@ -94,7 +153,7 @@ namespace FourTaste.WPF
             }
             finally
             {
-                RegisterButton.IsEnabled = true;
+                this.RegisterButton.IsEnabled = true;
             }
         }
 
