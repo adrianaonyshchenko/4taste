@@ -8,7 +8,7 @@ namespace FourTaste.Infrastructure.Data
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Allergy> Allergies { get; set; } = null!;
         public DbSet<MealPlan> MealPlans { get; set; } = null!;
-        public DbSet<Recipe> Recipes { get; set; } = null!; // Виправлено з object на DbSet<Recipe>
+        public DbSet<Recipe> Recipes { get; set; } = null!;
 
         public AppDbContext()
         {
@@ -17,6 +17,7 @@ namespace FourTaste.Infrastructure.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
             Database.EnsureCreated();
+            Database.ExecuteSqlRaw(@"ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Photo"" bytea NULL;");
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

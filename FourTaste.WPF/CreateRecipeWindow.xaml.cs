@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -14,8 +15,8 @@ namespace FourTaste.WPF
 
         private readonly List<string> _ingredientsList = new List<string>();
         private readonly List<string> _stepsList = new List<string>();
-
-        private string _selectedPhotoPath = string.Empty;
+        private byte[]? _selectedPhoto;
+        public int CreatedRecipeId { get; private set; }
 
         public CreateRecipeWindow(IRecipeService recipeService, int currentUserId)
         {
@@ -78,13 +79,13 @@ namespace FourTaste.WPF
 
             if (openFileDialog.ShowDialog() == true)
             {
-                _selectedPhotoPath = openFileDialog.FileName;
+                _selectedPhoto = File.ReadAllBytes(openFileDialog.FileName);
 
                 var template = (Button)sender;
                 var imageChild = FindVisualChild<Image>(template);
                 if (imageChild != null)
                 {
-                    imageChild.Source = new BitmapImage(new Uri(_selectedPhotoPath));
+                    imageChild.Source = new BitmapImage(new Uri(openFileDialog.FileName));
                 }
 
                 MessageBox.Show("Фото успішно вибрано!", "Фото", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -117,13 +118,14 @@ namespace FourTaste.WPF
             string time = TimeTextBox.Text;
             string category = CategoryComboBox.Text;
             string cuisine = CuisineComboBox.Text;
-            bool isPublic = StatusCheckBox.IsChecked ?? false;
+            bool isPrivate = StatusCheckBox.IsChecked ?? false;
+            bool isPublic = !isPrivate;
 
             List<string> ingredients = GetIngredientsFromUI();
             List<string> steps = GetStepsFromUI();
 
             var result = await _recipeService.CreateRecipeAsync(
-                title, time, category, cuisine, isPublic, _currentUserId, ingredients, steps);
+                title, time, category, cuisine, isPublic, _currentUserId, ingredients, steps, _selectedPhoto);
 
             if (result.IsFailure)
             {
@@ -131,6 +133,7 @@ namespace FourTaste.WPF
                 return;
             }
 
+            CreatedRecipeId = result.Value;
             MessageBox.Show("Рецепт успішно створено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
             this.DialogResult = true;
             this.Close();
