@@ -197,7 +197,11 @@ namespace FourTaste.WPF
         private void AddRecipeButton_Click(object sender, MouseButtonEventArgs e)
         {
             var createRecipeWindow = new CreateRecipeWindow(this.recipeService, this.CurrentUserId);
-            createRecipeWindow.ShowDialog();
+            if (createRecipeWindow.ShowDialog() == true)
+            {
+                var detailsWindow = new RecipeDetailsWindow(this.recipeService, createRecipeWindow.CreatedRecipeId);
+                detailsWindow.Show();
+            }
 
             _ = this.LoadCookingHistoryAsync();
         }

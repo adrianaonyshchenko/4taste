@@ -167,7 +167,7 @@ namespace FourTaste.WPF
         {
             if (this.RecipesListBox.SelectedItem is Recipe selectedRecipe)
             {
-                var detailsWindow = new RecipeDetailsWindow(_recipeService, selectedRecipe.Id);
+                var detailsWindow = new RecipeDetailsWindow(this.recipeService, selectedRecipe.Id);
                 detailsWindow.ShowDialog();
 
                 this.RecipesListBox.SelectedItem = null;
@@ -178,7 +178,7 @@ namespace FourTaste.WPF
         {
             if (sender is System.Windows.Controls.Border border && border.DataContext is Recipe selectedRecipe)
             {
-                var detailsWindow = new RecipeDetailsWindow(_recipeService, selectedRecipe.Id);
+                var detailsWindow = new RecipeDetailsWindow(this.recipeService, selectedRecipe.Id);
                 detailsWindow.ShowDialog();
             }
         }
