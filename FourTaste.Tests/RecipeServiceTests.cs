@@ -9,14 +9,14 @@ using FourTaste.ApplicationCore.Services;
 
 namespace FourTaste.Tests
 {
-    public class RecipeServiceTests
+    public class RecipeListTests
     {
         private readonly Mock<IRecipeRepository> _repositoryMock;
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly Mock<ILogger> _loggerMock;
         private readonly RecipeService _service;
 
-        public RecipeServiceTests()
+        public RecipeListTests()
         {
             _repositoryMock = new Mock<IRecipeRepository>();
             _userRepositoryMock = new Mock<IUserRepository>();
@@ -52,6 +52,46 @@ namespace FourTaste.Tests
         }
 
         [Fact]
+        public async Task GetPublicRecipes_ReturnsSuccessWithList()
+        {
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 1, Title = "Борщ", IsPublic = true },
+                new Recipe { Id = 2, Title = "Вареники", IsPublic = true }
+            };
+
+            _repositoryMock.Setup(r => r.GetPublicRecipesAsync())
+                .ReturnsAsync(mockRecipes);
+
+            var result = await _service.GetPublicRecipesAsync();
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.Equal(2, result.Value.Count);
+            Assert.Equal("Борщ", result.Value[0].Title);
+            _repositoryMock.Verify(r => r.GetPublicRecipesAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetRecipesByUserId_ReturnsSuccessWithUserRecipes()
+        {
+            int userId = 5;
+            var mockRecipes = new List<Recipe>
+            {
+                new Recipe { Id = 10, Title = "Мій секретний пиріг", UserId = userId }
+            };
+
+            _repositoryMock.Setup(r => r.GetRecipesByUserIdAsync(userId))
+                .ReturnsAsync(mockRecipes);
+
+            var result = await _service.GetRecipesByUserIdAsync(userId);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.Single(result.Value);
+            Assert.Equal(userId, result.Value[0].UserId);
+            Assert.Equal("Мій секретний пиріг", result.Value[0].Title);
+            _repositoryMock.Verify(r => r.GetRecipesByUserIdAsync(userId), Times.Once);
         public async Task CreateRecipe_WithTooLargePhoto_ReturnsFailure()
         {
             var photo = new byte[(5 * 1024 * 1024) + 1];

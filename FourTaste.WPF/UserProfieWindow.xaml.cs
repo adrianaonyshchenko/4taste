@@ -17,7 +17,7 @@ namespace FourTaste.WPF
         private readonly AuthService authService;
         private readonly IAllergyService allergyService;
         private readonly UserService userService;
-
+        private readonly IRecipeService _recipeService;
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
         public UserProfileWindow()
@@ -25,7 +25,8 @@ namespace FourTaste.WPF
                 App.ServiceProvider?.GetRequiredService<MealPlanService>()!,
                 App.ServiceProvider?.GetRequiredService<AuthService>()!,
                 App.ServiceProvider?.GetRequiredService<IAllergyService>()!,
-                App.ServiceProvider?.GetRequiredService<UserService>()!)
+                App.ServiceProvider?.GetRequiredService<UserService>()!,
+                App.ServiceProvider?.GetRequiredService<IRecipeService>()!)
         {
         }
 
@@ -33,7 +34,8 @@ namespace FourTaste.WPF
             MealPlanService mealPlanService,
             AuthService authService,
             IAllergyService? allergyService = null,
-            UserService? userService = null)
+            UserService? userService = null,
+            IRecipeService? recipeService = null)
         {
             this.InitializeComponent();
 
@@ -41,6 +43,7 @@ namespace FourTaste.WPF
             this.authService = authService ?? throw new ArgumentNullException(nameof(authService));
             this.allergyService = allergyService ?? App.ServiceProvider?.GetRequiredService<IAllergyService>()!;
             this.userService = userService ?? App.ServiceProvider?.GetRequiredService<UserService>()!;
+            this._recipeService = recipeService ?? App.ServiceProvider?.GetRequiredService<IRecipeService>()!;
 
             this.UpdateUserHeader();
             this.MenuCalendar.SelectedDate = DateTime.Today;
@@ -212,7 +215,7 @@ namespace FourTaste.WPF
             string allergenName = this.AllergenTextBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(allergenName))
             {
-                MessageBox.Show("Будь ласка, введіть назву алергену.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Будь ласка, введіть назву алергенu.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -371,5 +374,13 @@ namespace FourTaste.WPF
                 mealPlan.IsCooked = newStatus;
             }
         }
+
+        private void MyRecipesButton_Click(object sender, RoutedEventArgs e)
+        {
+            var myRecipesWindow = new MyRecipesWindow(_recipeService, CurrentUserId);
+            myRecipesWindow.Show();
+            this.Close();
+        }
+
     }
 }

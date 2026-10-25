@@ -337,12 +337,26 @@
                     </Style>
                 </Button.Resources>
             </Button>
-            <Button x:Name="List2Button" Click="List2Button_Click" Content="Список 2" Height="42" Background="#4A3532" Foreground="White" FontWeight="Bold" Margin="0,0,0,20" BorderBrush="Transparent">
-                <Button.Resources>
-                    <Style TargetType="Border">
-                        <Setter Property="CornerRadius" Value="18"/>
-                    </Style>
-                </Button.Resources>
+            <Button x:Name="MyRecipesButton"
+Click="MyRecipesButton_Click"
+         Background="#4A3532"
+        BorderBrush="Transparent"
+        Height="40"
+        Cursor="Hand">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                    CornerRadius="14"
+                    Height="40">
+                            <TextBlock Text="Мої рецепти"
+                           Foreground="White"
+                           FontSize="13"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
             </Button>
 
             <Button x:Name="LogoutButton" Click="LogoutButton_Click" Content="Вийти" Height="36" Width="110" Background="#C4B4A4" Foreground="#4A3532" FontWeight="Bold" HorizontalAlignment="Right" BorderBrush="Transparent">

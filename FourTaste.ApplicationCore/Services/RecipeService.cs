@@ -119,5 +119,16 @@ namespace FourTaste.ApplicationCore.Services
                 AuthorName = author?.Username ?? "Невідомий автор",
             });
         }
+        public async Task<Result<List<Recipe>>> GetPublicRecipesAsync()
+        {
+            var recipes = await _recipeRepository.GetPublicRecipesAsync();
+            return Result<List<Recipe>>.Success(recipes);
+        }
+
+        public async Task<Result<List<Recipe>>> GetRecipesByUserIdAsync(int userId)
+        {
+            var recipes = await _recipeRepository.GetRecipesByUserIdAsync(userId);
+            return Result<List<Recipe>>.Success(recipes);
+        }
     }
 }

@@ -136,25 +136,35 @@ CornerRadius="18">
             </Border>
         </StackPanel>
 
-        <!-- 3. Підзаголовок: "Історія рецептів" та бейдж "Популярні рецепти" -->
+        <!-- 3. Підзаголовок: "Історія рецептів" та кнопка "Популярні рецепти" -->
         <Grid Grid.Row="2" Margin="0,0,0,14">
             <TextBlock Text="Історія рецептів"
-Foreground="#4A3532"
-FontSize="20"
-FontWeight="Bold"
-HorizontalAlignment="Left"
-VerticalAlignment="Center"/>
+                       Foreground="#4A3532"
+                       FontSize="20"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center"/>
 
-            <Border HorizontalAlignment="Right"
-Background="#4A3532"
-CornerRadius="14"
-Padding="16,8"
-VerticalAlignment="Center">
-                <TextBlock Text="Популярні рецепти"
-Foreground="White"
-FontSize="12"
-FontWeight="Bold"/>
-            </Border>
+            <Button HorizontalAlignment="Right"
+                    x:Name="PublicRecipesButton"
+                    Click="PublicRecipesButton_Click"
+                    Background="#4A3532"
+                    BorderBrush="Transparent"
+                    Cursor="Hand"
+                    VerticalAlignment="Center">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="14"
+                                Padding="16,8">
+                            <TextBlock Text="Популярні рецепти"
+                                       Foreground="White"
+                                       FontSize="12"
+                                       FontWeight="Bold"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
         </Grid>
 
         <!-- 4. Основний контент: сітка карток історії рецептів -->
