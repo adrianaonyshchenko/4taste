@@ -7,6 +7,7 @@ using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Results;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
+using System.Windows.Input;
 using Serilog;
 
 namespace FourTaste.WPF
@@ -46,8 +47,7 @@ namespace FourTaste.WPF
             this._recipeService = recipeService ?? App.ServiceProvider?.GetRequiredService<IRecipeService>()!;
 
             this.UpdateUserHeader();
-            this.MenuCalendar.SelectedDate = DateTime.Today;
-            this.Loaded += this.UserProfileWindow_Loaded;
+            _ = this.LoadAllergiesAsync();
         }
 
         public void UpdateUserHeader()
@@ -80,12 +80,6 @@ namespace FourTaste.WPF
             }
         }
 
-        private async void UserProfileWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            this.UpdateUserHeader();
-            await this.LoadAllergiesAsync();
-        }
-
         private async Task LoadAllergiesAsync()
         {
             if (this.CurrentUserId <= 0)
@@ -103,107 +97,6 @@ namespace FourTaste.WPF
             this.AllergiesListBox.ItemsSource = result.Value;
         }
 
-        private async void MenuCalendar_SelectedDatesChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (this.MenuCalendar.SelectedDate.HasValue)
-            {
-                DateTime selectedDate = this.MenuCalendar.SelectedDate.Value;
-                this.SelectedDateTextBlock.Text = selectedDate.ToString("d MMMM");
-
-                if (SessionContext.CurrentUser != null)
-                {
-                    var plans = await this.mealPlanService.GetUserPlansForDateAsync(SessionContext.CurrentUser.ID, selectedDate);
-                    this.PlannedRecipesListBox.ItemsSource = plans;
-                }
-            }
-        }
-
-        private async void AddRecipeButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!this.MenuCalendar.SelectedDate.HasValue)
-            {
-                MessageBox.Show("Будь ласка, оберіть дату в календарі.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (SessionContext.CurrentUser == null)
-            {
-                MessageBox.Show("Користувач не авторизований.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            var recipeTextBox = this.FindName("RecipeTextBox") as TextBox;
-            string recipeName = recipeTextBox?.Text?.Trim() ?? string.Empty;
-
-            if (string.IsNullOrEmpty(recipeName))
-            {
-                MessageBox.Show("Будь ласка, введіть назву страви.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            DateTime selectedDate = this.MenuCalendar.SelectedDate.Value;
-
-            var result = await this.mealPlanService.AddCustomRecipeToPlanAsync(SessionContext.CurrentUser.ID, recipeName, selectedDate);
-
-            if (result.IsFailure)
-            {
-                MessageBox.Show($"Помилка: {result.Error}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            MessageBox.Show($"Страву '{recipeName}' успішно збережено на {selectedDate:d MMMM}!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-
-            if (recipeTextBox != null)
-            {
-                recipeTextBox.Text = string.Empty;
-            }
-
-            var plans = await this.mealPlanService.GetUserPlansForDateAsync(SessionContext.CurrentUser.ID, selectedDate);
-            this.PlannedRecipesListBox.ItemsSource = plans;
-        }
-
-        private async void DeleteRecipeButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!this.MenuCalendar.SelectedDate.HasValue)
-            {
-                MessageBox.Show("Будь ласка, оберіть дату в календарі.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (SessionContext.CurrentUser == null)
-            {
-                MessageBox.Show("Користувач не авторизований.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            if (this.PlannedRecipesListBox.SelectedItem is not MealPlan selectedMealPlan)
-            {
-                MessageBox.Show("Будь ласка, виберіть страву зі списку для видалення.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var confirmResult = MessageBox.Show($"Ви дійсно бажаєте видалити страву '{selectedMealPlan.RecipeName}'?", "Підтвердження видалення", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (confirmResult != MessageBoxResult.Yes)
-            {
-                return;
-            }
-
-            var result = await this.mealPlanService.DeleteMealPlanAsync(selectedMealPlan.Id, SessionContext.CurrentUser.ID);
-
-            if (result.IsFailure)
-            {
-                MessageBox.Show($"Не вдалося видалити страву: {result.Error}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            MessageBox.Show("Страву успішно видалено з меню!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-
-            DateTime selectedDate = this.MenuCalendar.SelectedDate.Value;
-            var plans = await this.mealPlanService.GetUserPlansForDateAsync(SessionContext.CurrentUser.ID, selectedDate);
-            this.PlannedRecipesListBox.ItemsSource = plans;
-        }
-
         private async void SaveAllergensButton_Click(object sender, RoutedEventArgs e)
         {
             if (this.CurrentUserId <= 0)
@@ -215,7 +108,7 @@ namespace FourTaste.WPF
             string allergenName = this.AllergenTextBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(allergenName))
             {
-                MessageBox.Show("Будь ласка, введіть назву алергенu.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Будь ласка, введіть назву алергену.", "Попередження", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -262,10 +155,10 @@ namespace FourTaste.WPF
             MessageBox.Show("Алерген успішно видалено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void MyProductsButton_Click(object sender, RoutedEventArgs e)
+        private void OpenMealPlanButton_Click(object sender, RoutedEventArgs e)
         {
-            Log.Information("Відкриття розділу 'Мої продукти'");
-            MessageBox.Show("Перехід до розділу 'Мої продукти'.", "Інформація", MessageBoxButton.OK, MessageBoxImage.Information);
+            var mealPlanWindow = new MealPlanWindow(this.mealPlanService);
+            mealPlanWindow.ShowDialog();
         }
 
         private async void DeleteProfileButton_Click(object sender, RoutedEventArgs e)
@@ -313,18 +206,6 @@ namespace FourTaste.WPF
             this.Close();
         }
 
-        private void List1Button_Click(object sender, RoutedEventArgs e)
-        {
-            Log.Information("Відкрито перший список покупок");
-            MessageBox.Show("Відкрито 'Список 1'.", "Списки", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void List2Button_Click(object sender, RoutedEventArgs e)
-        {
-            Log.Information("Відкрито другий список покупок");
-            MessageBox.Show("Відкрито 'Список 2'.", "Списки", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
         private async void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
             this.LogoutButton.IsEnabled = false;
@@ -349,38 +230,23 @@ namespace FourTaste.WPF
             }
         }
 
-        private async void RecipeCheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox checkBox && checkBox.DataContext is MealPlan mealPlan)
-            {
-                if (SessionContext.CurrentUser == null)
-                {
-                    MessageBox.Show("Користувач не авторизований.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    checkBox.IsChecked = mealPlan.IsCooked;
-                    return;
-                }
-
-                bool newStatus = checkBox.IsChecked ?? false;
-
-                var result = await this.mealPlanService.UpdateMealPlanStatusAsync(mealPlan.Id, SessionContext.CurrentUser.ID, newStatus);
-
-                if (result.IsFailure)
-                {
-                    MessageBox.Show($"Не вдалося оновити статус: {result.Error}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    checkBox.IsChecked = mealPlan.IsCooked;
-                    return;
-                }
-
-                mealPlan.IsCooked = newStatus;
-            }
-        }
-
         private void MyRecipesButton_Click(object sender, RoutedEventArgs e)
         {
-            var myRecipesWindow = new MyRecipesWindow(_recipeService, CurrentUserId);
+            var myRecipesWindow = new MyRecipesWindow(this._recipeService, this.CurrentUserId);
             myRecipesWindow.Show();
             this.Close();
         }
 
+        private void OpenCuisinesButton_Click(object sender, RoutedEventArgs e)
+        {
+            Log.Information("Відкриття вікна 'Кухні світу'");
+            var cuisinesWindow = new UserCuisinesWindow(this._recipeService, this.CurrentUserId);
+            cuisinesWindow.ShowDialog();
+        }
+
+        private void CuisinesBlock_Click(object sender, MouseButtonEventArgs e)
+        {
+            OpenCuisinesButton_Click(sender, e);
+        }
     }
 }
