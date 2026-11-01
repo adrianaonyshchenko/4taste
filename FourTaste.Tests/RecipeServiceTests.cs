@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Models;
+using FourTaste.ApplicationCore.Results;
 using FourTaste.ApplicationCore.Services;
 using Moq;
 using Serilog;
@@ -14,6 +16,8 @@ namespace FourTaste.Tests
     {
         private readonly Mock<IRecipeRepository> _repositoryMock;
         private readonly Mock<IUserRepository> _userRepositoryMock;
+        private readonly Mock<IFridgeRepository> _fridgeRepositoryMock;
+        private readonly Mock<IAllergyService> _allergyServiceMock;
         private readonly Mock<ILogger> _loggerMock;
         private readonly RecipeService _service;
 
@@ -21,8 +25,15 @@ namespace FourTaste.Tests
         {
             _repositoryMock = new Mock<IRecipeRepository>();
             _userRepositoryMock = new Mock<IUserRepository>();
+            _fridgeRepositoryMock = new Mock<IFridgeRepository>();
+            _allergyServiceMock = new Mock<IAllergyService>();
             _loggerMock = new Mock<ILogger>();
-            _service = new RecipeService(_repositoryMock.Object, _userRepositoryMock.Object, _loggerMock.Object);
+            _service = new RecipeService(
+                _repositoryMock.Object,
+                _userRepositoryMock.Object,
+                _fridgeRepositoryMock.Object,
+                _allergyServiceMock.Object,
+                _loggerMock.Object);
         }
 
         private static CreateRecipeRequest ValidRequest() => new()
@@ -144,6 +155,75 @@ namespace FourTaste.Tests
 
             Assert.True(result.IsFailure);
             _repositoryMock.Verify(r => r.SearchAsync(It.IsAny<RecipeSearchCriteria>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task FindByProducts_EmptyFridge_ReturnsFailureWithoutSearching()
+        {
+            _fridgeRepositoryMock.Setup(r => r.GetByUserIdAsync(1)).ReturnsAsync(new List<UserFridgeItem>());
+
+            var result = await _service.FindRecipesByProductsAsync(new FindRecipesByProductsRequest { UserId = 1 });
+
+            Assert.True(result.IsFailure);
+            _repositoryMock.Verify(r => r.SearchAsync(It.IsAny<RecipeSearchCriteria>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task FindByProducts_InvalidUser_ReturnsFailure()
+        {
+            var result = await _service.FindRecipesByProductsAsync(new FindRecipesByProductsRequest { UserId = 0 });
+
+            Assert.True(result.IsFailure);
+            _repositoryMock.Verify(r => r.SearchAsync(It.IsAny<RecipeSearchCriteria>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task FindByProducts_AllergiesUnavailable_ReturnsFailureWithoutSearching()
+        {
+            _fridgeRepositoryMock.Setup(r => r.GetByUserIdAsync(1))
+                .ReturnsAsync(new List<UserFridgeItem> { new UserFridgeItem { UserId = 1, IngredientName = "Яйця" } });
+            _allergyServiceMock.Setup(s => s.GetAllergiesByUserIdAsync(1))
+                .ReturnsAsync(Result<IReadOnlyList<Allergy>>.Failure("помилка"));
+
+            var result = await _service.FindRecipesByProductsAsync(new FindRecipesByProductsRequest { UserId = 1 });
+
+            Assert.True(result.IsFailure);
+            _repositoryMock.Verify(r => r.SearchAsync(It.IsAny<RecipeSearchCriteria>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task FindByProducts_BuildsCriteriaFromFridgeAllergiesAndFilters()
+        {
+            _fridgeRepositoryMock.Setup(r => r.GetByUserIdAsync(1)).ReturnsAsync(new List<UserFridgeItem>
+            {
+                new UserFridgeItem { UserId = 1, IngredientName = "Яйця" },
+                new UserFridgeItem { UserId = 1, IngredientName = "Молоко" },
+            });
+            IReadOnlyList<Allergy> allergies = new List<Allergy> { new Allergy { UserId = 1, AllergenName = "Арахіс" } };
+            _allergyServiceMock.Setup(s => s.GetAllergiesByUserIdAsync(1))
+                .ReturnsAsync(Result<IReadOnlyList<Allergy>>.Success(allergies));
+
+            RecipeSearchCriteria? captured = null;
+            _repositoryMock.Setup(r => r.SearchAsync(It.IsAny<RecipeSearchCriteria>()))
+                .Callback<RecipeSearchCriteria>(c => captured = c)
+                .ReturnsAsync(new List<Recipe>());
+
+            var result = await _service.FindRecipesByProductsAsync(new FindRecipesByProductsRequest
+            {
+                UserId = 1,
+                Category = "Сніданок",
+                Cuisine = "Українська",
+                MaxCookingMinutes = 30,
+            });
+
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(captured);
+            Assert.Equal(1, captured!.ViewerUserId);
+            Assert.Equal(new[] { "Яйця", "Молоко" }, captured.AvailableProducts.ToArray());
+            Assert.Equal(new[] { "Арахіс" }, captured.ExcludedAllergens.ToArray());
+            Assert.Equal("Сніданок", captured.Category);
+            Assert.Equal("Українська", captured.Cuisine);
+            Assert.Equal(30, captured.MaxCookingMinutes);
         }
 
         [Fact]

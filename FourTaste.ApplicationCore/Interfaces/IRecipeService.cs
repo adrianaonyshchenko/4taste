@@ -12,6 +12,8 @@ namespace FourTaste.ApplicationCore.Interfaces
 
         Task<Result<List<Recipe>>> SearchRecipesAsync(RecipeSearchCriteria criteria);
 
+        Task<Result<List<Recipe>>> FindRecipesByProductsAsync(FindRecipesByProductsRequest request);
+
         Task<Result<RecipeDetails>> GetRecipeDetailsAsync(int recipeId, int? viewerUserId);
     }
 }
