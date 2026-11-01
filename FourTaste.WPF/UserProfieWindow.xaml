@@ -8,7 +8,6 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Ліва колонка: Профіль, Алергени та Кухні світу -->
         <StackPanel Grid.Column="0" Margin="0,0,20,0">
             <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
                 <Grid Width="70" Height="70" Margin="0,0,12,0">
@@ -27,21 +26,27 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- Блок Алергенів -->
-            <Border Background="#C4B4A4" CornerRadius="22" Height="180" Margin="0,0,0,15" Padding="15,10">
+            <Border Background="#C4B4A4" CornerRadius="22" Height="220" Margin="0,0,0,15" Padding="15,10">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+
                     <TextBlock Grid.Row="0" Text="Алергени" HorizontalAlignment="Center" Foreground="#4A3532" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
+
                     <Border Grid.Row="1" Background="#E3D1BD" CornerRadius="10" Height="28" Padding="6,0" Margin="0,0,0,4">
                         <TextBox x:Name="AllergenTextBox" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" FontSize="12"/>
                     </Border>
+
                     <ListBox x:Name="AllergiesListBox" Grid.Row="2" Background="Transparent" BorderBrush="Transparent" Foreground="#D9534F" FontWeight="Bold" FontSize="12" DisplayMemberPath="AllergenName"/>
-                    <Button x:Name="SaveAllergensButton" Grid.Row="3" Click="SaveAllergensButton_Click" Content="Зберегти алерген" Height="28" Background="#4A3532" Foreground="White" FontWeight="Bold" BorderBrush="Transparent">
+
+                    <Button x:Name="DeleteAllergyButton" Grid.Row="3" Click="DeleteAllergyButton_Click" Content="Видалити обраний" Height="24" Background="Transparent" Foreground="#D9534F" FontWeight="SemiBold" FontSize="12" BorderBrush="Transparent" Cursor="Hand" Margin="0,0,0,6"/>
+
+                    <Button x:Name="SaveAllergensButton" Grid.Row="4" Click="SaveAllergensButton_Click" Content="Зберегти алерген" Height="28" Background="#4A3532" Foreground="White" FontWeight="Bold" BorderBrush="Transparent">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="12"/>
@@ -51,7 +56,6 @@
                 </Grid>
             </Border>
 
-            <!-- Блок "Кухні світу" -->
             <Border Background="#C4B4A4" CornerRadius="22" Height="150" Padding="15,12" Cursor="Hand" MouseLeftButtonUp="CuisinesBlock_Click">
                 <StackPanel>
                     <TextBlock Text="Кухні світу" HorizontalAlignment="Center" Foreground="#4A3532" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
@@ -67,7 +71,6 @@
             </Border>
         </StackPanel>
 
-        <!-- Права колонка: Кнопки навігації та керування аккаунтом -->
         <StackPanel Grid.Column="1" Margin="15,0,0,0">
             <TextBlock Text="Керування профілем" Foreground="#4A3532" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
             <Button x:Name="EditDataButton" Click="EditDataButton_Click" Content="Змінити дані" Height="40" Background="#4A3532" Foreground="White" FontWeight="Bold" BorderBrush="Transparent" Margin="0,0,0,10">
@@ -77,7 +80,7 @@
                     </Style>
                 </Button.Resources>
             </Button>
-            <Button x:Name="OpenMealPlanButton" Click="OpenMealPlanButton_Click" Content="Календар харчування на день" Height="42" Background="#877063" Foreground="White" FontWeight="Bold" BorderBrush="Transparent" Margin="0,0,0,20">
+            <Button x:Name="OpenMealPlanButton" Click="OpenMealPlanButton_Click" Content="Календар харчування на день" Height="42" Background="#4A3532" Foreground="White" FontWeight="Bold" BorderBrush="Transparent" Margin="0,0,0,20">
                 <Button.Resources>
                     <Style TargetType="Border">
                         <Setter Property="CornerRadius" Value="14"/>
@@ -87,7 +90,6 @@
 
             <TextBlock Text="Мої списки та розділи" Foreground="#4A3532" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
 
-            <!-- Додана кнопка "Мої продукти" -->
             <Button x:Name="MyFridgeButton" Click="MyFridgeButton_Click" Content="Мої продукти" Height="40" Background="#4A3532" Foreground="White" FontWeight="Bold" Margin="0,0,0,10" BorderBrush="Transparent">
                 <Button.Resources>
                     <Style TargetType="Border">

@@ -4,6 +4,7 @@ using System.Windows;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace FourTaste.WPF
@@ -204,13 +205,28 @@ namespace FourTaste.WPF
         private void FindRecipeForMeButton_Click(object sender, RoutedEventArgs e)
         {
             Log.Information("Користувач натиснув 'Знайти рецепт для мене' на основі холодильника");
-            MessageBox.Show("Цей функціонал пошуку за продуктами буде реалізовано в наступному кроці!", "Пошук рецептів", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            var recipeService = App.ServiceProvider!.GetRequiredService<IRecipeService>();
+            var window = new RecipesByProductsWindow(recipeService, _userId) { Owner = this };
+            window.ShowDialog();
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            var profileWindow = new UserProfileWindow();
+            var profileWindow = Application.Current.Windows.OfType<UserProfileWindow>().FirstOrDefault();
+
+            if (profileWindow == null)
+            {
+                profileWindow = App.ServiceProvider?.GetService<UserProfileWindow>() ?? new UserProfileWindow();
+            }
+
+            if (profileWindow.WindowState == WindowState.Minimized)
+            {
+                profileWindow.WindowState = WindowState.Normal;
+            }
+
             profileWindow.Show();
+            profileWindow.Activate();
             this.Close();
         }
     }

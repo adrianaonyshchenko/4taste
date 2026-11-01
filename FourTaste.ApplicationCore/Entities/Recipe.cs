@@ -57,5 +57,11 @@ namespace FourTaste.ApplicationCore.Entities
                 return "Невідомий автор";
             }
         }
+
+        [NotMapped]
+        public int MatchedIngredientsCount { get; set; }
+
+        [NotMapped]
+        public int TotalIngredientsCount { get; set; }
     }
 }

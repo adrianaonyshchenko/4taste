@@ -15,12 +15,21 @@ namespace FourTaste.ApplicationCore.Services
 
         private readonly IRecipeRepository _recipeRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IFridgeRepository _fridgeRepository;
+        private readonly IAllergyService _allergyService;
         private readonly ILogger _logger;
 
-        public RecipeService(IRecipeRepository recipeRepository, IUserRepository userRepository, ILogger logger)
+        public RecipeService(
+            IRecipeRepository recipeRepository,
+            IUserRepository userRepository,
+            IFridgeRepository fridgeRepository,
+            IAllergyService allergyService,
+            ILogger logger)
         {
             _recipeRepository = recipeRepository;
             _userRepository = userRepository;
+            _fridgeRepository = fridgeRepository;
+            _allergyService = allergyService;
             _logger = logger;
         }
 
@@ -105,7 +114,50 @@ namespace FourTaste.ApplicationCore.Services
 
             _logger.Information("Знайдено {Count} рецептів", recipes.Count);
             return Result<List<Recipe>>.Success(recipes);
+        }
 
+        public async Task<Result<List<Recipe>>> FindRecipesByProductsAsync(FindRecipesByProductsRequest request)
+        {
+            if (request is null || request.UserId <= 0)
+            {
+                _logger.Warning("Помилка валідації: некоректний запит на пошук рецептів за продуктами.");
+                return Result<List<Recipe>>.Failure("Некоректні дані запиту.");
+            }
+
+            var fridgeItems = await _fridgeRepository.GetByUserIdAsync(request.UserId);
+            if (fridgeItems.Count == 0)
+            {
+                _logger.Information("Пошук за продуктами: у користувача {UserId} порожній список продуктів.", request.UserId);
+                return Result<List<Recipe>>.Failure("Додайте продукти до списку «У мене є», щоб знайти рецепти.");
+            }
+
+            var allergiesResult = await _allergyService.GetAllergiesByUserIdAsync(request.UserId);
+            if (allergiesResult.IsFailure)
+            {
+                _logger.Warning("Пошук за продуктами: не вдалося отримати алергени користувача {UserId}.", request.UserId);
+                return Result<List<Recipe>>.Failure("Не вдалося отримати ваші алергени. Спробуйте ще раз.");
+            }
+
+            var criteria = new RecipeSearchCriteria
+            {
+                ViewerUserId = request.UserId,
+                AvailableProducts = fridgeItems.Select(i => i.IngredientName).ToList(),
+                ExcludedAllergens = allergiesResult.Value!.Select(a => a.AllergenName).ToList(),
+                Category = request.Category,
+                Cuisine = request.Cuisine,
+                MaxCookingMinutes = request.MaxCookingMinutes,
+            };
+
+            _logger.Information(
+                "Пошук за продуктами для користувача {UserId}: продуктів {Products}, алергенів {Allergens}",
+                request.UserId,
+                criteria.AvailableProducts.Count,
+                criteria.ExcludedAllergens.Count);
+
+            var recipes = await _recipeRepository.SearchAsync(criteria);
+
+            _logger.Information("Пошук за продуктами: знайдено {Count} рецептів", recipes.Count);
+            return Result<List<Recipe>>.Success(recipes);
         }
 
         public async Task<Result<RecipeDetails>> GetRecipeDetailsAsync(int recipeId, int? viewerUserId)

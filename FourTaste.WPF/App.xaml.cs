@@ -95,7 +95,6 @@ namespace FourTaste.WPF
             services.AddTransient<ManageAllergiesWindow>();
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
-            services.AddTransient<MainWindow>();
             services.AddTransient<UserProfileWindow>();
             services.AddTransient<EditProfileWindow>();
             services.AddTransient<CookingHistoryWindow>();
