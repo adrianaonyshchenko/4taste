@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Models;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,8 +13,10 @@ namespace FourTaste.WPF
 {
     public partial class PublicRecipesWindow : Window
     {
+        private const int SearchDelayMs = 300;
+
         private readonly IRecipeService recipeService;
-        private List<Recipe> allPublicRecipes = new ();
+        private int searchVersion;
 
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
@@ -50,7 +52,8 @@ namespace FourTaste.WPF
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.UpdateProfileAvatar();
-            await this.LoadPublicRecipesAsync();
+            this.UpdateSearchControls();
+            await this.SearchAsync(immediate: true);
         }
 
         private void UpdateProfileAvatar()
@@ -75,28 +78,14 @@ namespace FourTaste.WPF
             }
         }
 
-        private async Task LoadPublicRecipesAsync()
+        private void UpdateSearchControls()
         {
-            var result = await this.recipeService.GetPublicRecipesAsync();
-            if (result.IsFailure)
-            {
-                MessageBox.Show(result.Error, "Помилка завантаження", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            this.allPublicRecipes = result.Value ?? new List<Recipe>();
-            this.ApplyFilter();
-        }
-
-        private void ApplyFilter()
-        {
-            if (this.RecipesListBox == null || this.SearchTextBox == null)
+            if (this.SearchTextBox == null)
             {
                 return;
             }
 
-            string rawText = this.SearchTextBox.Text;
-            bool hasText = !string.IsNullOrEmpty(rawText);
+            bool hasText = !string.IsNullOrEmpty(this.SearchTextBox.Text);
 
             if (this.SearchPlaceholderTextBlock != null)
             {
@@ -107,119 +96,126 @@ namespace FourTaste.WPF
             {
                 this.ClearSearchButton.Visibility = hasText ? Visibility.Visible : Visibility.Collapsed;
             }
+        }
 
-            string query = rawText.Trim();
+        private async Task SearchAsync(bool immediate)
+        {
+            string query = this.SearchTextBox.Text.Trim();
             var filter = this.CurrentFilter;
+            int version = ++this.searchVersion;
 
-            if (string.IsNullOrEmpty(query) && filter == RecipeSearchFilter.All)
+            if (!immediate)
             {
-                if (this.ResultsCountTextBlock != null)
+                await Task.Delay(SearchDelayMs);
+                if (version != this.searchVersion)
                 {
-                    this.ResultsCountTextBlock.Visibility = Visibility.Collapsed;
+                    return;
                 }
+            }
 
-                if (this.allPublicRecipes.Count == 0)
-                {
-                    this.EmptyTextBlock.Text = "Поки немає жодного публічного рецепта.\nБудьте першим, хто поділиться рецептом!";
-                    this.EmptyTextBlock.Visibility = Visibility.Visible;
-                    this.RecipesListBox.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    this.RecipesListBox.ItemsSource = this.allPublicRecipes;
-                    this.RecipesListBox.Visibility = Visibility.Visible;
-                    this.EmptyTextBlock.Visibility = Visibility.Collapsed;
-                }
+            var result = await this.recipeService.SearchRecipesAsync(RecipeSearchCriteria.Public(query, filter));
 
+            if (version != this.searchVersion)
+            {
                 return;
             }
 
-            string queryWithoutAt = query.StartsWith('@') ? query.Substring(1) : query;
-
-            var filtered = this.allPublicRecipes.Where(r =>
+            if (result.IsFailure)
             {
-                if (string.IsNullOrEmpty(query))
-                {
-                    return true;
-                }
+                MessageBox.Show(result.Error, "Помилка завантаження", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-                bool matchTitle = filter != RecipeSearchFilter.AuthorOnly &&
-                    !string.IsNullOrEmpty(r.Title) &&
-                    r.Title.Contains(query, StringComparison.OrdinalIgnoreCase);
+            this.ShowRecipes(result.Value ?? new List<Recipe>(), query, filter);
+        }
 
-                bool matchAuthorName = filter != RecipeSearchFilter.TitleOnly &&
-                    !string.IsNullOrEmpty(r.AuthorName) &&
-                    r.AuthorName.Contains(query, StringComparison.OrdinalIgnoreCase);
-
-                bool matchAuthorUsername = filter != RecipeSearchFilter.TitleOnly &&
-                    !string.IsNullOrEmpty(r.AuthorUsername) &&
-                    (r.AuthorUsername.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                     r.AuthorUsername.Contains(queryWithoutAt, StringComparison.OrdinalIgnoreCase));
-
-                return matchTitle || matchAuthorName || matchAuthorUsername;
-            }).ToList();
+        private void ShowRecipes(List<Recipe> recipes, string query, RecipeSearchFilter filter)
+        {
+            bool isSearching = !string.IsNullOrEmpty(query) || filter != RecipeSearchFilter.All;
 
             if (this.ResultsCountTextBlock != null)
             {
-                this.ResultsCountTextBlock.Text = $"Знайдено: {filtered.Count}";
-                this.ResultsCountTextBlock.Visibility = Visibility.Visible;
+                this.ResultsCountTextBlock.Text = $"Знайдено: {recipes.Count}";
+                this.ResultsCountTextBlock.Visibility = isSearching ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            if (filtered.Count == 0)
+            if (recipes.Count == 0)
             {
-                this.EmptyTextBlock.Text = string.IsNullOrEmpty(query)
-                    ? "У цій категорії поки немає рецептів."
-                    : $"За запитом «{query}» рецептів не знайдено.\nСпробуйте іншу назву страви або ім'я автора.";
+                if (!isSearching)
+                {
+                    this.EmptyTextBlock.Text = "Поки немає жодного публічного рецепта.\nБудьте першим, хто поділиться рецептом!";
+                }
+                else if (string.IsNullOrEmpty(query))
+                {
+                    this.EmptyTextBlock.Text = "У цій категорії поки немає рецептів.";
+                }
+                else
+                {
+                    this.EmptyTextBlock.Text = $"За запитом «{query}» рецептів не знайдено.\nСпробуйте іншу назву страви або ім'я автора.";
+                }
+
                 this.EmptyTextBlock.Visibility = Visibility.Visible;
                 this.RecipesListBox.Visibility = Visibility.Collapsed;
             }
             else
             {
-                this.RecipesListBox.ItemsSource = filtered;
+                this.RecipesListBox.ItemsSource = recipes;
                 this.RecipesListBox.Visibility = Visibility.Visible;
                 this.EmptyTextBlock.Visibility = Visibility.Collapsed;
             }
         }
 
-        private void SearchTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        private async void SearchTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
-            this.ApplyFilter();
+            this.UpdateSearchControls();
+
+            if (!this.IsLoaded)
+            {
+                return;
+            }
+
+            await this.SearchAsync(immediate: false);
         }
 
-        private void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
+        private async void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                this.ApplyFilter();
                 e.Handled = true;
+                await this.SearchAsync(immediate: true);
             }
             else if (e.Key == Key.Escape)
             {
-                this.ClearSearch();
                 e.Handled = true;
+                await this.ClearSearchAsync();
             }
         }
 
-        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        private async void SearchButton_Click(object sender, RoutedEventArgs e)
         {
-            this.ApplyFilter();
+            await this.SearchAsync(immediate: true);
         }
 
-        private void ClearSearchButton_Click(object sender, RoutedEventArgs e)
+        private async void ClearSearchButton_Click(object sender, RoutedEventArgs e)
         {
-            this.ClearSearch();
+            await this.ClearSearchAsync();
         }
 
-        private void ClearSearch()
+        private async Task ClearSearchAsync()
         {
             this.SearchTextBox.Text = string.Empty;
             this.SearchTextBox.Focus();
-            this.ApplyFilter();
+            await this.SearchAsync(immediate: true);
         }
 
-        private void FilterRadio_Checked(object sender, RoutedEventArgs e)
+        private async void FilterRadio_Checked(object sender, RoutedEventArgs e)
         {
-            this.ApplyFilter();
+            if (!this.IsLoaded)
+            {
+                return;
+            }
+
+            await this.SearchAsync(immediate: true);
         }
 
         private void ProfileButton_Click(object sender, RoutedEventArgs e)
@@ -234,7 +230,7 @@ namespace FourTaste.WPF
             var createRecipeWindow = new CreateRecipeWindow(this.recipeService, this.CurrentUserId);
             if (createRecipeWindow.ShowDialog() == true)
             {
-                await this.LoadPublicRecipesAsync();
+                await this.SearchAsync(immediate: true);
 
                 var detailsWindow = new RecipeDetailsWindow(this.recipeService, createRecipeWindow.CreatedRecipeId);
                 detailsWindow.ShowDialog();

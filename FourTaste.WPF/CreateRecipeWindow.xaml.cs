@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Models;
 
 namespace FourTaste.WPF
 {
@@ -117,8 +118,20 @@ namespace FourTaste.WPF
                 List<string> ingredients = GetIngredientsFromUI();
                 List<string> steps = GetStepsFromUI();
 
-                var result = await _recipeService.CreateRecipeAsync(
-                    title, time, category, cuisine, isPublic, _currentUserId, ingredients, steps, _selectedPhoto);
+                var request = new CreateRecipeRequest
+                {
+                    Title = title,
+                    Time = time,
+                    Category = category,
+                    Cuisine = cuisine,
+                    IsPublic = isPublic,
+                    UserId = _currentUserId,
+                    Ingredients = ingredients,
+                    Steps = steps,
+                    Photo = _selectedPhoto,
+                };
+
+                var result = await _recipeService.CreateRecipeAsync(request);
 
                 if (result.IsFailure)
                 {
