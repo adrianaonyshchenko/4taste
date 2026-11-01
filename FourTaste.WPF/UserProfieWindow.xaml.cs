@@ -19,6 +19,7 @@ namespace FourTaste.WPF
         private readonly IAllergyService allergyService;
         private readonly UserService userService;
         private readonly IRecipeService _recipeService;
+        private readonly IFridgeService _fridgeService;
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
         public UserProfileWindow()
@@ -27,7 +28,8 @@ namespace FourTaste.WPF
                 App.ServiceProvider?.GetRequiredService<AuthService>()!,
                 App.ServiceProvider?.GetRequiredService<IAllergyService>()!,
                 App.ServiceProvider?.GetRequiredService<UserService>()!,
-                App.ServiceProvider?.GetRequiredService<IRecipeService>()!)
+                App.ServiceProvider?.GetRequiredService<IRecipeService>()!,
+                App.ServiceProvider?.GetRequiredService<IFridgeService>()!)
         {
         }
 
@@ -36,7 +38,8 @@ namespace FourTaste.WPF
             AuthService authService,
             IAllergyService? allergyService = null,
             UserService? userService = null,
-            IRecipeService? recipeService = null)
+            IRecipeService? recipeService = null,
+            IFridgeService? fridgeService = null)
         {
             this.InitializeComponent();
 
@@ -45,6 +48,7 @@ namespace FourTaste.WPF
             this.allergyService = allergyService ?? App.ServiceProvider?.GetRequiredService<IAllergyService>()!;
             this.userService = userService ?? App.ServiceProvider?.GetRequiredService<UserService>()!;
             this._recipeService = recipeService ?? App.ServiceProvider?.GetRequiredService<IRecipeService>()!;
+            this._fridgeService = fridgeService ?? App.ServiceProvider?.GetRequiredService<IFridgeService>()!;
 
             this.UpdateUserHeader();
             _ = this.LoadAllergiesAsync();
@@ -235,6 +239,14 @@ namespace FourTaste.WPF
             var myRecipesWindow = new MyRecipesWindow(this._recipeService, this.CurrentUserId);
             myRecipesWindow.Show();
             this.Close();
+        }
+
+        // Кнопка відкриття вікна "Мої продукти" (Холодильник - UC 27)
+        private void MyFridgeButton_Click(object sender, RoutedEventArgs e)
+        {
+            Log.Information("Користувач відкриває вікно 'Мої продукти' (Холодильник)");
+            var fridgeWindow = new FridgeWindow(this._fridgeService, this.CurrentUserId);
+            fridgeWindow.ShowDialog();
         }
 
         private void OpenCuisinesButton_Click(object sender, RoutedEventArgs e)
