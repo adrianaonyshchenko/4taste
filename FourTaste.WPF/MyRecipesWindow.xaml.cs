@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Models;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,9 +13,11 @@ namespace FourTaste.WPF
 {
     public partial class MyRecipesWindow : Window
     {
+        private const int SearchDelayMs = 300;
+
         private readonly IRecipeService recipeService;
         private readonly int currentUserId;
-        private List<Recipe> allMyRecipes = new ();
+        private int searchVersion;
 
         public MyRecipesWindow()
             : this(
@@ -33,31 +35,18 @@ namespace FourTaste.WPF
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            await this.LoadMyRecipesAsync();
+            this.UpdateSearchControls();
+            await this.SearchAsync(immediate: true);
         }
 
-        private async Task LoadMyRecipesAsync()
+        private void UpdateSearchControls()
         {
-            var result = await this.recipeService.GetRecipesByUserIdAsync(this.currentUserId);
-            if (result.IsFailure)
-            {
-                MessageBox.Show(result.Error, "Помилка завантаження", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            this.allMyRecipes = result.Value ?? new List<Recipe>();
-            this.ApplyFilter();
-        }
-
-        private void ApplyFilter()
-        {
-            if (this.RecipesListBox == null || this.SearchTextBox == null)
+            if (this.SearchTextBox == null)
             {
                 return;
             }
 
-            string rawText = this.SearchTextBox.Text;
-            bool hasText = !string.IsNullOrEmpty(rawText);
+            bool hasText = !string.IsNullOrEmpty(this.SearchTextBox.Text);
 
             if (this.SearchPlaceholderTextBlock != null)
             {
@@ -68,92 +57,106 @@ namespace FourTaste.WPF
             {
                 this.ClearSearchButton.Visibility = hasText ? Visibility.Visible : Visibility.Collapsed;
             }
+        }
 
-            string query = rawText.Trim();
+        private async Task SearchAsync(bool immediate)
+        {
+            string query = this.SearchTextBox.Text.Trim();
+            int version = ++this.searchVersion;
 
-            if (string.IsNullOrEmpty(query))
+            if (!immediate)
             {
-                if (this.ResultsCountTextBlock != null)
+                await Task.Delay(SearchDelayMs);
+                if (version != this.searchVersion)
                 {
-                    this.ResultsCountTextBlock.Visibility = Visibility.Collapsed;
+                    return;
                 }
+            }
 
-                if (this.allMyRecipes.Count == 0)
-                {
-                    this.EmptyTextBlock.Text = "У вас поки немає створених рецептів.\nДодайте свій перший рецепт!";
-                    this.EmptyTextBlock.Visibility = Visibility.Visible;
-                    this.RecipesListBox.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    this.RecipesListBox.ItemsSource = this.allMyRecipes;
-                    this.RecipesListBox.Visibility = Visibility.Visible;
-                    this.EmptyTextBlock.Visibility = Visibility.Collapsed;
-                }
+            var result = await this.recipeService.SearchRecipesAsync(RecipeSearchCriteria.ForUser(this.currentUserId, query));
 
+            if (version != this.searchVersion)
+            {
                 return;
             }
 
-            var filtered = this.allMyRecipes.Where(r =>
-                (!string.IsNullOrEmpty(r.Title) && r.Title.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(r.Category) && r.Category.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrEmpty(r.Cuisine) && r.Cuisine.Contains(query, StringComparison.OrdinalIgnoreCase))
-            ).ToList();
+            if (result.IsFailure)
+            {
+                MessageBox.Show(result.Error, "Помилка завантаження", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            this.ShowRecipes(result.Value ?? new List<Recipe>(), query);
+        }
+
+        private void ShowRecipes(List<Recipe> recipes, string query)
+        {
+            bool isSearching = !string.IsNullOrEmpty(query);
 
             if (this.ResultsCountTextBlock != null)
             {
-                this.ResultsCountTextBlock.Text = $"Знайдено: {filtered.Count}";
-                this.ResultsCountTextBlock.Visibility = Visibility.Visible;
+                this.ResultsCountTextBlock.Text = $"Знайдено: {recipes.Count}";
+                this.ResultsCountTextBlock.Visibility = isSearching ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            if (filtered.Count == 0)
+            if (recipes.Count == 0)
             {
-                this.EmptyTextBlock.Text = $"За запитом «{query}» рецептів не знайдено.\nСпробуйте іншу назву страви.";
+                this.EmptyTextBlock.Text = isSearching
+                    ? $"За запитом «{query}» рецептів не знайдено.\nСпробуйте іншу назву страви."
+                    : "У вас поки немає створених рецептів.\nДодайте свій перший рецепт!";
+
                 this.EmptyTextBlock.Visibility = Visibility.Visible;
                 this.RecipesListBox.Visibility = Visibility.Collapsed;
             }
             else
             {
-                this.RecipesListBox.ItemsSource = filtered;
+                this.RecipesListBox.ItemsSource = recipes;
                 this.RecipesListBox.Visibility = Visibility.Visible;
                 this.EmptyTextBlock.Visibility = Visibility.Collapsed;
             }
         }
 
-        private void SearchTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        private async void SearchTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
-            this.ApplyFilter();
+            this.UpdateSearchControls();
+
+            if (!this.IsLoaded)
+            {
+                return;
+            }
+
+            await this.SearchAsync(immediate: false);
         }
 
-        private void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
+        private async void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                this.ApplyFilter();
                 e.Handled = true;
+                await this.SearchAsync(immediate: true);
             }
             else if (e.Key == Key.Escape)
             {
-                this.ClearSearch();
                 e.Handled = true;
+                await this.ClearSearchAsync();
             }
         }
 
-        private void SearchButton_Click(object sender, RoutedEventArgs e)
+        private async void SearchButton_Click(object sender, RoutedEventArgs e)
         {
-            this.ApplyFilter();
+            await this.SearchAsync(immediate: true);
         }
 
-        private void ClearSearchButton_Click(object sender, RoutedEventArgs e)
+        private async void ClearSearchButton_Click(object sender, RoutedEventArgs e)
         {
-            this.ClearSearch();
+            await this.ClearSearchAsync();
         }
 
-        private void ClearSearch()
+        private async Task ClearSearchAsync()
         {
             this.SearchTextBox.Text = string.Empty;
             this.SearchTextBox.Focus();
-            this.ApplyFilter();
+            await this.SearchAsync(immediate: true);
         }
 
         private void ExitButton_Click(object sender, RoutedEventArgs e)

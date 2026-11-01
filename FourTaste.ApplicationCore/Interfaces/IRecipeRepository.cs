@@ -1,5 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Models;
 
 namespace FourTaste.ApplicationCore.Interfaces
 {
@@ -7,9 +9,8 @@ namespace FourTaste.ApplicationCore.Interfaces
     {
         Task AddAsync(Recipe recipe);
 
-        Task<List<Recipe>> GetPublicRecipesAsync();
-
-        Task<List<Recipe>> GetRecipesByUserIdAsync(int userId);
         Task<Recipe?> GetByIdAsync(int recipeId);
+
+        Task<List<Recipe>> SearchAsync(RecipeSearchCriteria criteria);
     }
 }

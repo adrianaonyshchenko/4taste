@@ -58,14 +58,21 @@ namespace FourTaste.ApplicationCore.Services
                 return Result<User>.Failure("Пароль не може бути порожнім.");
             }
 
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             var user = await this.userRepository.GetByEmailAsync(email);
+            this.logger.Information("Пошук користувача: {Ms} мс", sw.ElapsedMilliseconds);
+
             if (user == null)
             {
                 this.logger.Warning("Користувача з поштою {Email} не знайдено в базі.", email);
                 return Result<User>.Failure("Невірна електронна пошта або пароль.");
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            sw.Restart();
+            bool isPasswordValid = await Task.Run(() => BCrypt.Net.BCrypt.Verify(password, user.PasswordHash));
+            this.logger.Information("BCrypt: {Ms} мс", sw.ElapsedMilliseconds);
+
+            if (!isPasswordValid)
             {
                 this.logger.Warning("Введено невірний пароль для користувача з поштою {Email}.", email);
                 return Result<User>.Failure("Невірна електронна пошта або пароль.");

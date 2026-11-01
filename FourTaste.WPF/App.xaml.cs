@@ -39,6 +39,22 @@ namespace FourTaste.WPF
 
             ServiceProvider = services.BuildServiceProvider();
 
+            var provider = ServiceProvider;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+                    using var ctx = await factory.CreateDbContextAsync();
+                    ctx.EnsureDatabaseReady();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Не вдалося виконати прогрів бази даних");
+                }
+            });
+
+            base.OnStartup(e);
             base.OnStartup(e);
         }
 
@@ -73,7 +89,6 @@ namespace FourTaste.WPF
             services.AddScoped<IMealPlanRepository, MealPlanRepository>();
             services.AddScoped<MealPlanService>();
 
-            // Змінено на AddScoped для уникнення проблем з потоками EF Core
             services.AddScoped<IRecipeRepository, RecipeRepository>();
             services.AddScoped<IRecipeService, RecipeService>();
 

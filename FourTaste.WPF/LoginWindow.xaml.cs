@@ -128,8 +128,8 @@ namespace FourTaste.WPF
                     SessionContext.CurrentUser = loggedInUser;
                     MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                    var profileWindow = App.ServiceProvider?.GetService<UserProfileWindow>() ?? new UserProfileWindow();
-                    profileWindow.Show();
+                    var recipesWindow = App.ServiceProvider?.GetService<PublicRecipesWindow>() ?? new PublicRecipesWindow();
+                    recipesWindow.Show();
                     this.Close();
                 }
             }

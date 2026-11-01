@@ -214,7 +214,7 @@
                         <Border Background="{TemplateBinding Background}"
                                 CornerRadius="14"
                                 Padding="16,8">
-                            <TextBlock Text="Популярні рецепти"
+                            <TextBlock Text="Публічні рецепти"
                                        Foreground="White"
                                        FontSize="12"
                                        FontWeight="Bold"/>
