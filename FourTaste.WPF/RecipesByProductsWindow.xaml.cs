@@ -22,9 +22,9 @@ namespace FourTaste.WPF
             this._recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
             this._userId = userId;
 
-            this.CategoryComboBox.ItemsSource = new[] { AnyOption }.Concat(RecipeOptions.Categories).ToList();
+            this.CategoryComboBox.ItemsSource = new[] { AnyOption }.Concat(this._recipeService.GetAvailableCategories()).ToList();
             this.CategoryComboBox.SelectedIndex = 0;
-            this.CuisineComboBox.ItemsSource = new[] { AnyOption }.Concat(RecipeOptions.Cuisines).ToList();
+            this.CuisineComboBox.ItemsSource = new[] { AnyOption }.Concat(this._recipeService.GetAvailableCuisines()).ToList();
             this.CuisineComboBox.SelectedIndex = 0;
         }
 

@@ -306,5 +306,25 @@ namespace FourTaste.Tests
             Assert.True(result.IsFailure);
             _repositoryMock.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
         }
+
+        [Fact]
+        public void GetAvailableCuisines_ReturnsNonEmptyListContainingUkrainian()
+        {
+            var cuisines = _service.GetAvailableCuisines();
+
+            Assert.NotNull(cuisines);
+            Assert.NotEmpty(cuisines);
+            Assert.Contains("Українська", cuisines);
+        }
+
+        [Fact]
+        public void GetAvailableCategories_ReturnsNonEmptyList()
+        {
+            var categories = _service.GetAvailableCategories();
+
+            Assert.NotNull(categories);
+            Assert.NotEmpty(categories);
+            Assert.Contains("Сніданок", categories);
+        }
     }
 }

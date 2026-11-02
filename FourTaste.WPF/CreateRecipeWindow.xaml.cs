@@ -14,7 +14,7 @@ namespace FourTaste.WPF
 {
     public partial class CreateRecipeWindow : Window
     {
-        private readonly IRecipeService _recipeService;
+        private readonly IRecipeService _recipeService = null!;
         private readonly IAllergyService? _allergyService;
         private readonly int _currentUserId;
         private readonly List<string> _userAllergies = new ();
@@ -30,16 +30,17 @@ namespace FourTaste.WPF
 
         public CreateRecipeWindow(IRecipeService recipeService, IAllergyService? allergyService, int currentUserId)
         {
-            InitializeComponent();
             _recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
             _allergyService = allergyService;
             _currentUserId = currentUserId;
 
+            InitializeComponent();
+
             IngredientsItemsControl.ItemsSource = _ingredients;
             StepsListBox.ItemsSource = _stepsList;
 
-            CategoryComboBox.ItemsSource = RecipeOptions.Categories;
-            CuisineComboBox.ItemsSource = RecipeOptions.Cuisines;
+            CategoryComboBox.ItemsSource = _recipeService?.GetAvailableCategories() ?? Array.Empty<string>();
+            CuisineComboBox.ItemsSource = _recipeService?.GetAvailableCuisines() ?? Array.Empty<string>();
 
             if (AddStepButton != null)
             {

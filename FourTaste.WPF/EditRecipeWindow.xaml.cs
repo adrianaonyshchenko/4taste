@@ -43,8 +43,8 @@ namespace FourTaste.WPF
             IngredientsItemsControl.ItemsSource = _ingredients;
             StepsItemsControl.ItemsSource = _steps;
 
-            CategoryComboBox.ItemsSource = RecipeOptions.Categories;
-            CuisineComboBox.ItemsSource = RecipeOptions.Cuisines;
+            CategoryComboBox.ItemsSource = _recipeService.GetAvailableCategories();
+            CuisineComboBox.ItemsSource = _recipeService.GetAvailableCuisines();
         }
 
         public bool IsSaved { get; private set; }
