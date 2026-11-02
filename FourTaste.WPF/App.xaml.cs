@@ -1,4 +1,4 @@
-using FourTaste.ApplicationCore.Entities;
+﻿using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
 using FourTaste.Infrastructure.Data;
@@ -50,7 +50,7 @@ namespace FourTaste.WPF
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Не вдалося виконати прогрів бази даних");
+                    Log.Error(ex, "РќРµ РІРґР°Р»РѕСЃСЏ РІРёРєРѕРЅР°С‚Рё РїСЂРѕРіСЂС–РІ Р±Р°Р·Рё РґР°РЅРёС…");
                 }
             });
 
@@ -101,16 +101,18 @@ namespace FourTaste.WPF
             services.AddTransient<CreateRecipeWindow>();
             services.AddTransient<PublicRecipesWindow>();
             services.AddTransient<MyRecipesWindow>();
+            services.AddTransient<EditRecipeWindow>();
+            services.AddTransient<EditIngredientsWindow>();
             services.AddTransient<IFridgeRepository, FridgeRepository>();
             services.AddTransient<IFridgeService, FridgeService>();
         }
 
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
-            Log.Error(e.Exception, "Непередбачувана критична помилка в UI потоці (DispatcherUnhandledException)");
+            Log.Error(e.Exception, "РќРµРїРµСЂРµРґР±Р°С‡СѓРІР°РЅР° РєСЂРёС‚РёС‡РЅР° РїРѕРјРёР»РєР° РІ UI РїРѕС‚РѕС†С– (DispatcherUnhandledException)");
             MessageBox.Show(
-                $"Виникла критична технічна помилка:\n{e.Exception.Message}\n\nЗверніться до адміністратора або перевірте підключення до бази даних чи мережі.",
-                "Критична помилка",
+                $"Р’РёРЅРёРєР»Р° РєСЂРёС‚РёС‡РЅР° С‚РµС…РЅС–С‡РЅР° РїРѕРјРёР»РєР°:\n{e.Exception.Message}\n\nР—РІРµСЂРЅС–С‚СЊСЃСЏ РґРѕ Р°РґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂР° Р°Р±Рѕ РїРµСЂРµРІС–СЂС‚Рµ РїС–РґРєР»СЋС‡РµРЅРЅСЏ РґРѕ Р±Р°Р·Рё РґР°РЅРёС… С‡Рё РјРµСЂРµР¶С–.",
+                "РљСЂРёС‚РёС‡РЅР° РїРѕРјРёР»РєР°",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             e.Handled = true;
@@ -120,14 +122,15 @@ namespace FourTaste.WPF
         {
             if (e.ExceptionObject is Exception ex)
             {
-                Log.Fatal(ex, "Критична неперехоплена помилка домену застосунку (AppDomain.UnhandledException)");
+                Log.Fatal(ex, "РљСЂРёС‚РёС‡РЅР° РЅРµРїРµСЂРµС…РѕРїР»РµРЅР° РїРѕРјРёР»РєР° РґРѕРјРµРЅСѓ Р·Р°СЃС‚РѕСЃСѓРЅРєСѓ (AppDomain.UnhandledException)");
             }
         }
 
         private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
         {
-            Log.Error(e.Exception, "Неперехоплена помилка фонової задачі (TaskScheduler.UnobservedTaskException)");
+            Log.Error(e.Exception, "РќРµРїРµСЂРµС…РѕРїР»РµРЅР° РїРѕРјРёР»РєР° С„РѕРЅРѕРІРѕС— Р·Р°РґР°С‡С– (TaskScheduler.UnobservedTaskException)");
             e.SetObserved();
         }
     }
 }
+

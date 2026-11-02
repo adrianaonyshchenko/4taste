@@ -22,6 +22,8 @@ namespace FourTaste.ApplicationCore.Entities
 
         public byte[]? Photo { get; set; }
 
+        public int Servings { get; set; } = 1;
+
         public List<Ingredient> Ingredients { get; set; } = new ();
 
         public List<RecipeStep> Steps { get; set; } = new ();

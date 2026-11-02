@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -40,12 +40,68 @@ namespace FourTaste.Infrastructure.Repositories
                 .FirstOrDefaultAsync(r => r.Id == recipeId);
         }
 
+        public async Task UpdateAsync(Recipe recipe)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var existing = await context.Recipes
+                .Include(r => r.Ingredients)
+                .Include(r => r.Steps)
+                .FirstOrDefaultAsync(r => r.Id == recipe.Id);
+
+            if (existing is null)
+            {
+                return;
+            }
+
+            existing.Title = recipe.Title;
+            existing.Time = recipe.Time;
+            existing.Category = recipe.Category;
+            existing.Cuisine = recipe.Cuisine;
+            existing.IsPublic = recipe.IsPublic;
+            existing.Servings = recipe.Servings;
+            existing.Photo = recipe.Photo;
+
+            context.RemoveRange(existing.Ingredients);
+            existing.Ingredients = recipe.Ingredients.Select(i => new Ingredient
+            {
+                Name = i.Name.Trim(),
+                Amount = i.Amount.Trim(),
+                RecipeId = recipe.Id,
+            }).ToList();
+
+            context.RemoveRange(existing.Steps);
+            int stepNum = 1;
+            existing.Steps = recipe.Steps.Select(s => new RecipeStep
+            {
+                StepNumber = stepNum++,
+                Description = s.Description.Trim(),
+                RecipeId = recipe.Id,
+            }).ToList();
+
+            await context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int recipeId)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var existing = await context.Recipes
+                .Include(r => r.Ingredients)
+                .Include(r => r.Steps)
+                .FirstOrDefaultAsync(r => r.Id == recipeId);
+
+            if (existing != null)
+            {
+                context.Recipes.Remove(existing);
+                await context.SaveChangesAsync();
+            }
+        }
+
         public async Task<List<Recipe>> SearchAsync(RecipeSearchCriteria criteria)
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
             var query =
-                from r in context.Recipes.AsNoTracking()
+                from r in context.Recipes.AsNoTracking().Include(r => r.Ingredients)
                 join u in context.Users.AsNoTracking() on r.UserId equals u.ID into authors
                 from a in authors.DefaultIfEmpty()
                 select new RecipeRow
@@ -93,12 +149,6 @@ namespace FourTaste.Infrastructure.Repositories
                         : int.MaxValue) <= maxSeconds);
             }
 
-            var allergens = Normalize(criteria.ExcludedAllergens);
-            if (allergens.Count > 0)
-            {
-                query = query.Where(x => !x.Recipe.Ingredients.Any(i => allergens.Any(al => i.Name.ToLower().Contains(al))));
-            }
-
             if (!string.IsNullOrWhiteSpace(criteria.SearchTerm))
             {
                 var term = criteria.SearchTerm.Trim().ToLower();
@@ -124,29 +174,33 @@ namespace FourTaste.Infrastructure.Repositories
                 };
             }
 
+            var allergens = Normalize(criteria.ExcludedAllergens);
             var products = Normalize(criteria.AvailableProducts);
             bool byProducts = products.Count > 0;
 
-            if (byProducts)
+            var rows = await query.ToListAsync();
+
+            if (allergens.Count > 0)
             {
-                query = query.Where(x => x.Recipe.Ingredients.Any(i => products.Any(p => i.Name.ToLower().Contains(p))));
-
-                query = query.Select(x => new RecipeRow
-                {
-                    Recipe = x.Recipe,
-                    AuthorId = x.AuthorId,
-                    AuthorUsername = x.AuthorUsername,
-                    AuthorName = x.AuthorName,
-                    MatchedCount = x.Recipe.Ingredients.Count(i => products.Any(p => i.Name.ToLower().Contains(p))),
-                    TotalCount = x.Recipe.Ingredients.Count(),
-                });
-
-                query = query
-                    .OrderBy(x => x.TotalCount - x.MatchedCount)
-                    .ThenByDescending(x => x.MatchedCount);
+                rows = rows
+                    .Where(x => !x.Recipe.Ingredients.Any(i => allergens.Any(al => i.Name.ToLower().Contains(al))))
+                    .ToList();
             }
 
-            var rows = await query.ToListAsync();
+            if (byProducts)
+            {
+                rows = rows
+                    .Where(x => x.Recipe.Ingredients.Any(i => products.Any(p => i.Name.ToLower().Contains(p))))
+                    .Select(x =>
+                    {
+                        x.MatchedCount = x.Recipe.Ingredients.Count(i => products.Any(p => i.Name.ToLower().Contains(p)));
+                        x.TotalCount = x.Recipe.Ingredients.Count;
+                        return x;
+                    })
+                    .OrderBy(x => x.TotalCount - x.MatchedCount)
+                    .ThenByDescending(x => x.MatchedCount)
+                    .ToList();
+            }
 
             foreach (var row in rows)
             {
