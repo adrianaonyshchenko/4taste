@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace FourTaste.ApplicationCore.Models
 {
@@ -17,6 +17,8 @@ namespace FourTaste.ApplicationCore.Models
         public int UserId { get; set; }
 
         public List<string> Ingredients { get; set; } = new ();
+
+        public List<RecipeIngredientDto> IngredientItems { get; set; } = new ();
 
         public List<string> Steps { get; set; } = new ();
 

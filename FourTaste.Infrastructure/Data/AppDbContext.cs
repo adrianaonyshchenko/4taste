@@ -1,4 +1,4 @@
-using FourTaste.ApplicationCore.Entities;
+п»їusing FourTaste.ApplicationCore.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace FourTaste.Infrastructure.Data
@@ -37,28 +37,29 @@ namespace FourTaste.Infrastructure.Data
                     this.Database.EnsureCreated();
 
                     this.Database.ExecuteSqlRaw(@"ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Photo"" bytea NULL;");
+                    this.Database.ExecuteSqlRaw(@"ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Servings"" INTEGER NOT NULL DEFAULT 1;");
 
-                    // Таблиця для холодильника
+                    // РҐРѕР»РѕРґРёР»СЊРЅРёРє
                     this.Database.ExecuteSqlRaw(@"
                         CREATE TABLE IF NOT EXISTS ""UserFridgeItems"" (
                             ""Id"" SERIAL PRIMARY KEY,
                             ""UserId"" INTEGER NOT NULL,
                             ""IngredientName"" TEXT NOT NULL,
                             ""Quantity"" INTEGER NOT NULL DEFAULT 1,
-                            ""Unit"" TEXT NOT NULL DEFAULT 'шт'
+                            ""Unit"" TEXT NOT NULL DEFAULT 'Рі'
                         );
                     ");
                     this.Database.ExecuteSqlRaw(@"ALTER TABLE ""UserFridgeItems"" ADD COLUMN IF NOT EXISTS ""Quantity"" INTEGER NOT NULL DEFAULT 1;");
-                    this.Database.ExecuteSqlRaw(@"ALTER TABLE ""UserFridgeItems"" ADD COLUMN IF NOT EXISTS ""Unit"" TEXT NOT NULL DEFAULT 'шт';");
+                    this.Database.ExecuteSqlRaw(@"ALTER TABLE ""UserFridgeItems"" ADD COLUMN IF NOT EXISTS ""Unit"" TEXT NOT NULL DEFAULT 'Рі';");
 
-                    // Таблиця для списку покупок
+                    // РЎРїРёСЃРѕРє РїРѕРєСѓРїРѕРє
                     this.Database.ExecuteSqlRaw(@"
                         CREATE TABLE IF NOT EXISTS ""UserShoppingItems"" (
                             ""Id"" SERIAL PRIMARY KEY,
                             ""UserId"" INTEGER NOT NULL,
                             ""IngredientName"" TEXT NOT NULL,
                             ""Quantity"" INTEGER NOT NULL DEFAULT 1,
-                            ""Unit"" TEXT NOT NULL DEFAULT 'шт'
+                            ""Unit"" TEXT NOT NULL DEFAULT 'Рі'
                         );
                     ");
 

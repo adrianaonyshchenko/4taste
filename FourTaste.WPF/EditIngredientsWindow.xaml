@@ -1,0 +1,124 @@
+<Window x:Class="FourTaste.WPF.EditIngredientsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Зміна інгредієнтів" Height="580" Width="640"
+        WindowStartupLocation="CenterOwner" Background="#EADCC9">
+    <Window.Resources>
+        <Style x:Key="PillButton" TargetType="Button">
+            <Setter Property="Background" Value="#D5C4B4"/>
+            <Setter Property="Foreground" Value="#4A352F"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}"
+                                CornerRadius="18" Padding="10,5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Редагування інгредієнтів"
+                   FontSize="18" FontWeight="Bold" Foreground="#4A352F" Margin="0,0,0,12"/>
+
+        <!-- Картка зі списком інгредієнтів -->
+        <Border Grid.Row="1" Background="#B89F8B" CornerRadius="18" Padding="15">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="IngredientsItemsControl">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="130"/>
+                                    <ColumnDefinition Width="36"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Поле назви -->
+                                <Border Grid.Column="0" Background="#E3D7CB" CornerRadius="8" Padding="4,2" Margin="0,0,8,0">
+                                    <TextBox Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Background="Transparent" BorderBrush="Transparent"
+                                             FontSize="14" Foreground="#4A352F" VerticalContentAlignment="Center"/>
+                                </Border>
+
+                                <!-- Поле кількості -->
+                                <Border Grid.Column="1" Background="#E3D7CB" CornerRadius="8" Padding="4,2" Margin="0,0,8,0">
+                                    <TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Background="Transparent" BorderBrush="Transparent"
+                                             FontSize="14" Foreground="#4A352F" VerticalContentAlignment="Center"/>
+                                </Border>
+
+                                <!-- Кнопка видалення -->
+                                <Button Grid.Column="2" Content="✕" Click="DeleteIngredientButton_Click"
+                                        Tag="{Binding}" Background="#F29B9B" Foreground="#4A352F"
+                                        FontWeight="Bold" Height="28" Width="28" Cursor="Hand">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" CornerRadius="14">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Блок додавання нового інгредієнта -->
+        <Border Grid.Row="2" Background="#E3D7CB" CornerRadius="12" Padding="12" Margin="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox x:Name="NewIngredientNameTextBox" Grid.Column="0" Margin="0,0,8,0"
+                         FontSize="14" Padding="6" Background="White" BorderThickness="0"
+                         ToolTip="Назва нового інгредієнта (напр., Буряк)"/>
+
+                <TextBox x:Name="NewIngredientAmountTextBox" Grid.Column="1" Margin="0,0,8,0"
+                         FontSize="14" Padding="6" Background="White" BorderThickness="0"
+                         ToolTip="Кількість (напр., 100г. або 1 ст.)"/>
+
+                <Button Grid.Column="2" Content="+ Додати" Click="AddIngredientButton_Click"
+                        Style="{StaticResource PillButton}" Background="#542E2B" Foreground="White"
+                        Height="34" Width="100"/>
+            </Grid>
+        </Border>
+
+        <!-- Нижні кнопки дій -->
+        <Grid Grid.Row="3" Margin="0,15,0,0">
+            <Button Content="Скасувати" Click="CancelButton_Click"
+                    Style="{StaticResource PillButton}" Background="#B89F8B" Foreground="#4A352F"
+                    HorizontalAlignment="Left" Width="120" Height="40"/>
+
+            <Button Content="Готово" Click="SaveButton_Click"
+                    Style="{StaticResource PillButton}" Background="#542E2B" Foreground="White"
+                    HorizontalAlignment="Right" Width="120" Height="40"/>
+        </Grid>
+    </Grid>
+</Window>

@@ -10,6 +10,10 @@ namespace FourTaste.ApplicationCore.Interfaces
     {
         Task<Result<int>> CreateRecipeAsync(CreateRecipeRequest request);
 
+        Task<Result> UpdateRecipeAsync(UpdateRecipeRequest request);
+
+        Task<Result> DeleteRecipeAsync(int recipeId, int userId);
+
         Task<Result<List<Recipe>>> SearchRecipesAsync(RecipeSearchCriteria criteria);
 
         Task<Result<List<Recipe>>> FindRecipesByProductsAsync(FindRecipesByProductsRequest request);
