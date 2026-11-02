@@ -2,6 +2,7 @@ using System;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -154,6 +155,15 @@ namespace FourTaste.WPF
             finally
             {
                 this.RegisterButton.IsEnabled = true;
+            }
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.RegisterButton_Click(this.RegisterButton, new RoutedEventArgs());
             }
         }
 

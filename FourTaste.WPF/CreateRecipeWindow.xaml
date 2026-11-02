@@ -171,7 +171,7 @@
         <!-- НИЖНІ КНОПКИ: Вийти та Зберегти -->
         <Grid Grid.Row="2" Margin="0,15,0,0">
             <Button x:Name="CancelButton" Content="Вийти" Width="110" Height="38" HorizontalAlignment="Left" Background="#B89F8B" Foreground="#4A352F" FontWeight="Bold" Style="{StaticResource RoundedButtonStyle}" Click="CancelButton_Click"/>
-            <Button x:Name="SaveButton" Content="Зберегти" IsDefault="True" Width="130" Height="38" HorizontalAlignment="Right" Background="#542E2B" Foreground="#FFF" FontWeight="Bold" Style="{StaticResource RoundedButtonStyle}" Click="SaveButton_Click"/>
+            <Button x:Name="SaveButton" Content="Зберегти" Width="130" Height="38" HorizontalAlignment="Right" Background="#542E2B" Foreground="#FFF" FontWeight="Bold" Style="{StaticResource RoundedButtonStyle}" Click="SaveButton_Click"/>
         </Grid>
     </Grid>
 </Window>

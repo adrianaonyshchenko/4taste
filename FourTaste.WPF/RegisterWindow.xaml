@@ -6,7 +6,8 @@
         mc:Ignorable="d"
         Title="Реєстрація - 4taste" Height="500" Width="600"
         WindowStartupLocation="CenterScreen"
-        Background="#DFC7A8">
+        Background="#DFC7A8"
+        KeyDown="Window_KeyDown">
 
     <Grid Margin="30,20,30,25">
         <Grid.RowDefinitions>
@@ -197,7 +198,6 @@
                     FontSize="15" 
                     Height="45" 
                     Width="360"
-                    IsDefault="True"
                     HorizontalAlignment="Center"
                     Click="RegisterButton_Click"
                     Cursor="Hand"
