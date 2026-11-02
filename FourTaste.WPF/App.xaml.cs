@@ -1,4 +1,4 @@
-﻿using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
 using FourTaste.Infrastructure.Data;
@@ -54,7 +54,6 @@ namespace FourTaste.WPF
                 }
             });
 
-            base.OnStartup(e);
             base.OnStartup(e);
         }
 

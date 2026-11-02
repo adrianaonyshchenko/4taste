@@ -90,6 +90,13 @@ namespace FourTaste.Tests
         }
 
         [Fact]
+        public void AvatarService_LoadAvatarBytes_ShouldReturnNull_WhenUserIdInvalid()
+        {
+            Assert.Null(AvatarService.LoadAvatarBytes(0));
+            Assert.Null(AvatarService.LoadAvatarBytes(-1));
+        }
+
+        [Fact]
         public void AvatarService_SessionSync_UpdatesSessionContext()
         {
             int testUserId = 8888;

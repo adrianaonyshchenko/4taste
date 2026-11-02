@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows.Media.Imaging;
 using FourTaste.ApplicationCore.Services;
 using FourTaste.Infrastructure.Data;
@@ -261,6 +262,37 @@ namespace FourTaste.WPF
             }
         }
 
+        public static byte[]? LoadAvatarBytes(int userId)
+        {
+            if (userId <= 0)
+            {
+                return null;
+            }
+
+            if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId && SessionContext.CurrentUser.Avatar != null && SessionContext.CurrentUser.Avatar.Length > 0)
+            {
+                return SessionContext.CurrentUser.Avatar;
+            }
+
+            string path = GetAvatarFilePath(userId);
+            if (File.Exists(path))
+            {
+                try
+                {
+                    byte[] localBytes = File.ReadAllBytes(path);
+                    if (localBytes.Length > 0 && localBytes.Length <= 5 * 1024 * 1024)
+                    {
+                        return localBytes;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return LoadAvatarFromDatabase(userId);
+        }
+
         private static byte[]? LoadAvatarFromDatabase(int userId)
         {
             try
@@ -270,7 +302,7 @@ namespace FourTaste.WPF
                 {
                     using var context = factory.CreateDbContext();
                     context.EnsureDatabaseReady();
-                    var user = context.Users.Find(userId);
+                    var user = context.Users.AsNoTracking().FirstOrDefault(u => u.ID == userId);
                     return user?.Avatar;
                 }
             }
@@ -291,12 +323,10 @@ namespace FourTaste.WPF
                 {
                     using var context = factory.CreateDbContext();
                     context.EnsureDatabaseReady();
-                    var user = context.Users.Find(userId);
-                    if (user != null)
-                    {
-                        user.Avatar = avatarBytes;
-                        context.SaveChanges();
-                    }
+                    context.Database.ExecuteSqlRaw(
+                        @"UPDATE ""Users"" SET ""Avatar"" = {0} WHERE ""ID"" = {1}",
+                        (object?)avatarBytes ?? DBNull.Value,
+                        userId);
                 }
             }
             catch (Exception ex)

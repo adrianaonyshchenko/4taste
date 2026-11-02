@@ -52,6 +52,20 @@ namespace FourTaste.WPF
 
             this.UpdateUserHeader();
             _ = this.LoadAllergiesAsync();
+
+            this.Loaded += async (s, e) =>
+            {
+                if (SessionContext.CurrentUser != null && (SessionContext.CurrentUser.Avatar == null || SessionContext.CurrentUser.Avatar.Length == 0))
+                {
+                    int uid = SessionContext.CurrentUser.ID;
+                    var dbBytes = await Task.Run(() => AvatarService.LoadAvatarBytes(uid));
+                    if (dbBytes != null && dbBytes.Length > 0 && SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == uid)
+                    {
+                        SessionContext.CurrentUser.Avatar = dbBytes;
+                        this.UpdateUserHeader();
+                    }
+                }
+            };
         }
 
         public void UpdateUserHeader()
