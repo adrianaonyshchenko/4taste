@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
@@ -77,6 +78,15 @@ namespace FourTaste.WPF
             this.AllergenTextBox.Clear();
             await this.LoadAllergiesAsync();
             MessageBox.Show("Алерген успішно збережено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void AllergenTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.SaveAllergyButton_Click(this.SaveAllergyButton, new RoutedEventArgs());
+            }
         }
 
         private async void DeleteAllergyButton_Click(object sender, RoutedEventArgs e)

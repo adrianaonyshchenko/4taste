@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Models;
@@ -228,6 +229,24 @@ namespace FourTaste.WPF
             profileWindow.Show();
             profileWindow.Activate();
             this.Close();
+        }
+
+        private void FridgeInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.AddFridgeItemButton_Click(sender, new RoutedEventArgs());
+            }
+        }
+
+        private void ShoppingInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.AddShoppingItemButton_Click(sender, new RoutedEventArgs());
+            }
         }
     }
 }

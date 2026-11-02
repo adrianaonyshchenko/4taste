@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
@@ -171,6 +172,24 @@ namespace FourTaste.WPF
 
             this.NewPasswordBox.Clear();
             MessageBox.Show("Пароль успішно змінено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void ProfileField_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.UpdateProfileButton_Click(this.UpdateProfileButton, new RoutedEventArgs());
+            }
+        }
+
+        private void NewPasswordBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.ChangePasswordButton_Click(this.ChangePasswordButton, new RoutedEventArgs());
+            }
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)

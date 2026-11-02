@@ -98,13 +98,15 @@
 
                 <TextBox x:Name="NewIngredientNameTextBox" Grid.Column="0" Margin="0,0,8,0"
                          FontSize="14" Padding="6" Background="White" BorderThickness="0"
-                         ToolTip="Назва нового інгредієнта (напр., Буряк)"/>
+                         ToolTip="Назва нового інгредієнта (напр., Буряк)"
+                         KeyDown="NewIngredient_KeyDown"/>
 
                 <TextBox x:Name="NewIngredientAmountTextBox" Grid.Column="1" Margin="0,0,8,0"
                          FontSize="14" Padding="6" Background="White" BorderThickness="0"
-                         ToolTip="Кількість (напр., 100г. або 1 ст.)"/>
+                         ToolTip="Кількість (напр., 100г. або 1 ст.)"
+                         KeyDown="NewIngredient_KeyDown"/>
 
-                <Button Grid.Column="2" Content="+ Додати" Click="AddIngredientButton_Click"
+                <Button x:Name="AddIngredientButton" Grid.Column="2" Content="+ Додати" Click="AddIngredientButton_Click"
                         Style="{StaticResource PillButton}" Background="#542E2B" Foreground="White"
                         Height="34" Width="100"/>
             </Grid>

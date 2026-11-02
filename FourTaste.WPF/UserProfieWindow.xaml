@@ -39,7 +39,7 @@
                     <TextBlock Grid.Row="0" Text="Алергени" HorizontalAlignment="Center" Foreground="#4A3532" FontWeight="Bold" FontSize="15" Margin="0,0,0,6"/>
 
                     <Border Grid.Row="1" Background="#E3D1BD" CornerRadius="10" Height="28" Padding="6,0" Margin="0,0,0,4">
-                        <TextBox x:Name="AllergenTextBox" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" FontSize="12"/>
+                        <TextBox x:Name="AllergenTextBox" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" FontSize="12" KeyDown="AllergenTextBox_KeyDown"/>
                     </Border>
 
                     <ListBox x:Name="AllergiesListBox" Grid.Row="2" Background="Transparent" BorderBrush="Transparent" Foreground="#D9534F" FontWeight="Bold" FontSize="12" DisplayMemberPath="AllergenName"/>
