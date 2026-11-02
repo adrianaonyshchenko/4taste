@@ -1,17 +1,17 @@
 using System;
 using System.Threading.Tasks;
-using Xunit;
+using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Services;
 using Moq;
 using Serilog;
-using FourTaste.ApplicationCore.Services;
-using FourTaste.ApplicationCore.Interfaces;
-using FourTaste.ApplicationCore.Entities;
+using Xunit;
 
 namespace FourTaste.Tests
 {
+    [Collection("SessionContext")]
     public class AuthServiceTests
     {
-
         [Fact]
         public async Task LogoutAsync_ShouldClearSessionAndNotQueryDatabase_WhenCalled()
         {
@@ -72,7 +72,7 @@ namespace FourTaste.Tests
             {
                 ID = 1,
                 Email = "test@gmail.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("correct_password")
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("correct_password"),
             };
 
             mockRepo.Setup(r => r.GetByEmailAsync("test@gmail.com"))
@@ -96,7 +96,7 @@ namespace FourTaste.Tests
             {
                 ID = 1,
                 Email = "test@gmail.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("correct_password")
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("correct_password"),
             };
 
             mockRepo.Setup(r => r.GetByEmailAsync("test@gmail.com"))
