@@ -48,7 +48,6 @@ namespace FourTaste.Infrastructure.Data
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Photo"" bytea NULL;");
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Servings"" INTEGER NOT NULL DEFAULT 1;");
 
-                        // Холодильник
                         this.Database.ExecuteSqlRaw(@"
                             CREATE TABLE IF NOT EXISTS ""UserFridgeItems"" (
                                 ""Id"" SERIAL PRIMARY KEY,
@@ -61,7 +60,6 @@ namespace FourTaste.Infrastructure.Data
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""UserFridgeItems"" ADD COLUMN IF NOT EXISTS ""Quantity"" INTEGER NOT NULL DEFAULT 1;");
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""UserFridgeItems"" ADD COLUMN IF NOT EXISTS ""Unit"" TEXT NOT NULL DEFAULT 'г';");
 
-                        // Список покупок
                         this.Database.ExecuteSqlRaw(@"
                             CREATE TABLE IF NOT EXISTS ""UserShoppingItems"" (
                                 ""Id"" SERIAL PRIMARY KEY,

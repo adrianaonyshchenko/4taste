@@ -11,8 +11,8 @@ namespace FourTaste.WPF
         public bool IsAllergen { get; set; }
 
         public Brush TextColor => IsAllergen
-            ? new SolidColorBrush(Color.FromRgb(217, 56, 41)) // червоний для алергенів
-            : new SolidColorBrush(Color.FromRgb(74, 53, 47));  // темно-коричневий для звичайних
+            ? new SolidColorBrush(Color.FromRgb(217, 56, 41))
+            : new SolidColorBrush(Color.FromRgb(74, 53, 47));
     }
 }
 

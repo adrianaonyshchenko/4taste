@@ -103,13 +103,10 @@ namespace FourTaste.WPF
             int servings = recipe.Servings > 0 ? recipe.Servings : 1;
             ServingsTextBlock.Text = FormatServingsText(servings);
 
-            // Кнопка редагування рецепта (Use Case №30):
-            // Доступна виключно якщо поточний користувач є автором рецепта
             bool isAuthor = viewerId.HasValue && viewerId.Value == recipe.UserId;
             EditRecipeButton.Visibility = isAuthor ? Visibility.Visible : Visibility.Collapsed;
             EditRecipeButton.IsEnabled = isAuthor;
 
-            // Завантажуємо алергени користувача для підсвічування червоним
             var userAllergies = new List<string>();
             if (viewerId.HasValue && _allergyService != null)
             {

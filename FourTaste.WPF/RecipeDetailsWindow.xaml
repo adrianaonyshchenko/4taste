@@ -132,7 +132,6 @@
                             <TextBlock x:Name="StatusTextBlock" Foreground="#4A352F" FontSize="14" Margin="0,2"/>
                         </StackPanel>
 
-                        <!-- Блок кількості порцій (без неробочої кнопки «Змінити») -->
                         <StackPanel Grid.Column="1" Width="130" VerticalAlignment="Center">
                             <Border Background="#E3D7CB" CornerRadius="12" Padding="10">
                                 <TextBlock x:Name="ServingsTextBlock" Text="1&#10;порція" TextAlignment="Center" FontSize="20"
