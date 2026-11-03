@@ -123,5 +123,32 @@ namespace FourTaste.ApplicationCore.Services
             this.logger.Information("Акаунт користувача з ID {UserId} успішно видалено", userId);
             return Result.Success();
         }
+
+        public async Task<Result> UpdateAvatarAsync(int userId, byte[]? avatar)
+        {
+            var user = await this.userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                this.logger.Warning("Користувача з ID {UserId} не знайдено для оновлення аватарки", userId);
+                return Result.Failure("Користувача не знайдено.");
+            }
+
+            user.Avatar = avatar;
+            await this.userRepository.UpdateAsync(user);
+            this.logger.Information("Аватарку користувача з ID {UserId} успішно оновлено в базі даних", userId);
+            return Result.Success();
+        }
+
+        public async Task<Result<byte[]?>> GetAvatarAsync(int userId)
+        {
+            var user = await this.userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                this.logger.Warning("Користувача з ID {UserId} не знайдено для отримання аватарки", userId);
+                return Result<byte[]?>.Failure("Користувача не знайдено.");
+            }
+
+            return Result<byte[]?>.Success(user.Avatar);
+        }
     }
 }

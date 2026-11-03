@@ -57,15 +57,15 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Grid.Column="0" Background="#E3D1BD" CornerRadius="12" Height="36" Padding="8,0" Margin="0,0,6,0">
-                            <TextBox x:Name="NewIngredientTextBox" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" FontSize="13" Foreground="#4A3532" ToolTip="Продукт"/>
+                            <TextBox x:Name="NewIngredientTextBox" KeyDown="FridgeInput_KeyDown" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" FontSize="13" Foreground="#4A3532" ToolTip="Продукт"/>
                         </Border>
 
                         <Border Grid.Column="1" Background="#E3D1BD" CornerRadius="12" Height="36" Padding="2,0" Margin="0,0,6,0">
-                            <TextBox x:Name="NewQuantityTextBox" Text="1" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="13" FontWeight="Bold" Foreground="#4A3532" ToolTip="Кількість"/>
+                            <TextBox x:Name="NewQuantityTextBox" KeyDown="FridgeInput_KeyDown" Text="1" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="13" FontWeight="Bold" Foreground="#4A3532" ToolTip="Кількість"/>
                         </Border>
 
                         <Border Grid.Column="2" Background="#E3D1BD" CornerRadius="12" Height="36" Padding="2,0">
-                            <TextBox x:Name="NewUnitTextBox" Text="шт" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="12" Foreground="#4A3532" ToolTip="Одиниця (г, кг, мл, л, шт)"/>
+                            <TextBox x:Name="NewUnitTextBox" KeyDown="FridgeInput_KeyDown" Text="шт" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="12" Foreground="#4A3532" ToolTip="Одиниця (г, кг, мл, л, шт)"/>
                         </Border>
                     </Grid>
 
@@ -127,15 +127,15 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Grid.Column="0" Background="#E3D1BD" CornerRadius="12" Height="36" Padding="8,0" Margin="0,0,6,0">
-                            <TextBox x:Name="NewShoppingItemTextBox" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" FontSize="13" Foreground="#4A3532" ToolTip="Продукт для купівлі"/>
+                            <TextBox x:Name="NewShoppingItemTextBox" KeyDown="ShoppingInput_KeyDown" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" FontSize="13" Foreground="#4A3532" ToolTip="Продукт для купівлі"/>
                         </Border>
 
                         <Border Grid.Column="1" Background="#E3D1BD" CornerRadius="12" Height="36" Padding="2,0" Margin="0,0,6,0">
-                            <TextBox x:Name="NewShoppingQuantityTextBox" Text="1" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="13" FontWeight="Bold" Foreground="#4A3532" ToolTip="Кількість"/>
+                            <TextBox x:Name="NewShoppingQuantityTextBox" KeyDown="ShoppingInput_KeyDown" Text="1" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="13" FontWeight="Bold" Foreground="#4A3532" ToolTip="Кількість"/>
                         </Border>
 
                         <Border Grid.Column="2" Background="#E3D1BD" CornerRadius="12" Height="36" Padding="2,0">
-                            <TextBox x:Name="NewShoppingUnitTextBox" Text="шт" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="12" Foreground="#4A3532" ToolTip="Одиниця (г, кг, мл, л, шт)"/>
+                            <TextBox x:Name="NewShoppingUnitTextBox" KeyDown="ShoppingInput_KeyDown" Text="шт" Background="Transparent" BorderBrush="Transparent" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="12" Foreground="#4A3532" ToolTip="Одиниця (г, кг, мл, л, шт)"/>
                         </Border>
                     </Grid>
 

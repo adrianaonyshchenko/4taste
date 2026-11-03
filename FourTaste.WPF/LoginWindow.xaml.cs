@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -136,6 +137,15 @@ namespace FourTaste.WPF
             finally
             {
                 this.LoginButton.IsEnabled = true;
+            }
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.LoginButton_Click(this.LoginButton, new RoutedEventArgs());
             }
         }
 

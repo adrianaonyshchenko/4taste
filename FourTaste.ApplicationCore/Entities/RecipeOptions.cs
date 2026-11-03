@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
-namespace FourTaste.WPF
+namespace FourTaste.ApplicationCore.Entities
 {
     public static class RecipeOptions
     {

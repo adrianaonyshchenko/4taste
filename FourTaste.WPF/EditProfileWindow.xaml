@@ -123,17 +123,17 @@
                     <!-- Розділ особистих даних -->
                     <TextBlock Text="Ім'я" Foreground="#4A3532" FontSize="13" FontWeight="SemiBold" Margin="4,0,0,4"/>
                     <Border Background="#E3D1BD" CornerRadius="14" Height="38" Padding="12,0" Margin="0,0,0,10">
-                        <TextBox x:Name="ProfileNameTextBox"/>
+                        <TextBox x:Name="ProfileNameTextBox" KeyDown="ProfileField_KeyDown"/>
                     </Border>
 
                     <TextBlock Text="Нікнейм" Foreground="#4A3532" FontSize="13" FontWeight="SemiBold" Margin="4,0,0,4"/>
                     <Border Background="#E3D1BD" CornerRadius="14" Height="38" Padding="12,0" Margin="0,0,0,10">
-                        <TextBox x:Name="ProfileUsernameTextBox"/>
+                        <TextBox x:Name="ProfileUsernameTextBox" KeyDown="ProfileField_KeyDown"/>
                     </Border>
 
                     <TextBlock Text="Електронна пошта" Foreground="#4A3532" FontSize="13" FontWeight="SemiBold" Margin="4,0,0,4"/>
                     <Border Background="#E3D1BD" CornerRadius="14" Height="38" Padding="12,0" Margin="0,0,0,14">
-                        <TextBox x:Name="ProfileEmailTextBox"/>
+                        <TextBox x:Name="ProfileEmailTextBox" KeyDown="ProfileField_KeyDown"/>
                     </Border>
 
                     <Button x:Name="UpdateProfileButton"
@@ -165,7 +165,7 @@
                         </Grid.ColumnDefinitions>
 
                         <Border Grid.Column="0" Background="#E3D1BD" CornerRadius="14" Height="38" Padding="12,0" Margin="0,0,8,0">
-                            <PasswordBox x:Name="NewPasswordBox"/>
+                            <PasswordBox x:Name="NewPasswordBox" KeyDown="NewPasswordBox_KeyDown"/>
                         </Border>
 
                         <Button Grid.Column="1"

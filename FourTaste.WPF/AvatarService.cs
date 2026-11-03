@@ -1,6 +1,12 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows.Media.Imaging;
+using FourTaste.ApplicationCore.Services;
+using FourTaste.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace FourTaste.WPF
 {
@@ -13,9 +19,16 @@ namespace FourTaste.WPF
 
         static AvatarService()
         {
-            if (!Directory.Exists(AvatarsDirectory))
+            try
             {
-                Directory.CreateDirectory(AvatarsDirectory);
+                if (!Directory.Exists(AvatarsDirectory))
+                {
+                    Directory.CreateDirectory(AvatarsDirectory);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Не вдалося створити директорію для аватарок");
             }
         }
 
@@ -31,7 +44,22 @@ namespace FourTaste.WPF
                 return false;
             }
 
-            return File.Exists(GetAvatarFilePath(userId));
+            if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId)
+            {
+                if (SessionContext.CurrentUser.Avatar != null && SessionContext.CurrentUser.Avatar.Length > 0)
+                {
+                    return true;
+                }
+            }
+
+            string path = GetAvatarFilePath(userId);
+            if (File.Exists(path))
+            {
+                return true;
+            }
+
+            var dbBytes = LoadAvatarFromDatabase(userId);
+            return dbBytes != null && dbBytes.Length > 0;
         }
 
         public static BitmapImage? LoadAvatar(int userId)
@@ -42,25 +70,96 @@ namespace FourTaste.WPF
             }
 
             string path = GetAvatarFilePath(userId);
-            if (!File.Exists(path))
+
+            if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId)
             {
+                if (SessionContext.CurrentUser.Avatar != null && SessionContext.CurrentUser.Avatar.Length > 0)
+                {
+                    if (!File.Exists(path))
+                    {
+                        try
+                        {
+                            File.WriteAllBytes(path, SessionContext.CurrentUser.Avatar);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    return ToBitmapImage(SessionContext.CurrentUser.Avatar);
+                }
+
+                // В сесії ще немає байтів — перевіряємо базу даних
+                byte[]? dbBytes = LoadAvatarFromDatabase(userId);
+                if (dbBytes != null && dbBytes.Length > 0)
+                {
+                    SessionContext.CurrentUser.Avatar = dbBytes;
+                    try
+                    {
+                        File.WriteAllBytes(path, dbBytes);
+                    }
+                    catch
+                    {
+                    }
+
+                    return ToBitmapImage(dbBytes);
+                }
+
+                // Якщо в БД ще немає, але на цьому комп'ютері вже був збережений локальний файл
+                // синхронізуємо його в БД, щоб аватарка підтягнулася і на інших комп'ютерах
+                if (File.Exists(path))
+                {
+                    try
+                    {
+                        byte[] localBytes = File.ReadAllBytes(path);
+                        if (localBytes.Length > 0 && localBytes.Length <= 5 * 1024 * 1024)
+                        {
+                            SessionContext.CurrentUser.Avatar = localBytes;
+                            SaveAvatarToDatabase(userId, localBytes);
+                            return ToBitmapImage(localBytes);
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
                 return null;
             }
 
-            try
+            // Для іншого користувача: спершу локальний кеш, якщо немає — БД
+            if (File.Exists(path))
             {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.UriSource = new Uri(path, UriKind.Absolute);
-                bitmap.EndInit();
-                bitmap.Freeze();
-                return bitmap;
+                try
+                {
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.UriSource = new Uri(path, UriKind.Absolute);
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+                    return bitmap;
+                }
+                catch
+                {
+                }
             }
-            catch
+
+            byte[]? remoteBytes = LoadAvatarFromDatabase(userId);
+            if (remoteBytes != null && remoteBytes.Length > 0)
             {
-                return null;
+                try
+                {
+                    File.WriteAllBytes(path, remoteBytes);
+                }
+                catch
+                {
+                }
+
+                return ToBitmapImage(remoteBytes);
             }
+
+            return null;
         }
 
         public static bool SaveAvatar(int userId, string sourceFilePath)
@@ -72,12 +171,39 @@ namespace FourTaste.WPF
 
             try
             {
+                byte[] bytes = File.ReadAllBytes(sourceFilePath);
+                return SaveAvatar(userId, bytes);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Помилка читання файлу аватарки для користувача {UserId}", userId);
+                return false;
+            }
+        }
+
+        public static bool SaveAvatar(int userId, byte[] bytes)
+        {
+            if (userId <= 0 || bytes == null || bytes.Length == 0 || bytes.Length > 5 * 1024 * 1024)
+            {
+                return false;
+            }
+
+            try
+            {
                 string targetPath = GetAvatarFilePath(userId);
-                File.Copy(sourceFilePath, targetPath, overwrite: true);
+                File.WriteAllBytes(targetPath, bytes);
+
+                if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId)
+                {
+                    SessionContext.CurrentUser.Avatar = bytes;
+                }
+
+                SaveAvatarToDatabase(userId, bytes);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Error(ex, "Помилка збереження аватарки користувача {UserId}", userId);
                 return false;
             }
         }
@@ -94,16 +220,136 @@ namespace FourTaste.WPF
                 string path = GetAvatarFilePath(userId);
                 if (File.Exists(path))
                 {
-                    File.Delete(path);
+                    try
+                    {
+                        File.Delete(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Не вдалося видалити локальний файл аватарки {Path}", path);
+                    }
                 }
 
+                if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId)
+                {
+                    SessionContext.CurrentUser.Avatar = null;
+                }
+
+                SaveAvatarToDatabase(userId, null);
                 return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Помилка видалення аватарки користувача {UserId}", userId);
+                return false;
+            }
+        }
+
+        public static BitmapImage? ToBitmapImage(byte[]? bytes)
+        {
+            if (bytes == null || bytes.Length == 0)
+            {
+                return null;
+            }
+
+            try
+            {
+                using var stream = new MemoryStream(bytes);
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.StreamSource = stream;
+                bitmap.EndInit();
+                bitmap.Freeze();
+                return bitmap;
             }
             catch
             {
-                return false;
+                return null;
+            }
+        }
+
+        public static byte[]? LoadAvatarBytes(int userId)
+        {
+            if (userId <= 0)
+            {
+                return null;
+            }
+
+            if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId && SessionContext.CurrentUser.Avatar != null && SessionContext.CurrentUser.Avatar.Length > 0)
+            {
+                return SessionContext.CurrentUser.Avatar;
+            }
+
+            string path = GetAvatarFilePath(userId);
+            if (File.Exists(path))
+            {
+                try
+                {
+                    byte[] localBytes = File.ReadAllBytes(path);
+                    if (localBytes.Length > 0 && localBytes.Length <= 5 * 1024 * 1024)
+                    {
+                        return localBytes;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return LoadAvatarFromDatabase(userId);
+        }
+
+        private static byte[]? LoadAvatarFromDatabase(int userId)
+        {
+            try
+            {
+                var factory = App.ServiceProvider?.GetService<IDbContextFactory<AppDbContext>>();
+                if (factory != null)
+                {
+                    using var context = factory.CreateDbContext();
+                    context.EnsureDatabaseReady();
+                    var user = context.Users.AsNoTracking().FirstOrDefault(u => u.ID == userId);
+                    return user?.Avatar;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Помилка завантаження аватарки з бази даних для ID {UserId}", userId);
+            }
+
+            return null;
+        }
+
+        private static void SaveAvatarToDatabase(int userId, byte[]? avatarBytes)
+        {
+            try
+            {
+                var factory = App.ServiceProvider?.GetService<IDbContextFactory<AppDbContext>>();
+                if (factory != null)
+                {
+                    using var context = factory.CreateDbContext();
+                    context.EnsureDatabaseReady();
+
+                    if (avatarBytes == null || avatarBytes.Length == 0)
+                    {
+                        context.Database.ExecuteSqlRaw(
+                            @"UPDATE ""Users"" SET ""Avatar"" = NULL WHERE ""ID"" = {0}",
+                            userId);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(
+                            @"UPDATE ""Users"" SET ""Avatar"" = {0} WHERE ""ID"" = {1}",
+                            avatarBytes,
+                            userId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Помилка збереження аватарки в базі даних для ID {UserId}", userId);
             }
         }
     }
 }
-

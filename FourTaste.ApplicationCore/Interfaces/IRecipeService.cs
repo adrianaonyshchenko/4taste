@@ -8,6 +8,10 @@ namespace FourTaste.ApplicationCore.Interfaces
 {
     public interface IRecipeService
     {
+        IReadOnlyList<string> GetAvailableCuisines();
+
+        IReadOnlyList<string> GetAvailableCategories();
+
         Task<Result<int>> CreateRecipeAsync(CreateRecipeRequest request);
 
         Task<Result> UpdateRecipeAsync(UpdateRecipeRequest request);

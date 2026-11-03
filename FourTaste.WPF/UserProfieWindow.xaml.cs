@@ -2,12 +2,12 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Results;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
-using System.Windows.Input;
 using Serilog;
 
 namespace FourTaste.WPF
@@ -52,6 +52,20 @@ namespace FourTaste.WPF
 
             this.UpdateUserHeader();
             _ = this.LoadAllergiesAsync();
+
+            this.Loaded += async (s, e) =>
+            {
+                if (SessionContext.CurrentUser != null && (SessionContext.CurrentUser.Avatar == null || SessionContext.CurrentUser.Avatar.Length == 0))
+                {
+                    int uid = SessionContext.CurrentUser.ID;
+                    var dbBytes = await Task.Run(() => AvatarService.LoadAvatarBytes(uid));
+                    if (dbBytes != null && dbBytes.Length > 0 && SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == uid)
+                    {
+                        SessionContext.CurrentUser.Avatar = dbBytes;
+                        this.UpdateUserHeader();
+                    }
+                }
+            };
         }
 
         public void UpdateUserHeader()
@@ -126,6 +140,15 @@ namespace FourTaste.WPF
             this.AllergenTextBox.Clear();
             await this.LoadAllergiesAsync();
             MessageBox.Show("Алерген успішно збережено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void AllergenTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.SaveAllergensButton_Click(this.SaveAllergensButton, new RoutedEventArgs());
+            }
         }
 
         private async void DeleteAllergyButton_Click(object sender, RoutedEventArgs e)

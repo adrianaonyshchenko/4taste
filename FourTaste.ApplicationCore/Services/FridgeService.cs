@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
@@ -60,16 +60,10 @@ namespace FourTaste.ApplicationCore.Services
 
         public async Task<Result> RemoveItemAsync(RemoveFridgeItemRequest request)
         {
-            if (request is null)
-            {
-                _logger.Warning("Помилка валідації: запит на видалення продукту з холодильника порожній.");
-                return Result.Failure("Дані запиту не задано.");
-            }
-
             _logger.Information("Спроба видалити продукт з Id {ItemId} з холодильника користувача {UserId}", request.ItemId, request.UserId);
 
             var item = await _fridgeRepository.GetByIdAsync(request.ItemId);
-            if (item is null || item.UserId != request.UserId)
+            if (item == null || item.UserId != request.UserId)
             {
                 _logger.Warning("Продукт з Id {ItemId} не знайдено або він не належить користувачу {UserId}", request.ItemId, request.UserId);
                 return Result.Failure("Продукт не знайдено.");
@@ -130,16 +124,10 @@ namespace FourTaste.ApplicationCore.Services
 
         public async Task<Result> RemoveShoppingItemAsync(RemoveShoppingItemRequest request)
         {
-            if (request is null)
-            {
-                _logger.Warning("Помилка валідації: запит на видалення продукту зі списку покупок порожній.");
-                return Result.Failure("Дані запиту не задано.");
-            }
-
             _logger.Information("Спроба видалити продукт з Id {ItemId} зі списку покупок користувача {UserId}", request.ItemId, request.UserId);
 
             var item = await _fridgeRepository.GetShoppingItemByIdAsync(request.ItemId);
-            if (item is null || item.UserId != request.UserId)
+            if (item == null || item.UserId != request.UserId)
             {
                 _logger.Warning("Продукт з Id {ItemId} у списку покупок не знайдено або він не належить користувачу {UserId}", request.ItemId, request.UserId);
                 return Result.Failure("Продукт не знайдено.");

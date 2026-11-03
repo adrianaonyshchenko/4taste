@@ -35,6 +35,16 @@ namespace FourTaste.ApplicationCore.Services
             _logger = logger;
         }
 
+        public IReadOnlyList<string> GetAvailableCuisines()
+        {
+            return RecipeOptions.Cuisines;
+        }
+
+        public IReadOnlyList<string> GetAvailableCategories()
+        {
+            return RecipeOptions.Categories;
+        }
+
         public async Task<Result<int>> CreateRecipeAsync(CreateRecipeRequest request)
         {
             if (request is null)

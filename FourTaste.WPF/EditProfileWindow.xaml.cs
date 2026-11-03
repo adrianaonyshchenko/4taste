@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
@@ -69,7 +70,7 @@ namespace FourTaste.WPF
             }
         }
 
-        private void ChooseAvatarButton_Click(object sender, RoutedEventArgs e)
+        private async void ChooseAvatarButton_Click(object sender, RoutedEventArgs e)
         {
             if (this.CurrentUserId <= 0)
             {
@@ -88,6 +89,11 @@ namespace FourTaste.WPF
                 bool saved = AvatarService.SaveAvatar(this.CurrentUserId, dialog.FileName);
                 if (saved)
                 {
+                    if (SessionContext.CurrentUser?.Avatar != null)
+                    {
+                        await this.userService.UpdateAvatarAsync(this.CurrentUserId, SessionContext.CurrentUser.Avatar);
+                    }
+
                     this.UpdateAvatarPreview();
                     MessageBox.Show("Аватарку успішно збережено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -98,7 +104,7 @@ namespace FourTaste.WPF
             }
         }
 
-        private void DeleteAvatarButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteAvatarButton_Click(object sender, RoutedEventArgs e)
         {
             if (this.CurrentUserId <= 0)
             {
@@ -119,6 +125,7 @@ namespace FourTaste.WPF
             }
 
             AvatarService.DeleteAvatar(this.CurrentUserId);
+            await this.userService.UpdateAvatarAsync(this.CurrentUserId, null);
             this.UpdateAvatarPreview();
             MessageBox.Show("Аватарку успішно видалено.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
         }
@@ -171,6 +178,24 @@ namespace FourTaste.WPF
 
             this.NewPasswordBox.Clear();
             MessageBox.Show("Пароль успішно змінено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void ProfileField_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.UpdateProfileButton_Click(this.UpdateProfileButton, new RoutedEventArgs());
+            }
+        }
+
+        private void NewPasswordBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                this.ChangePasswordButton_Click(this.ChangePasswordButton, new RoutedEventArgs());
+            }
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)

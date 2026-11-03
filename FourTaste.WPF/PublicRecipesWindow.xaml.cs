@@ -53,6 +53,18 @@ namespace FourTaste.WPF
         {
             this.UpdateProfileAvatar();
             this.UpdateSearchControls();
+
+            if (this.CurrentUserId > 0 && (SessionContext.CurrentUser?.Avatar == null || SessionContext.CurrentUser.Avatar.Length == 0))
+            {
+                int uid = this.CurrentUserId;
+                var dbBytes = await Task.Run(() => AvatarService.LoadAvatarBytes(uid));
+                if (dbBytes != null && dbBytes.Length > 0 && SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == uid)
+                {
+                    SessionContext.CurrentUser.Avatar = dbBytes;
+                    this.UpdateProfileAvatar();
+                }
+            }
+
             await this.SearchAsync(immediate: true);
         }
 
