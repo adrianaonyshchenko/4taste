@@ -220,7 +220,14 @@ namespace FourTaste.WPF
                 string path = GetAvatarFilePath(userId);
                 if (File.Exists(path))
                 {
-                    File.Delete(path);
+                    try
+                    {
+                        File.Delete(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Не вдалося видалити локальний файл аватарки {Path}", path);
+                    }
                 }
 
                 if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId)
@@ -323,10 +330,20 @@ namespace FourTaste.WPF
                 {
                     using var context = factory.CreateDbContext();
                     context.EnsureDatabaseReady();
-                    context.Database.ExecuteSqlRaw(
-                        @"UPDATE ""Users"" SET ""Avatar"" = {0} WHERE ""ID"" = {1}",
-                        (object?)avatarBytes ?? DBNull.Value,
-                        userId);
+
+                    if (avatarBytes == null || avatarBytes.Length == 0)
+                    {
+                        context.Database.ExecuteSqlRaw(
+                            @"UPDATE ""Users"" SET ""Avatar"" = NULL WHERE ""ID"" = {0}",
+                            userId);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(
+                            @"UPDATE ""Users"" SET ""Avatar"" = {0} WHERE ""ID"" = {1}",
+                            avatarBytes,
+                            userId);
+                    }
                 }
             }
             catch (Exception ex)

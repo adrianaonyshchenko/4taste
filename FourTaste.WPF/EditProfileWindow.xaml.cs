@@ -70,7 +70,7 @@ namespace FourTaste.WPF
             }
         }
 
-        private void ChooseAvatarButton_Click(object sender, RoutedEventArgs e)
+        private async void ChooseAvatarButton_Click(object sender, RoutedEventArgs e)
         {
             if (this.CurrentUserId <= 0)
             {
@@ -89,6 +89,11 @@ namespace FourTaste.WPF
                 bool saved = AvatarService.SaveAvatar(this.CurrentUserId, dialog.FileName);
                 if (saved)
                 {
+                    if (SessionContext.CurrentUser?.Avatar != null)
+                    {
+                        await this.userService.UpdateAvatarAsync(this.CurrentUserId, SessionContext.CurrentUser.Avatar);
+                    }
+
                     this.UpdateAvatarPreview();
                     MessageBox.Show("Аватарку успішно збережено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -99,7 +104,7 @@ namespace FourTaste.WPF
             }
         }
 
-        private void DeleteAvatarButton_Click(object sender, RoutedEventArgs e)
+        private async void DeleteAvatarButton_Click(object sender, RoutedEventArgs e)
         {
             if (this.CurrentUserId <= 0)
             {
@@ -120,6 +125,7 @@ namespace FourTaste.WPF
             }
 
             AvatarService.DeleteAvatar(this.CurrentUserId);
+            await this.userService.UpdateAvatarAsync(this.CurrentUserId, null);
             this.UpdateAvatarPreview();
             MessageBox.Show("Аватарку успішно видалено.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
         }
