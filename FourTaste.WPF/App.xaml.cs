@@ -90,6 +90,8 @@ namespace FourTaste.WPF
 
             services.AddScoped<IRecipeRepository, RecipeRepository>();
             services.AddScoped<IRecipeService, RecipeService>();
+            services.AddScoped<ISubstituteRepository, SubstituteRepository>();
+            services.AddScoped<ISubstituteService, SubstituteService>();
 
             services.AddTransient<ManageAllergiesWindow>();
             services.AddTransient<RegisterWindow>();

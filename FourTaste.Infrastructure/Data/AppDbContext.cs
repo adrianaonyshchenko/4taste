@@ -1,4 +1,5 @@
 using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace FourTaste.Infrastructure.Data
@@ -19,6 +20,12 @@ namespace FourTaste.Infrastructure.Data
         public DbSet<UserFridgeItem> UserFridgeItems { get; set; } = null!;
 
         public DbSet<UserShoppingItem> UserShoppingItems { get; set; } = null!;
+
+        public DbSet<AllergenCatalogItem> AllergenCatalogItems { get; set; } = null!;
+
+        public DbSet<IngredientSubstitute> IngredientSubstitutes { get; set; } = null!;
+
+        public DbSet<UserRecipeSubstitution> UserRecipeSubstitutions { get; set; } = null!;
 
         public AppDbContext()
         {
@@ -71,6 +78,56 @@ namespace FourTaste.Infrastructure.Data
                                 ""Unit"" TEXT NOT NULL DEFAULT 'г'
                             );
                         ");
+
+                        // Довідник алергенів
+                        this.Database.ExecuteSqlRaw(@"
+                            CREATE TABLE IF NOT EXISTS ""AllergenCatalogItems"" (
+                                ""Id"" SERIAL PRIMARY KEY,
+                                ""Code"" TEXT NOT NULL,
+                                ""NameUk"" TEXT NOT NULL,
+                                ""Keywords"" TEXT NOT NULL
+                            );
+                        ");
+
+                        // Довідник замінників
+                        this.Database.ExecuteSqlRaw(@"
+                            CREATE TABLE IF NOT EXISTS ""IngredientSubstitutes"" (
+                                ""Id"" SERIAL PRIMARY KEY,
+                                ""OriginalIngredientName"" TEXT NOT NULL,
+                                ""SubstituteName"" TEXT NOT NULL,
+                                ""Ratio"" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+                                ""Note"" TEXT NULL,
+                                ""AllergenCodes"" TEXT NOT NULL DEFAULT '',
+                                ""IsVerified"" BOOLEAN NOT NULL DEFAULT TRUE
+                            );
+                        ");
+
+                        // Персональні підміни користувача
+                        this.Database.ExecuteSqlRaw(@"
+                            CREATE TABLE IF NOT EXISTS ""UserRecipeSubstitutions"" (
+                                ""Id"" SERIAL PRIMARY KEY,
+                                ""UserId"" INTEGER NOT NULL,
+                                ""RecipeId"" INTEGER NOT NULL,
+                                ""OriginalIngredientId"" INTEGER NOT NULL,
+                                ""OriginalIngredientName"" TEXT NOT NULL,
+                                ""SubstituteIngredientName"" TEXT NOT NULL,
+                                ""CalculatedAmount"" TEXT NOT NULL,
+                                ""Ratio"" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+                                ""Note"" TEXT NULL
+                            );
+                        ");
+                    }
+
+                    if (!this.AllergenCatalogItems.Any())
+                    {
+                        this.AllergenCatalogItems.AddRange(SubstituteSeedData.GetAllergens());
+                        this.SaveChanges();
+                    }
+
+                    if (!this.IngredientSubstitutes.Any())
+                    {
+                        this.IngredientSubstitutes.AddRange(SubstituteSeedData.GetSubstitutes());
+                        this.SaveChanges();
                     }
 
                     isDatabaseInitialized = true;
