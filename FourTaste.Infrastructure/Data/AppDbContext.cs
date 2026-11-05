@@ -118,15 +118,28 @@ namespace FourTaste.Infrastructure.Data
                         ");
                     }
 
-                    if (!this.AllergenCatalogItems.Any())
+                    var existingAllergenCodes = this.AllergenCatalogItems.Select(a => a.Code).ToHashSet();
+                    var newAllergens = SubstituteSeedData.GetAllergens()
+                        .Where(a => !existingAllergenCodes.Contains(a.Code))
+                        .ToList();
+
+                    if (newAllergens.Count > 0)
                     {
-                        this.AllergenCatalogItems.AddRange(SubstituteSeedData.GetAllergens());
+                        this.AllergenCatalogItems.AddRange(newAllergens);
                         this.SaveChanges();
                     }
 
-                    if (!this.IngredientSubstitutes.Any())
+                    var existingSubstitutes = this.IngredientSubstitutes
+                        .Select(s => s.SubstituteName + "_" + s.OriginalIngredientName)
+                        .ToHashSet();
+
+                    var newSubstitutes = SubstituteSeedData.GetSubstitutes()
+                        .Where(s => !existingSubstitutes.Contains(s.SubstituteName + "_" + s.OriginalIngredientName))
+                        .ToList();
+
+                    if (newSubstitutes.Count > 0)
                     {
-                        this.IngredientSubstitutes.AddRange(SubstituteSeedData.GetSubstitutes());
+                        this.IngredientSubstitutes.AddRange(newSubstitutes);
                         this.SaveChanges();
                     }
 

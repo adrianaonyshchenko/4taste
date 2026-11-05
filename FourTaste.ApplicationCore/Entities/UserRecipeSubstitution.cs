@@ -21,3 +21,4 @@ namespace FourTaste.ApplicationCore.Entities
         public string? Note { get; set; }
     }
 }
+

@@ -17,3 +17,4 @@ namespace FourTaste.ApplicationCore.Models
         public IReadOnlyList<SafeSubstituteItemDto> Substitutes { get; set; } = new List<SafeSubstituteItemDto>();
     }
 }
+

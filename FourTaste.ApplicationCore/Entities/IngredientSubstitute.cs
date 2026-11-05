@@ -17,3 +17,4 @@ namespace FourTaste.ApplicationCore.Entities
         public bool IsVerified { get; set; } = true;
     }
 }
+

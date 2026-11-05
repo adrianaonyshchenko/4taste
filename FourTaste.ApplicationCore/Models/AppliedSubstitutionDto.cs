@@ -19,3 +19,4 @@ namespace FourTaste.ApplicationCore.Models
         public string? Note { get; set; }
     }
 }
+

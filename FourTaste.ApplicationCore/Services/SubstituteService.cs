@@ -115,6 +115,7 @@ namespace FourTaste.ApplicationCore.Services
 
             var allSubstitutes = await _substituteRepository.GetAllSubstitutesAsync();
             var candidateSubstitutes = FilterCandidatesForIngredient(ingredient.Name, allSubstitutes, catalog);
+            var (_, effectiveAmount) = AllergyMatcher.ExtractCleanNameAndAmount(ingredient.Name, ingredient.Amount);
 
             var safeList = new List<SafeSubstituteItemDto>();
             foreach (var candidate in candidateSubstitutes)
@@ -125,7 +126,7 @@ namespace FourTaste.ApplicationCore.Services
                     continue;
                 }
 
-                string calcAmount = AllergyMatcher.CalculateSubstituteAmount(ingredient.Amount, candidate.Ratio);
+                string calcAmount = AllergyMatcher.CalculateSubstituteAmount(effectiveAmount, candidate.Ratio);
                 safeList.Add(new SafeSubstituteItemDto
                 {
                     Id = candidate.Id,
@@ -198,7 +199,8 @@ namespace FourTaste.ApplicationCore.Services
                 return Result<AppliedSubstitutionDto>.Failure("Обраний замінник є небезпечним для вашого профілю алергій.");
             }
 
-            string calcAmount = AllergyMatcher.CalculateSubstituteAmount(ingredient.Amount, substitute.Ratio);
+            var (_, effectiveAmount) = AllergyMatcher.ExtractCleanNameAndAmount(ingredient.Name, ingredient.Amount);
+            string calcAmount = AllergyMatcher.CalculateSubstituteAmount(effectiveAmount, substitute.Ratio);
 
             var substitution = new UserRecipeSubstitution
             {
@@ -279,46 +281,75 @@ namespace FourTaste.ApplicationCore.Services
             List<IngredientSubstitute> allSubstitutes,
             List<AllergenCatalogItem> catalog)
         {
-            var normalizedIng = AllergyMatcher.Normalize(ingredientName);
+            var (cleanName, _) = AllergyMatcher.ExtractCleanNameAndAmount(ingredientName, string.Empty);
+            var normalizedIng = AllergyMatcher.Normalize(cleanName);
 
-            // 1. Спочатку шукаємо точні або часткові збіги за назвою оригінального інгредієнта
-            var directMatches = allSubstitutes.Where(s =>
-            {
-                var normOrig = AllergyMatcher.Normalize(s.OriginalIngredientName);
-                return !string.IsNullOrEmpty(normOrig) &&
-                       (normalizedIng.Contains(normOrig) || normOrig.Contains(normalizedIng));
-            }).ToList();
+            // 1. Точний збіг за назвою оригінального інгредієнта
+            var exactMatches = allSubstitutes
+                .Where(s => AllergyMatcher.Normalize(s.OriginalIngredientName) == normalizedIng)
+                .ToList();
 
-            if (directMatches.Count > 0)
+            if (exactMatches.Count > 0)
             {
-                return directMatches;
+                return exactMatches;
             }
 
-            // 2. Якщо прямого збігу немає, шукаємо через категорію алергенів
-            return allSubstitutes.Where(s =>
+            // 2. Специфічний збіг: назва інгредієнта містить оригінал (наприклад, "кисломолочний сир 9%" містить "кисломолочний сир", "пшеничне борошно" містить "борошно")
+            var containingOriginals = allSubstitutes
+                .Select(s => AllergyMatcher.Normalize(s.OriginalIngredientName))
+                .Where(orig => !string.IsNullOrEmpty(orig) && normalizedIng.Contains(orig))
+                .Distinct()
+                .OrderByDescending(orig => orig.Length)
+                .ToList();
+
+            if (containingOriginals.Count > 0)
             {
-                var normOrig = AllergyMatcher.Normalize(s.OriginalIngredientName);
-                if (string.IsNullOrEmpty(normOrig))
+                string bestMatch = containingOriginals[0];
+                return allSubstitutes
+                    .Where(s => AllergyMatcher.Normalize(s.OriginalIngredientName) == bestMatch)
+                    .ToList();
+            }
+
+            // 3. Зворотний збіг (довідник містить слово з інгредієнта)
+            var reverseOriginals = allSubstitutes
+                .Select(s => AllergyMatcher.Normalize(s.OriginalIngredientName))
+                .Where(orig => !string.IsNullOrEmpty(orig) && orig.Contains(normalizedIng))
+                .Distinct()
+                .OrderByDescending(orig => orig.Length)
+                .ToList();
+
+            if (reverseOriginals.Count > 0)
+            {
+                string bestMatch = reverseOriginals[0];
+                return allSubstitutes
+                    .Where(s => AllergyMatcher.Normalize(s.OriginalIngredientName) == bestMatch)
+                    .ToList();
+            }
+
+            // 2. Якщо прямого збігу за назвою немає, шукаємо через категорію алергенів
+            var matchedCategory = catalog.FirstOrDefault(c =>
+                AllergyMatcher.Normalize(c.NameUk) == normalizedIng ||
+                AllergyMatcher.Normalize(c.Code) == normalizedIng ||
+                AllergyMatcher.ExtractKeywords(c.Keywords).Any(k => normalizedIng.Contains(k)));
+
+            if (matchedCategory != null)
+            {
+                var categoryKeywords = AllergyMatcher.ExtractKeywords(matchedCategory.Keywords);
+                var categoryCandidates = allSubstitutes.Where(s =>
                 {
-                    return false;
-                }
+                    var normOrig = AllergyMatcher.Normalize(s.OriginalIngredientName);
+                    return categoryKeywords.Contains(normOrig) ||
+                           AllergyMatcher.Normalize(matchedCategory.NameUk).Contains(normOrig) ||
+                           normOrig == AllergyMatcher.Normalize(matchedCategory.Code);
+                }).ToList();
 
-                var matchedCategory = catalog.FirstOrDefault(c =>
-                    AllergyMatcher.Normalize(c.NameUk) == normOrig ||
-                    AllergyMatcher.Normalize(c.Code) == normOrig ||
-                    AllergyMatcher.ExtractKeywords(c.Keywords).Contains(normOrig));
-
-                if (matchedCategory != null)
+                if (categoryCandidates.Count > 0)
                 {
-                    if (normalizedIng.Contains(AllergyMatcher.Normalize(matchedCategory.NameUk)) ||
-                        AllergyMatcher.ExtractKeywords(matchedCategory.Keywords).Any(k => normalizedIng.Contains(k)))
-                    {
-                        return true;
-                    }
+                    return categoryCandidates;
                 }
+            }
 
-                return false;
-            }).ToList();
+            return new List<IngredientSubstitute>();
         }
     }
 }

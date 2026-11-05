@@ -8,7 +8,8 @@ namespace FourTaste.ApplicationCore.Services
 {
     public static class AllergyMatcher
     {
-        private static readonly char[] Separators = new[] { ',', ';', ' ', '/', '\\', '|' };
+        private static readonly char[] KeywordSeparators = new[] { ',', ';', '\n', '\r' };
+        private static readonly char[] CodeSeparators = new[] { ',', ';', ' ', '/', '\\', '|' };
 
         public static string Normalize(string? value)
         {
@@ -163,6 +164,41 @@ namespace FourTaste.ApplicationCore.Services
             return true;
         }
 
+        public static (string CleanName, string CleanAmount) ExtractCleanNameAndAmount(string rawName, string rawAmount)
+        {
+            if (string.IsNullOrWhiteSpace(rawName))
+            {
+                return (string.Empty, rawAmount ?? string.Empty);
+            }
+
+            rawName = rawName.Trim();
+            rawAmount = rawAmount?.Trim() ?? string.Empty;
+
+            // Перевіряємо, чи містить назва шаблон кількості/ваги
+            var match = Regex.Match(
+                rawName,
+                @"^(.*?)(?:\s*[-–—:]\s*|\s*\()([\d\.,\s\-/]+(?:г|кг|мл|л|ст\.\s*л\.|ч\.\s*л\.|шт|ст|зубчик|дрібка|пакетик|склянк)[^\)]*)\)?$",
+                RegexOptions.IgnoreCase);
+
+            if (match.Success)
+            {
+                string parsedName = match.Groups[1].Value.Trim();
+                string embeddedAmount = match.Groups[2].Value.Trim();
+
+                if (!string.IsNullOrEmpty(parsedName) && !string.IsNullOrEmpty(embeddedAmount))
+                {
+                    if (string.IsNullOrWhiteSpace(rawAmount) || rawAmount == "1 шт." || rawAmount == "1 шт")
+                    {
+                        return (parsedName, embeddedAmount);
+                    }
+
+                    return (parsedName, rawAmount);
+                }
+            }
+
+            return (rawName, string.IsNullOrWhiteSpace(rawAmount) ? "1 шт." : rawAmount);
+        }
+
         public static string CalculateSubstituteAmount(string originalAmount, double ratio)
         {
             if (string.IsNullOrWhiteSpace(originalAmount))
@@ -176,6 +212,20 @@ namespace FourTaste.ApplicationCore.Services
                 return originalAmount;
             }
 
+            // Перевірка на діапазон (наприклад "400-500г")
+            var rangeMatch = Regex.Match(originalAmount, @"^([\d\.,]+)\s*[-–]\s*([\d\.,]+)\s*(.*)$");
+            if (rangeMatch.Success)
+            {
+                if (double.TryParse(rangeMatch.Groups[1].Value.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double minVal) &&
+                    double.TryParse(rangeMatch.Groups[2].Value.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double maxVal))
+                {
+                    string minStr = (minVal * ratio).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                    string maxStr = (maxVal * ratio).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                    string unit = rangeMatch.Groups[3].Value.Trim();
+                    return string.IsNullOrEmpty(unit) ? $"{minStr}-{maxStr}" : $"{minStr}-{maxStr} {unit}".Trim();
+                }
+            }
+
             var match = Regex.Match(originalAmount, @"^([\d\.,]+)\s*(.*)$");
             if (match.Success)
             {
@@ -185,7 +235,7 @@ namespace FourTaste.ApplicationCore.Services
                     double calculated = parsedVal * ratio;
                     string formattedVal = calculated.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
                     string unit = match.Groups[2].Value.Trim();
-                    return string.IsNullOrEmpty(unit) ? formattedVal : $"{formattedVal} {unit}";
+                    return string.IsNullOrEmpty(unit) ? formattedVal : $"{formattedVal} {unit}".Trim();
                 }
             }
 
@@ -200,7 +250,7 @@ namespace FourTaste.ApplicationCore.Services
             }
 
             return keywords
-                .Split(Separators, StringSplitOptions.RemoveEmptyEntries)
+                .Split(KeywordSeparators, StringSplitOptions.RemoveEmptyEntries)
                 .Select(Normalize)
                 .Where(s => !string.IsNullOrEmpty(s))
                 .Distinct()
@@ -215,7 +265,7 @@ namespace FourTaste.ApplicationCore.Services
                 return result;
             }
 
-            foreach (var item in codes.Split(Separators, StringSplitOptions.RemoveEmptyEntries))
+            foreach (var item in codes.Split(CodeSeparators, StringSplitOptions.RemoveEmptyEntries))
             {
                 var clean = Normalize(item);
                 if (!string.IsNullOrEmpty(clean))

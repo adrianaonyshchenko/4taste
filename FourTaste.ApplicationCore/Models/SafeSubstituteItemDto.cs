@@ -17,3 +17,4 @@ namespace FourTaste.ApplicationCore.Models
         public string CalculatedAmount { get; set; } = string.Empty;
     }
 }
+

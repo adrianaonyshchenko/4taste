@@ -19,3 +19,4 @@ namespace FourTaste.ApplicationCore.Interfaces
         Task<Result> RemoveSubstitutionAsync(int userId, int recipeId, int ingredientId);
     }
 }
+

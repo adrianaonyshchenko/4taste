@@ -27,6 +27,15 @@ namespace FourTaste.Infrastructure.Repositories
                 return SubstituteSeedData.GetAllergens();
             }
 
+            var missing = SubstituteSeedData.GetAllergens()
+                .Where(s => !items.Any(i => i.Code == s.Code))
+                .ToList();
+
+            if (missing.Count > 0)
+            {
+                items.AddRange(missing);
+            }
+
             return items;
         }
 
@@ -37,6 +46,15 @@ namespace FourTaste.Infrastructure.Repositories
             if (list.Count == 0)
             {
                 return SubstituteSeedData.GetSubstitutes();
+            }
+
+            var missing = SubstituteSeedData.GetSubstitutes()
+                .Where(s => !list.Any(i => i.OriginalIngredientName == s.OriginalIngredientName && i.SubstituteName == s.SubstituteName))
+                .ToList();
+
+            if (missing.Count > 0)
+            {
+                list.AddRange(missing);
             }
 
             return list;
@@ -113,3 +131,4 @@ namespace FourTaste.Infrastructure.Repositories
         }
     }
 }
+

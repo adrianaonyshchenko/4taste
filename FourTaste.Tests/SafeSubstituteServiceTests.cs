@@ -183,15 +183,84 @@ namespace FourTaste.Tests
         public async Task GetSafeSubstitutes_ReturnsEmptyListWhenNoSafeSubstitutesExist()
         {
             var (service, db, recipeRepoMock, _) = CreateTestSetup(
-                new Allergy { Id = 1, UserId = 42, AllergenName = "цукор" });
+                new Allergy { Id = 1, UserId = 42, AllergenName = "екзотична пряність" });
 
-            recipeRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(CreateTestRecipe(1));
+            var recipe = new Recipe
+            {
+                Id = 99,
+                UserId = 10,
+                IsPublic = true,
+                Ingredients = new List<Ingredient>
+                {
+                    new Ingredient { Id = 991, RecipeId = 99, Name = "Екзотична пряність", Amount = "1 ч. л." },
+                },
+            };
+            recipeRepoMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync(recipe);
 
-            // Для цукру немає в базі жодного замінника
-            var result = await service.GetSafeSubstitutesAsync(42, 1, 104);
+            var result = await service.GetSafeSubstitutesAsync(42, 99, 991);
 
             Assert.True(result.IsSuccess);
             Assert.Empty(result.Value!.Substitutes);
+        }
+
+        [Fact]
+        public async Task GetSafeSubstitutes_CottageCheese_ReturnsTofuAndNotOils()
+        {
+            var (service, _, recipeRepoMock, _) = CreateTestSetup(
+                new Allergy { Id = 1, UserId = 42, AllergenName = "кисломолочний сир" });
+
+            var recipe = new Recipe
+            {
+                Id = 15,
+                UserId = 10,
+                IsPublic = true,
+                Ingredients = new List<Ingredient>
+                {
+                    new Ingredient { Id = 151, RecipeId = 15, Name = "кисломолочний сир - 400-500г", Amount = "1 шт." },
+                },
+            };
+            recipeRepoMock.Setup(r => r.GetByIdAsync(15)).ReturnsAsync(recipe);
+
+            var result = await service.GetSafeSubstitutesAsync(42, 15, 151);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotEmpty(result.Value!.Substitutes);
+            // Повинні бути тофу / рослинний сир
+            Assert.Contains(result.Value.Substitutes, s => s.Name.Contains("Тофу"));
+            // НІ В ЯКОМУ РАЗІ не повинно бути олій (кулінарна перевірка)
+            Assert.DoesNotContain(result.Value.Substitutes, s => s.Name == "Кокосова олія");
+            Assert.DoesNotContain(result.Value.Substitutes, s => s.Name == "Оливкова олія");
+            Assert.DoesNotContain(result.Value.Substitutes, s => s.Name == "Рисове молоко");
+            // Перевірка правильної ваги замість 1 шт.
+            Assert.Equal("400-500г", result.Value.Substitutes[0].CalculatedAmount);
+        }
+
+        [Fact]
+        public async Task GetSafeSubstitutes_Sugar_ReturnsErythritolAndSyrups()
+        {
+            var (service, _, recipeRepoMock, _) = CreateTestSetup(
+                new Allergy { Id = 1, UserId = 42, AllergenName = "цукор" });
+
+            var recipe = new Recipe
+            {
+                Id = 16,
+                UserId = 10,
+                IsPublic = true,
+                Ingredients = new List<Ingredient>
+                {
+                    new Ingredient { Id = 161, RecipeId = 16, Name = "цукор - 3ст. л.", Amount = "1 шт." },
+                },
+            };
+            recipeRepoMock.Setup(r => r.GetByIdAsync(16)).ReturnsAsync(recipe);
+
+            var result = await service.GetSafeSubstitutesAsync(42, 16, 161);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotEmpty(result.Value!.Substitutes);
+            Assert.Contains(result.Value.Substitutes, s => s.Name == "Еритритол");
+            Assert.Contains(result.Value.Substitutes, s => s.Name == "Сироп топінамбура");
+            // Перевірка екстракції кількості
+            Assert.Equal("3ст. л.", result.Value.Substitutes[0].CalculatedAmount);
         }
 
         [Fact]
@@ -342,3 +411,4 @@ namespace FourTaste.Tests
         }
     }
 }
+

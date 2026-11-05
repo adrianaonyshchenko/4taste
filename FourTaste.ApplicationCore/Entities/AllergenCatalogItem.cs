@@ -11,3 +11,4 @@ namespace FourTaste.ApplicationCore.Entities
         public string Keywords { get; set; } = string.Empty;
     }
 }
+

@@ -213,8 +213,10 @@ namespace FourTaste.WPF
                 bool isSubstituted = _activeSubstitutions.TryGetValue(ing.Id, out var sub);
                 bool isAllergen = !isSubstituted && conflictingIds.Contains(ing.Id);
 
-                string displayName = isSubstituted ? sub!.SubstituteIngredientName : (ing.Name?.Trim() ?? string.Empty);
-                string displayAmount = isSubstituted ? sub!.CalculatedAmount : (string.IsNullOrWhiteSpace(ing.Amount) ? "1 шт." : ing.Amount.Trim());
+                var (cleanName, effectiveAmount) = AllergyMatcher.ExtractCleanNameAndAmount(ing.Name, ing.Amount);
+
+                string displayName = isSubstituted ? sub!.SubstituteIngredientName : cleanName;
+                string displayAmount = isSubstituted ? sub!.CalculatedAmount : effectiveAmount;
 
                 return new RecipeIngredientDisplayModel
                 {
@@ -223,8 +225,8 @@ namespace FourTaste.WPF
                     Amount = displayAmount,
                     IsAllergen = isAllergen,
                     IsSubstituted = isSubstituted,
-                    OriginalName = ing.Name?.Trim() ?? string.Empty,
-                    OriginalAmount = ing.Amount?.Trim() ?? string.Empty,
+                    OriginalName = cleanName,
+                    OriginalAmount = effectiveAmount,
                     SubstituteNote = isSubstituted ? sub!.Note : null,
                 };
             }).ToList();
@@ -242,18 +244,31 @@ namespace FourTaste.WPF
                 return;
             }
 
+            var selectorItems = _conflictingIngredients.Select(i =>
+            {
+                var (cleanName, effectiveAmount) = AllergyMatcher.ExtractCleanNameAndAmount(i.Name, i.Amount);
+                return new
+                {
+                    Id = i.Id,
+                    DisplayName = string.IsNullOrEmpty(effectiveAmount) ? cleanName : $"{cleanName} ({effectiveAmount})",
+                    CleanName = cleanName,
+                };
+            }).ToList();
+
             if (_conflictingIngredients.Count == 1)
             {
                 AllergenicIngredientsComboBox.Visibility = Visibility.Collapsed;
                 SelectedAllergenNameTextBlock.Visibility = Visibility.Visible;
-                SelectedAllergenNameTextBlock.Text = _conflictingIngredients[0].Name;
+                SelectedAllergenNameTextBlock.Text = selectorItems[0].DisplayName;
                 _selectedIngredientId = _conflictingIngredients[0].Id;
             }
             else
             {
                 SelectedAllergenNameTextBlock.Visibility = Visibility.Collapsed;
                 AllergenicIngredientsComboBox.Visibility = Visibility.Visible;
-                AllergenicIngredientsComboBox.ItemsSource = _conflictingIngredients;
+                AllergenicIngredientsComboBox.DisplayMemberPath = "DisplayName";
+                AllergenicIngredientsComboBox.SelectedValuePath = "Id";
+                AllergenicIngredientsComboBox.ItemsSource = selectorItems;
                 if (AllergenicIngredientsComboBox.SelectedItem == null)
                 {
                     AllergenicIngredientsComboBox.SelectedIndex = 0;
