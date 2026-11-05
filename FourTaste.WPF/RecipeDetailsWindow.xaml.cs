@@ -4,8 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Models;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,18 +18,43 @@ namespace FourTaste.WPF
     {
         private readonly IRecipeService _recipeService;
         private readonly IAllergyService? _allergyService;
+        private readonly ISubstituteService? _substituteService;
         private readonly int _recipeId;
 
+        private Recipe? _currentRecipe;
+        private List<Ingredient> _conflictingIngredients = new ();
+        private Dictionary<int, AppliedSubstitutionDto> _activeSubstitutions = new ();
+        private List<SubstituteOptionDisplayModel> _currentSubstituteOptions = new ();
+        private int _selectedIngredientId;
+
         public RecipeDetailsWindow(IRecipeService recipeService, int recipeId)
-            : this(recipeService, App.ServiceProvider?.GetService<IAllergyService>(), recipeId)
+            : this(
+                recipeService,
+                App.ServiceProvider?.GetService<IAllergyService>(),
+                App.ServiceProvider?.GetService<ISubstituteService>(),
+                recipeId)
         {
         }
 
         public RecipeDetailsWindow(IRecipeService recipeService, IAllergyService? allergyService, int recipeId)
+            : this(
+                recipeService,
+                allergyService,
+                App.ServiceProvider?.GetService<ISubstituteService>(),
+                recipeId)
+        {
+        }
+
+        public RecipeDetailsWindow(
+            IRecipeService recipeService,
+            IAllergyService? allergyService,
+            ISubstituteService? substituteService,
+            int recipeId)
         {
             InitializeComponent();
             _recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
             _allergyService = allergyService;
+            _substituteService = substituteService ?? App.ServiceProvider?.GetService<ISubstituteService>();
             _recipeId = recipeId;
         }
 
@@ -91,7 +119,8 @@ namespace FourTaste.WPF
             }
 
             var details = result.Value!;
-            var recipe = details.Recipe;
+            _currentRecipe = details.Recipe;
+            var recipe = _currentRecipe;
 
             TitleTextBlock.Text = recipe.Title;
             AuthorTextBlock.Text = details.AuthorName;
@@ -103,40 +132,58 @@ namespace FourTaste.WPF
             int servings = recipe.Servings > 0 ? recipe.Servings : 1;
             ServingsTextBlock.Text = FormatServingsText(servings);
 
-            // Кнопка редагування рецепта (Use Case №30):
-            // Доступна виключно якщо поточний користувач є автором рецепта
             bool isAuthor = viewerId.HasValue && viewerId.Value == recipe.UserId;
             EditRecipeButton.Visibility = isAuthor ? Visibility.Visible : Visibility.Collapsed;
             EditRecipeButton.IsEnabled = isAuthor;
 
-            // Завантажуємо алергени користувача для підсвічування червоним
-            var userAllergies = new List<string>();
-            if (viewerId.HasValue && _allergyService != null)
+            // Завантажуємо збережені персональні заміни користувача для цього рецепта
+            _activeSubstitutions.Clear();
+            if (viewerId.HasValue && _substituteService != null)
             {
-                var allergiesRes = await _allergyService.GetAllergiesByUserIdAsync(viewerId.Value);
-                if (allergiesRes.IsSuccess && allergiesRes.Value != null)
+                var subsRes = await _substituteService.GetUserSubstitutionsAsync(viewerId.Value, _recipeId);
+                if (subsRes.IsSuccess && subsRes.Value != null)
                 {
-                    userAllergies = allergiesRes.Value
-                        .Where(a => !string.IsNullOrWhiteSpace(a.AllergenName))
-                        .Select(a => a.AllergenName.Trim().ToLower())
-                        .ToList();
+                    foreach (var sub in subsRes.Value)
+                    {
+                        _activeSubstitutions[sub.OriginalIngredientId] = sub;
+                    }
                 }
             }
 
-            var ingredientViewModels = recipe.Ingredients.Select(ing =>
+            // Отримуємо конфліктуючі інгредієнти-алергени користувача через SubstituteService
+            _conflictingIngredients.Clear();
+            if (viewerId.HasValue && _substituteService != null)
             {
-                string name = ing.Name?.Trim() ?? string.Empty;
-                string amount = string.IsNullOrWhiteSpace(ing.Amount) ? "1 шт." : ing.Amount.Trim();
-                bool isAllergen = userAllergies.Any(al => !string.IsNullOrWhiteSpace(al) && name.ToLower().Contains(al));
-                return new RecipeIngredientDisplayModel
+                var conflictRes = await _substituteService.GetConflictingIngredientsAsync(viewerId.Value, _recipeId);
+                if (conflictRes.IsSuccess && conflictRes.Value != null)
                 {
-                    Name = name,
-                    Amount = amount,
-                    IsAllergen = isAllergen,
-                };
-            }).ToList();
+                    _conflictingIngredients = conflictRes.Value.ToList();
+                }
+            }
 
-            IngredientsItemsControl.ItemsSource = ingredientViewModels;
+            RenderIngredientsList();
+
+            // Кнопка «Знайти замінник алергену» (UC-36):
+            // Показується/активна лише якщо користувач авторизований та в рецепті є алергени з його профілю
+            if (!viewerId.HasValue)
+            {
+                FindSubstituteButton.IsEnabled = false;
+                FindSubstituteButton.ToolTip = "Увійдіть до свого облікового запису, щоб бачити замінники для ваших алергенів.";
+            }
+            else if (_conflictingIngredients.Count == 0)
+            {
+                FindSubstituteButton.IsEnabled = false;
+                FindSubstituteButton.ToolTip = "Алергенів для вашого профілю у цьому рецепті не знайдено.";
+            }
+            else
+            {
+                FindSubstituteButton.IsEnabled = true;
+                FindSubstituteButton.ToolTip = "Знайти безпечні перевірені замінники для інгредієнтів-алергенів";
+            }
+
+            // Налаштування вибору алергенів у панелі
+            UpdateAllergenSelector();
+
             StepsItemsControl.ItemsSource = recipe.Steps.OrderBy(s => s.StepNumber).ToList();
 
             var photo = ToBitmapImage(recipe.Photo);
@@ -150,6 +197,271 @@ namespace FourTaste.WPF
                 RecipeImage.Source = null;
                 PhotoPlaceholder.Visibility = Visibility.Visible;
             }
+        }
+
+        private void RenderIngredientsList()
+        {
+            if (_currentRecipe == null)
+            {
+                return;
+            }
+
+            var conflictingIds = new HashSet<int>(_conflictingIngredients.Select(i => i.Id));
+
+            var ingredientViewModels = _currentRecipe.Ingredients.Select(ing =>
+            {
+                bool isSubstituted = _activeSubstitutions.TryGetValue(ing.Id, out var sub);
+                bool isAllergen = !isSubstituted && conflictingIds.Contains(ing.Id);
+
+                string displayName = isSubstituted ? sub!.SubstituteIngredientName : (ing.Name?.Trim() ?? string.Empty);
+                string displayAmount = isSubstituted ? sub!.CalculatedAmount : (string.IsNullOrWhiteSpace(ing.Amount) ? "1 шт." : ing.Amount.Trim());
+
+                return new RecipeIngredientDisplayModel
+                {
+                    Id = ing.Id,
+                    Name = displayName,
+                    Amount = displayAmount,
+                    IsAllergen = isAllergen,
+                    IsSubstituted = isSubstituted,
+                    OriginalName = ing.Name?.Trim() ?? string.Empty,
+                    OriginalAmount = ing.Amount?.Trim() ?? string.Empty,
+                    SubstituteNote = isSubstituted ? sub!.Note : null,
+                };
+            }).ToList();
+
+            IngredientsItemsControl.ItemsSource = ingredientViewModels;
+        }
+
+        private void UpdateAllergenSelector()
+        {
+            if (_conflictingIngredients.Count == 0)
+            {
+                AllergenicIngredientsComboBox.ItemsSource = null;
+                AllergenicIngredientsComboBox.Visibility = Visibility.Collapsed;
+                SelectedAllergenNameTextBlock.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            if (_conflictingIngredients.Count == 1)
+            {
+                AllergenicIngredientsComboBox.Visibility = Visibility.Collapsed;
+                SelectedAllergenNameTextBlock.Visibility = Visibility.Visible;
+                SelectedAllergenNameTextBlock.Text = _conflictingIngredients[0].Name;
+                _selectedIngredientId = _conflictingIngredients[0].Id;
+            }
+            else
+            {
+                SelectedAllergenNameTextBlock.Visibility = Visibility.Collapsed;
+                AllergenicIngredientsComboBox.Visibility = Visibility.Visible;
+                AllergenicIngredientsComboBox.ItemsSource = _conflictingIngredients;
+                if (AllergenicIngredientsComboBox.SelectedItem == null)
+                {
+                    AllergenicIngredientsComboBox.SelectedIndex = 0;
+                }
+            }
+        }
+
+        private async void FindSubstituteButton_Click(object sender, RoutedEventArgs e)
+        {
+            int? viewerId = SessionContext.CurrentUser?.ID;
+            if (!viewerId.HasValue)
+            {
+                MessageBox.Show(
+                    "Для отримання безпечних замінників необхідно увійти до системи.",
+                    "Потрібна авторизація",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            if (_conflictingIngredients.Count == 0)
+            {
+                MessageBox.Show(
+                    "У цьому рецепті немає алергенів, що збігаються з вашим профілем.",
+                    "Алергенів не знайдено",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            SubstitutePanel.Visibility = Visibility.Visible;
+
+            if (_conflictingIngredients.Count == 1)
+            {
+                _selectedIngredientId = _conflictingIngredients[0].Id;
+            }
+            else if (AllergenicIngredientsComboBox.SelectedValue is int selId && selId > 0)
+            {
+                _selectedIngredientId = selId;
+            }
+            else
+            {
+                AllergenicIngredientsComboBox.SelectedIndex = 0;
+                _selectedIngredientId = _conflictingIngredients[0].Id;
+            }
+
+            await LoadSubstitutesForSelectedIngredientAsync();
+        }
+
+        private async void AllergenicIngredientsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (AllergenicIngredientsComboBox.SelectedValue is int id && id > 0)
+            {
+                _selectedIngredientId = id;
+                if (SubstitutePanel.Visibility == Visibility.Visible)
+                {
+                    await LoadSubstitutesForSelectedIngredientAsync();
+                }
+            }
+        }
+
+        private async Task LoadSubstitutesForSelectedIngredientAsync()
+        {
+            int? viewerId = SessionContext.CurrentUser?.ID;
+            if (!viewerId.HasValue || _substituteService == null || _selectedIngredientId <= 0)
+            {
+                return;
+            }
+
+            // Стани UI
+            SubstituteLoadingPanel.Visibility = Visibility.Visible;
+            SubstituteErrorPanel.Visibility = Visibility.Collapsed;
+            SubstituteEmptyPanel.Visibility = Visibility.Collapsed;
+            SubstituteListScrollViewer.Visibility = Visibility.Collapsed;
+            SaveSubstitutionButton.IsEnabled = false;
+
+            var result = await _substituteService.GetSafeSubstitutesAsync(viewerId.Value, _recipeId, _selectedIngredientId);
+
+            SubstituteLoadingPanel.Visibility = Visibility.Collapsed;
+
+            if (result.IsFailure)
+            {
+                SubstituteErrorPanel.Visibility = Visibility.Visible;
+                SubstituteErrorTextBlock.Text = result.Error;
+                return;
+            }
+
+            var safeList = result.Value?.Substitutes ?? new List<SafeSubstituteItemDto>();
+
+            if (safeList.Count == 0)
+            {
+                SubstituteEmptyPanel.Visibility = Visibility.Visible;
+                return;
+            }
+
+            _currentSubstituteOptions = safeList.Select(s => new SubstituteOptionDisplayModel
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Ratio = s.Ratio,
+                Note = s.Note,
+                CalculatedAmount = s.CalculatedAmount,
+                IsSelected = false,
+            }).ToList();
+
+            SubstituteOptionsItemsControl.ItemsSource = _currentSubstituteOptions;
+            SubstituteListScrollViewer.Visibility = Visibility.Visible;
+        }
+
+        private void SubstituteRadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is RadioButton rb && rb.DataContext is SubstituteOptionDisplayModel selectedModel)
+            {
+                foreach (var opt in _currentSubstituteOptions)
+                {
+                    opt.IsSelected = opt.Id == selectedModel.Id;
+                }
+
+                SaveSubstitutionButton.IsEnabled = true;
+            }
+        }
+
+        private async void SaveSubstitutionButton_Click(object sender, RoutedEventArgs e)
+        {
+            int? viewerId = SessionContext.CurrentUser?.ID;
+            if (!viewerId.HasValue || _substituteService == null)
+            {
+                MessageBox.Show("Необхідно авторизуватися.", "Увага", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var selectedOption = _currentSubstituteOptions.FirstOrDefault(o => o.IsSelected);
+            if (selectedOption == null)
+            {
+                MessageBox.Show("Будь ласка, оберіть замінник зі списку.", "Увага", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            SaveSubstitutionButton.IsEnabled = false;
+
+            var applyResult = await _substituteService.ApplySubstitutionAsync(
+                viewerId.Value,
+                _recipeId,
+                _selectedIngredientId,
+                selectedOption.Id);
+
+            if (applyResult.IsFailure)
+            {
+                MessageBox.Show(applyResult.Error, "Помилка збереження", MessageBoxButton.OK, MessageBoxImage.Warning);
+                SaveSubstitutionButton.IsEnabled = true;
+                return;
+            }
+
+            _activeSubstitutions[_selectedIngredientId] = applyResult.Value!;
+            RenderIngredientsList();
+
+            SubstitutePanel.Visibility = Visibility.Collapsed;
+
+            MessageBox.Show(
+                $"Замінник «{selectedOption.Name}» успішно збережено для цього рецепта!",
+                "Успіх",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
+        private async void RevertSubstitutionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement fe || fe.Tag is not RecipeIngredientDisplayModel model)
+            {
+                return;
+            }
+
+            int? viewerId = SessionContext.CurrentUser?.ID;
+            if (!viewerId.HasValue || _substituteService == null)
+            {
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Повернути оригінальний інгредієнт «{model.OriginalName}»?",
+                "Скасування заміни",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            var removeResult = await _substituteService.RemoveSubstitutionAsync(viewerId.Value, _recipeId, model.Id);
+            if (removeResult.IsFailure)
+            {
+                MessageBox.Show(removeResult.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            _activeSubstitutions.Remove(model.Id);
+            RenderIngredientsList();
+        }
+
+        private void CloseSubstitutePanelButton_Click(object sender, RoutedEventArgs e)
+        {
+            SubstitutePanel.Visibility = Visibility.Collapsed;
+        }
+
+        private async void RetrySubstituteButton_Click(object sender, RoutedEventArgs e)
+        {
+            await LoadSubstitutesForSelectedIngredientAsync();
         }
 
         private async void EditRecipeButton_Click(object sender, RoutedEventArgs e)
