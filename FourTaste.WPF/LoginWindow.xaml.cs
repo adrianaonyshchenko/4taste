@@ -134,6 +134,10 @@ namespace FourTaste.WPF
                     this.Close();
                 }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка зв'язку з базою даних:\n{ex.Message}", "Помилка входу", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
             finally
             {
                 this.LoginButton.IsEnabled = true;

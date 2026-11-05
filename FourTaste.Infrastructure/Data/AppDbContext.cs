@@ -45,7 +45,12 @@ namespace FourTaste.Infrastructure.Data
 
             lock (InitLock)
             {
-                if (!isDatabaseInitialized)
+                if (isDatabaseInitialized)
+                {
+                    return;
+                }
+
+                try
                 {
                     this.Database.EnsureCreated();
 
@@ -118,9 +123,20 @@ namespace FourTaste.Infrastructure.Data
                         ");
                     }
 
-                    var existingAllergenCodes = this.AllergenCatalogItems.Select(a => a.Code).ToHashSet();
+                    var existingAllergenCodes = this.AllergenCatalogItems
+                        .AsNoTracking()
+                        .Select(a => a.Code)
+                        .ToHashSet();
+
                     var newAllergens = SubstituteSeedData.GetAllergens()
                         .Where(a => !existingAllergenCodes.Contains(a.Code))
+                        .Select(a => new AllergenCatalogItem
+                        {
+                            Id = 0,
+                            Code = a.Code,
+                            NameUk = a.NameUk,
+                            Keywords = a.Keywords,
+                        })
                         .ToList();
 
                     if (newAllergens.Count > 0)
@@ -130,11 +146,22 @@ namespace FourTaste.Infrastructure.Data
                     }
 
                     var existingSubstitutes = this.IngredientSubstitutes
+                        .AsNoTracking()
                         .Select(s => s.SubstituteName + "_" + s.OriginalIngredientName)
                         .ToHashSet();
 
                     var newSubstitutes = SubstituteSeedData.GetSubstitutes()
                         .Where(s => !existingSubstitutes.Contains(s.SubstituteName + "_" + s.OriginalIngredientName))
+                        .Select(s => new IngredientSubstitute
+                        {
+                            Id = 0,
+                            OriginalIngredientName = s.OriginalIngredientName,
+                            SubstituteName = s.SubstituteName,
+                            Ratio = s.Ratio,
+                            Note = s.Note,
+                            AllergenCodes = s.AllergenCodes,
+                            IsVerified = s.IsVerified,
+                        })
                         .ToList();
 
                     if (newSubstitutes.Count > 0)
@@ -143,6 +170,11 @@ namespace FourTaste.Infrastructure.Data
                         this.SaveChanges();
                     }
 
+                    isDatabaseInitialized = true;
+                }
+                catch (System.Exception ex)
+                {
+                    Serilog.Log.Error(ex, "Помилка при ініціалізації структури бази даних");
                     isDatabaseInitialized = true;
                 }
             }
