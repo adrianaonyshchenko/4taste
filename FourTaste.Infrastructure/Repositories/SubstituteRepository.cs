@@ -11,6 +11,11 @@ namespace FourTaste.Infrastructure.Repositories
 {
     public class SubstituteRepository : ISubstituteRepository
     {
+        private static readonly System.Threading.SemaphoreSlim _catalogLock = new System.Threading.SemaphoreSlim(1, 1);
+        private static readonly System.Threading.SemaphoreSlim _substitutesLock = new System.Threading.SemaphoreSlim(1, 1);
+        private static List<AllergenCatalogItem>? _cachedCatalog;
+        private static List<IngredientSubstitute>? _cachedSubstitutes;
+
         private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
         public SubstituteRepository(IDbContextFactory<AppDbContext> contextFactory)
@@ -18,59 +23,109 @@ namespace FourTaste.Infrastructure.Repositories
             _contextFactory = contextFactory;
         }
 
+        public static void ClearCache()
+        {
+            _cachedCatalog = null;
+            _cachedSubstitutes = null;
+        }
+
         public async Task<List<AllergenCatalogItem>> GetAllergenCatalogAsync()
         {
-            using var context = await _contextFactory.CreateDbContextAsync();
-            var items = await context.AllergenCatalogItems.AsNoTracking().ToListAsync();
-            if (items.Count == 0)
+            if (_cachedCatalog != null)
             {
-                return SubstituteSeedData.GetAllergens();
+                return new List<AllergenCatalogItem>(_cachedCatalog);
             }
 
-            var missing = SubstituteSeedData.GetAllergens()
-                .Where(s => !items.Any(i => i.Code == s.Code))
-                .ToList();
-
-            if (missing.Count > 0)
+            await _catalogLock.WaitAsync();
+            try
             {
-                items.AddRange(missing);
-            }
+                if (_cachedCatalog != null)
+                {
+                    return new List<AllergenCatalogItem>(_cachedCatalog);
+                }
 
-            return items;
+                using var context = await _contextFactory.CreateDbContextAsync();
+                var items = await context.AllergenCatalogItems.AsNoTracking().ToListAsync();
+                if (items.Count == 0)
+                {
+                    items = SubstituteSeedData.GetAllergens();
+                }
+                else
+                {
+                    var missing = SubstituteSeedData.GetAllergens()
+                        .Where(s => !items.Any(i => i.Code == s.Code))
+                        .ToList();
+
+                    if (missing.Count > 0)
+                    {
+                        items.AddRange(missing);
+                    }
+                }
+
+                _cachedCatalog = items;
+                return new List<AllergenCatalogItem>(_cachedCatalog);
+            }
+            finally
+            {
+                _catalogLock.Release();
+            }
         }
 
         public async Task<List<IngredientSubstitute>> GetAllSubstitutesAsync()
         {
-            using var context = await _contextFactory.CreateDbContextAsync();
-            var list = await context.IngredientSubstitutes.AsNoTracking().ToListAsync();
-            if (list.Count == 0)
+            if (_cachedSubstitutes != null)
             {
-                return SubstituteSeedData.GetSubstitutes();
+                return new List<IngredientSubstitute>(_cachedSubstitutes);
             }
 
-            var missing = SubstituteSeedData.GetSubstitutes()
-                .Where(s => !list.Any(i => i.OriginalIngredientName == s.OriginalIngredientName && i.SubstituteName == s.SubstituteName))
-                .ToList();
-
-            if (missing.Count > 0)
+            await _substitutesLock.WaitAsync();
+            try
             {
-                list.AddRange(missing);
-            }
+                if (_cachedSubstitutes != null)
+                {
+                    return new List<IngredientSubstitute>(_cachedSubstitutes);
+                }
 
-            return list;
+                using var context = await _contextFactory.CreateDbContextAsync();
+                var list = await context.IngredientSubstitutes.AsNoTracking().ToListAsync();
+                if (list.Count == 0)
+                {
+                    list = SubstituteSeedData.GetSubstitutes();
+                }
+                else
+                {
+                    var missing = SubstituteSeedData.GetSubstitutes()
+                        .Where(s => !list.Any(i => i.OriginalIngredientName == s.OriginalIngredientName && i.SubstituteName == s.SubstituteName))
+                        .ToList();
+
+                    if (missing.Count > 0)
+                    {
+                        list.AddRange(missing);
+                    }
+                }
+
+                _cachedSubstitutes = list;
+                return new List<IngredientSubstitute>(_cachedSubstitutes);
+            }
+            finally
+            {
+                _substitutesLock.Release();
+            }
         }
 
         public async Task<IngredientSubstitute?> GetSubstituteByIdAsync(int substituteId)
         {
-            using var context = await _contextFactory.CreateDbContextAsync();
-            var item = await context.IngredientSubstitutes.AsNoTracking().FirstOrDefaultAsync(s => s.Id == substituteId);
-            if (item == null)
+            if (_cachedSubstitutes != null)
             {
-                var seeds = SubstituteSeedData.GetSubstitutes();
-                item = seeds.FirstOrDefault(s => s.Id == substituteId);
+                var cached = _cachedSubstitutes.FirstOrDefault(s => s.Id == substituteId);
+                if (cached != null)
+                {
+                    return cached;
+                }
             }
 
-            return item;
+            var all = await GetAllSubstitutesAsync();
+            return all.FirstOrDefault(s => s.Id == substituteId);
         }
 
         public async Task<List<UserRecipeSubstitution>> GetUserRecipeSubstitutionsAsync(int userId, int recipeId)

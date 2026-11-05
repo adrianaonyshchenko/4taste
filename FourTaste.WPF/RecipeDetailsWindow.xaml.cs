@@ -136,11 +136,17 @@ namespace FourTaste.WPF
             EditRecipeButton.Visibility = isAuthor ? Visibility.Visible : Visibility.Collapsed;
             EditRecipeButton.IsEnabled = isAuthor;
 
-            // Завантажуємо збережені персональні заміни користувача для цього рецепта
+            // Завантажуємо збережені персональні заміни та конфліктуючі алергени паралельно
             _activeSubstitutions.Clear();
+            _conflictingIngredients.Clear();
             if (viewerId.HasValue && _substituteService != null)
             {
-                var subsRes = await _substituteService.GetUserSubstitutionsAsync(viewerId.Value, _recipeId);
+                var subsTask = _substituteService.GetUserSubstitutionsAsync(viewerId.Value, _recipeId);
+                var conflictTask = _substituteService.GetConflictingIngredientsAsync(viewerId.Value, _recipeId);
+
+                await Task.WhenAll(subsTask, conflictTask);
+
+                var subsRes = await subsTask;
                 if (subsRes.IsSuccess && subsRes.Value != null)
                 {
                     foreach (var sub in subsRes.Value)
@@ -148,13 +154,8 @@ namespace FourTaste.WPF
                         _activeSubstitutions[sub.OriginalIngredientId] = sub;
                     }
                 }
-            }
 
-            // Отримуємо конфліктуючі інгредієнти-алергени користувача через SubstituteService
-            _conflictingIngredients.Clear();
-            if (viewerId.HasValue && _substituteService != null)
-            {
-                var conflictRes = await _substituteService.GetConflictingIngredientsAsync(viewerId.Value, _recipeId);
+                var conflictRes = await conflictTask;
                 if (conflictRes.IsSuccess && conflictRes.Value != null)
                 {
                     _conflictingIngredients = conflictRes.Value.ToList();

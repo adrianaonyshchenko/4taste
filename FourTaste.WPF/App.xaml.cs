@@ -47,6 +47,10 @@ namespace FourTaste.WPF
                     var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
                     using var ctx = await factory.CreateDbContextAsync();
                     ctx.EnsureDatabaseReady();
+
+                    var subRepo = provider.GetRequiredService<FourTaste.ApplicationCore.Interfaces.ISubstituteRepository>();
+                    await subRepo.GetAllergenCatalogAsync();
+                    await subRepo.GetAllSubstitutesAsync();
                 }
                 catch (Exception ex)
                 {
