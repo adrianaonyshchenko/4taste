@@ -236,6 +236,43 @@ namespace FourTaste.Tests
         }
 
         [Fact]
+        public async Task GetSafeSubstitutes_CottageCheese_WhenUserAllergicToSoyAndNuts_ReturnsHypoallergenicSubstitutes()
+        {
+            // Користувач з алергією на молоко/сир, сою та горіхи
+            var (service, _, recipeRepoMock, _) = CreateTestSetup(
+                new Allergy { Id = 1, UserId = 42, AllergenName = "кисломолочний сир" },
+                new Allergy { Id = 2, UserId = 42, AllergenName = "соя" },
+                new Allergy { Id = 3, UserId = 42, AllergenName = "горіхи" });
+
+            var recipe = new Recipe
+            {
+                Id = 15,
+                UserId = 10,
+                IsPublic = true,
+                Ingredients = new List<Ingredient>
+                {
+                    new Ingredient { Id = 151, RecipeId = 15, Name = "кисломолочний сир - 400-500г", Amount = "1 шт." },
+                },
+            };
+            recipeRepoMock.Setup(r => r.GetByIdAsync(15)).ReturnsAsync(recipe);
+
+            var result = await service.GetSafeSubstitutesAsync(42, 15, 151);
+
+            Assert.True(result.IsSuccess);
+            Assert.NotEmpty(result.Value!.Substitutes);
+            // Жоден соєвий або горіховий замінник не повинен з'явитися
+            Assert.DoesNotContain(result.Value.Substitutes, s => s.Name.Contains("Тофу"));
+            Assert.DoesNotContain(result.Value.Substitutes, s => s.Name.Contains("кеш'ю"));
+            Assert.DoesNotContain(result.Value.Substitutes, s => s.Name.Contains("Мигдальний"));
+            // Повинні бути повністю гіпоалергенні замінники
+            Assert.Contains(result.Value.Substitutes, s => s.Name.Contains("Кокосова рікота"));
+            Assert.Contains(result.Value.Substitutes, s => s.Name.Contains("насіння соняшника"));
+            Assert.Contains(result.Value.Substitutes, s => s.Name.Contains("пшоно"));
+            // Перевірка екстракції кількості
+            Assert.Equal("400-500г", result.Value.Substitutes[0].CalculatedAmount);
+        }
+
+        [Fact]
         public async Task GetSafeSubstitutes_Sugar_ReturnsErythritolAndSyrups()
         {
             var (service, _, recipeRepoMock, _) = CreateTestSetup(
