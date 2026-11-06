@@ -89,7 +89,6 @@ namespace FourTaste.WPF
                     return ToBitmapImage(SessionContext.CurrentUser.Avatar);
                 }
 
-                // В сесії ще немає байтів — перевіряємо базу даних
                 byte[]? dbBytes = LoadAvatarFromDatabase(userId);
                 if (dbBytes != null && dbBytes.Length > 0)
                 {
@@ -105,8 +104,6 @@ namespace FourTaste.WPF
                     return ToBitmapImage(dbBytes);
                 }
 
-                // Якщо в БД ще немає, але на цьому комп'ютері вже був збережений локальний файл
-                // синхронізуємо його в БД, щоб аватарка підтягнулася і на інших комп'ютерах
                 if (File.Exists(path))
                 {
                     try
@@ -127,7 +124,6 @@ namespace FourTaste.WPF
                 return null;
             }
 
-            // Для іншого користувача: спершу локальний кеш, якщо немає — БД
             if (File.Exists(path))
             {
                 try

@@ -264,7 +264,6 @@ namespace FourTaste.WPF
             this.Close();
         }
 
-        // Кнопка відкриття вікна "Мої продукти" (Холодильник - UC 27)
         private void MyFridgeButton_Click(object sender, RoutedEventArgs e)
         {
             Log.Information("Користувач відкриває вікно 'Мої продукти' (Холодильник)");

@@ -41,7 +41,6 @@
         <TextBlock Grid.Row="0" Text="Редагування інгредієнтів"
                    FontSize="18" FontWeight="Bold" Foreground="#4A352F" Margin="0,0,0,12"/>
 
-        <!-- Картка зі списком інгредієнтів -->
         <Border Grid.Row="1" Background="#B89F8B" CornerRadius="18" Padding="15">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl x:Name="IngredientsItemsControl">
@@ -54,21 +53,18 @@
                                     <ColumnDefinition Width="36"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Поле назви -->
                                 <Border Grid.Column="0" Background="#E3D7CB" CornerRadius="8" Padding="4,2" Margin="0,0,8,0">
                                     <TextBox Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              Background="Transparent" BorderBrush="Transparent"
                                              FontSize="14" Foreground="#4A352F" VerticalContentAlignment="Center"/>
                                 </Border>
 
-                                <!-- Поле кількості -->
                                 <Border Grid.Column="1" Background="#E3D7CB" CornerRadius="8" Padding="4,2" Margin="0,0,8,0">
                                     <TextBox Text="{Binding Amount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              Background="Transparent" BorderBrush="Transparent"
                                              FontSize="14" Foreground="#4A352F" VerticalContentAlignment="Center"/>
                                 </Border>
 
-                                <!-- Кнопка видалення -->
                                 <Button Grid.Column="2" Content="✕" Click="DeleteIngredientButton_Click"
                                         Tag="{Binding}" Background="#F29B9B" Foreground="#4A352F"
                                         FontWeight="Bold" Height="28" Width="28" Cursor="Hand">
@@ -87,7 +83,6 @@
             </ScrollViewer>
         </Border>
 
-        <!-- Блок додавання нового інгредієнта -->
         <Border Grid.Row="2" Background="#E3D7CB" CornerRadius="12" Padding="12" Margin="0,12,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -112,7 +107,6 @@
             </Grid>
         </Border>
 
-        <!-- Нижні кнопки дій -->
         <Grid Grid.Row="3" Margin="0,15,0,0">
             <Button Content="Скасувати" Click="CancelButton_Click"
                     Style="{StaticResource PillButton}" Background="#B89F8B" Foreground="#4A352F"

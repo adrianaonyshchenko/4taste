@@ -44,7 +44,6 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Головна картка-контейнер (ідентична до RecipeDetailsWindow) -->
         <Border Grid.Row="0" Background="#B89F8B" CornerRadius="18" Padding="20">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -52,7 +51,6 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- ЛІВА КОЛОНКА (280px): Фото вгорі, Інгредієнти внизу на всю висоту -->
                 <Grid Grid.Column="0" Margin="0,0,20,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="200"/>
@@ -60,7 +58,6 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Фото рецепта з кнопкою зміни -->
                     <Border Grid.Row="0" Background="#E3D7CB" CornerRadius="12" ClipToBounds="True">
                         <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Click="ChangePhotoButton_Click"
                                 ToolTip="Натисніть, щоб додати або замінити фото">
@@ -76,7 +73,6 @@
                         </Button>
                     </Border>
 
-                    <!-- Панель «Інгредієнти» -->
                     <Border Grid.Row="2" Background="#E3D7CB" CornerRadius="12" Padding="15">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -88,7 +84,6 @@
                             <TextBlock Grid.Row="0" Text="Інгредієнти" FontWeight="Bold" FontSize="14"
                                        Foreground="#4A352F" Margin="0,0,0,8"/>
 
-                            <!-- Список інгредієнтів (алергени червоним) -->
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl x:Name="IngredientsItemsControl">
                                     <ItemsControl.ItemTemplate>
@@ -113,7 +108,6 @@
                                 </ItemsControl>
                             </ScrollViewer>
 
-                            <!-- Кнопка «Змінити інгредієнти» внизу панелі -->
                             <Button Grid.Row="2" x:Name="ChangeIngredientsButton" Content="Змінити інгредієнти"
                                     Click="ChangeIngredientsButton_Click"
                                     Style="{StaticResource PillButton}" Background="#542E2B" Foreground="White"
@@ -122,7 +116,6 @@
                     </Border>
                 </Grid>
 
-                <!-- ПРАВА КОЛОНКА: Назва/параметри зверху, Порядок приготування знизу -->
                 <Grid Grid.Column="1">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -130,7 +123,6 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Рядок 0: Змінити назву -->
                     <Border Grid.Row="0" Background="#D5C4B4" CornerRadius="8" Padding="2" Margin="0,0,0,12">
                         <Grid>
                             <TextBox x:Name="TitleTextBox" FontSize="20" FontWeight="Bold"
@@ -142,16 +134,13 @@
                         </Grid>
                     </Border>
 
-                    <!-- Рядок 1: Параметри рецепта (зліва) та Блок порцій (справа) -->
                     <Grid Grid.Row="1" Margin="0,0,0,15">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="130"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Параметри у стовпчик -->
                         <StackPanel Grid.Column="0">
-                            <!-- Час приготування -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <TextBlock Text="Час приготування" Width="140" VerticalAlignment="Center"
                                            Foreground="#4A352F" FontSize="14"/>
@@ -163,21 +152,18 @@
                                 </Border>
                             </StackPanel>
 
-                            <!-- Категорія -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <TextBlock Text="Категорія" Width="140" VerticalAlignment="Center"
                                            Foreground="#4A352F" FontSize="14"/>
                                 <ComboBox x:Name="CategoryComboBox" Width="160" Style="{StaticResource ParamComboBoxStyle}"/>
                             </StackPanel>
 
-                            <!-- Країна / кухня -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                 <TextBlock Text="Країна" Width="140" VerticalAlignment="Center"
                                            Foreground="#4A352F" FontSize="14"/>
                                 <ComboBox x:Name="CuisineComboBox" Width="160" Style="{StaticResource ParamComboBoxStyle}"/>
                             </StackPanel>
 
-                            <!-- Статус -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
                                 <TextBlock Text="Статус" Width="140" VerticalAlignment="Center"
                                            Foreground="#4A352F" FontSize="14"/>
@@ -188,7 +174,6 @@
                             </StackPanel>
                         </StackPanel>
 
-                        <!-- Блок кількості порцій -->
                         <StackPanel Grid.Column="1" Width="130">
                             <Border Background="#E3D7CB" CornerRadius="12" Padding="10">
                                 <TextBlock x:Name="ServingsTextBlock" Text="1&#10;порція" TextAlignment="Center"
@@ -200,7 +185,6 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- Рядок 2: Порядок приготування -->
                     <Border Grid.Row="2" Background="#947A66" CornerRadius="12" Padding="15">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -216,7 +200,6 @@
                             <TextBlock Grid.Row="1" Text="Змінити опис" FontSize="12"
                                        Foreground="#EADCC9" Margin="0,0,0,8"/>
 
-                            <!-- Список кроків -->
                             <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl x:Name="StepsItemsControl">
                                     <ItemsControl.ItemTemplate>
@@ -256,7 +239,6 @@
                                 </ItemsControl>
                             </ScrollViewer>
 
-                            <!-- Кнопка додавання кроку -->
                             <Button Grid.Row="3" x:Name="AddStepButton" Content="+ додати крок"
                                     Click="AddStepButton_Click" Background="Transparent" BorderBrush="Transparent"
                                     Foreground="White" FontWeight="Bold" FontSize="13" Cursor="Hand"
@@ -267,7 +249,6 @@
             </Grid>
         </Border>
 
-        <!-- ФУТЕР ЕКРАНА (Видалити зліва, Назад та Зберегти справа) -->
         <Grid Grid.Row="1" Margin="0,15,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -276,17 +257,14 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Кнопка «Видалити» (рожева капсула #F29B9B) -->
             <Button Grid.Column="0" x:Name="DeleteButton" Content="Видалити" Click="DeleteButton_Click"
                     Style="{StaticResource PillButton}" Background="#F29B9B" Foreground="#4A352F"
                     Height="44" Width="130"/>
 
-            <!-- Кнопка «Назад» -->
             <Button Grid.Column="2" x:Name="BackButton" Content="Назад" Click="BackButton_Click"
                     Style="{StaticResource PillButton}" Background="#B89F8B" Foreground="#4A352F"
                     Height="44" Width="110" Margin="0,0,12,0"/>
 
-            <!-- Кнопка «Зберегти» (темно-коричнева капсула #542E2B) -->
             <Button Grid.Column="3" x:Name="SaveButton" Content="Зберегти" Click="SaveButton_Click"
                     Style="{StaticResource PillButton}" Background="#542E2B" Foreground="White"
                     Height="44" Width="130"/>

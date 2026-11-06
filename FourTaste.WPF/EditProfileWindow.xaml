@@ -30,7 +30,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Верхня панель навігації -->
         <Grid Grid.Row="0" Margin="0,0,0,15">
             <Button x:Name="BackButton"
                     Click="BackButton_Click"
@@ -52,7 +51,6 @@
             </Button>
         </Grid>
 
-        <!-- Центральна картка налаштувань -->
         <Border Grid.Row="1"
                 Background="#C4B4A4"
                 CornerRadius="22"
@@ -69,7 +67,6 @@
                                HorizontalAlignment="Center"
                                Margin="0,0,0,16"/>
 
-                    <!-- Блок зміни аватарки -->
                     <StackPanel HorizontalAlignment="Center" Margin="0,0,0,18">
                         <Grid Width="84" Height="84" HorizontalAlignment="Center" Margin="0,0,0,10">
                             <Border x:Name="DefaultAvatarBorder" Width="84" Height="84" CornerRadius="42" Background="#EBB832">
@@ -120,7 +117,6 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- Розділ особистих даних -->
                     <TextBlock Text="Ім'я" Foreground="#4A3532" FontSize="13" FontWeight="SemiBold" Margin="4,0,0,4"/>
                     <Border Background="#E3D1BD" CornerRadius="14" Height="38" Padding="12,0" Margin="0,0,0,10">
                         <TextBox x:Name="ProfileNameTextBox" KeyDown="ProfileField_KeyDown"/>
@@ -156,7 +152,6 @@
 
                     <Separator Background="#8C7365" Margin="0,0,0,16"/>
 
-                    <!-- Розділ зміни пароля -->
                     <TextBlock Text="Новий пароль" Foreground="#4A3532" FontSize="13" FontWeight="SemiBold" Margin="4,0,0,4"/>
                     <Grid Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
