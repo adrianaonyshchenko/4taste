@@ -144,7 +144,6 @@ namespace FourTaste.ApplicationCore.Services
                 return Result.Failure("Рецепт не знайдено.");
             }
 
-            // Перевірка прав доступу: лише автор може редагувати рецепт
             if (recipe.UserId != request.UserId)
             {
                 _logger.Warning("Спроба несанкціонованого редагування: користувач {UserId} намагався змінити рецепт {RecipeId} автора {AuthorId}.", request.UserId, request.Id, recipe.UserId);
@@ -262,7 +261,6 @@ namespace FourTaste.ApplicationCore.Services
                 return Result.Failure("Рецепт не знайдено.");
             }
 
-            // Перевірка прав доступу: лише автор може видалити рецепт
             if (recipe.UserId != userId)
             {
                 _logger.Warning("Спроба несанкціонованого видалення: користувач {UserId} намагався видалити рецепт {RecipeId} автора {AuthorId}.", userId, recipeId, recipe.UserId);

@@ -136,7 +136,6 @@ namespace FourTaste.WPF
             EditRecipeButton.Visibility = isAuthor ? Visibility.Visible : Visibility.Collapsed;
             EditRecipeButton.IsEnabled = isAuthor;
 
-            // Завантажуємо збережені персональні заміни та конфліктуючі алергени паралельно
             _activeSubstitutions.Clear();
             _conflictingIngredients.Clear();
             if (viewerId.HasValue && _substituteService != null)
@@ -164,8 +163,6 @@ namespace FourTaste.WPF
 
             RenderIngredientsList();
 
-            // Кнопка «Знайти замінник алергену» (UC-36):
-            // Показується/активна лише якщо користувач авторизований та в рецепті є алергени з його профілю
             if (!viewerId.HasValue)
             {
                 FindSubstituteButton.IsEnabled = false;
@@ -182,7 +179,6 @@ namespace FourTaste.WPF
                 FindSubstituteButton.ToolTip = "Знайти безпечні перевірені замінники для інгредієнтів-алергенів";
             }
 
-            // Налаштування вибору алергенів у панелі
             UpdateAllergenSelector();
 
             StepsItemsControl.ItemsSource = recipe.Steps.OrderBy(s => s.StepNumber).ToList();
@@ -339,7 +335,6 @@ namespace FourTaste.WPF
                 return;
             }
 
-            // Стани UI
             SubstituteLoadingPanel.Visibility = Visibility.Visible;
             SubstituteErrorPanel.Visibility = Visibility.Collapsed;
             SubstituteEmptyPanel.Visibility = Visibility.Collapsed;

@@ -60,7 +60,6 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Колонка 0: Фото та список інгредієнтів -->
                 <Grid Grid.Column="0" Margin="0,0,20,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -135,7 +134,6 @@
                     </Border>
                 </Grid>
 
-                <!-- Колонка 1: Панель «Замінити» (з'являється при натисканні) -->
                 <Border Grid.Column="1" x:Name="SubstitutePanel" Width="330" Background="#E3D7CB" CornerRadius="14"
                         Padding="15" Margin="0,0,20,0" Visibility="Collapsed">
                     <Grid>
@@ -147,7 +145,6 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Заголовок панелі та кнопка закриття -->
                         <Grid Grid.Row="0" Margin="0,0,0,10">
                             <TextBlock Text="Замінити" FontSize="20" FontWeight="Bold" Foreground="#4A352F" VerticalAlignment="Center"/>
                             <Button x:Name="CloseSubstitutePanelButton" Content="✕" Width="28" Height="28"
@@ -162,7 +159,6 @@
                             </Button>
                         </Grid>
 
-                        <!-- Назва алергену / селектор -->
                         <Border Grid.Row="1" Background="#F1E8DF" CornerRadius="10" Padding="10,8" Margin="0,0,0,12">
                             <StackPanel>
                                 <TextBlock Text="Алерген в рецепті:" FontSize="11" Foreground="#7A685D" Margin="0,0,0,2"/>
@@ -175,15 +171,12 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Стани списку (Завантаження / Помилка / Порожньо / Варіанти) -->
                         <Grid Grid.Row="2" Margin="0,0,0,10">
-                            <!-- Завантаження -->
                             <StackPanel x:Name="SubstituteLoadingPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
                                 <ProgressBar IsIndeterminate="True" Width="140" Height="6" Margin="0,0,0,10"/>
                                 <TextBlock Text="Шукаємо безпечні замінники..." Foreground="#7A685D" FontSize="12" HorizontalAlignment="Center"/>
                             </StackPanel>
 
-                            <!-- Помилка -->
                             <Border x:Name="SubstituteErrorPanel" Background="#FFEBEE" CornerRadius="8" Padding="12" VerticalAlignment="Center" Visibility="Collapsed">
                                 <StackPanel>
                                     <TextBlock Text="⚠ Помилка завантаження" FontWeight="Bold" Foreground="#D93829" FontSize="13" Margin="0,0,0,4"/>
@@ -193,7 +186,6 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Порожньо -->
                             <Border x:Name="SubstituteEmptyPanel" Background="#F1E8DF" CornerRadius="8" Padding="14" VerticalAlignment="Center" Visibility="Collapsed">
                                 <StackPanel HorizontalAlignment="Center">
                                     <TextBlock Text="ℹ️" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,6"/>
@@ -202,7 +194,6 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Список варіантів -->
                             <ScrollViewer x:Name="SubstituteListScrollViewer" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl x:Name="SubstituteOptionsItemsControl">
                                     <ItemsControl.ItemTemplate>
@@ -236,13 +227,11 @@
                             </ScrollViewer>
                         </Grid>
 
-                        <!-- Застереження безпеки -->
                         <Border Grid.Row="3" Background="#FFF8E1" CornerRadius="6" Padding="8,5" Margin="0,0,0,10">
                             <TextBlock Text="⚠ Перевіряйте склад продуктів на упаковці" FontSize="11"
                                        Foreground="#7A685D" TextAlignment="Center" TextWrapping="Wrap"/>
                         </Border>
 
-                        <!-- Кнопка Зберегти -->
                         <Grid Grid.Row="4">
                             <Button x:Name="SaveSubstitutionButton" Content="Зберегти"
                                     Style="{StaticResource PillButton}" Background="#542E2B" Foreground="White"
@@ -251,7 +240,6 @@
                     </Grid>
                 </Border>
 
-                <!-- Колонка 2: Інформація про рецепт та кроки приготування -->
                 <Grid Grid.Column="2">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -332,7 +320,6 @@
             </Grid>
         </Border>
 
-        <!-- Рядок 1: Нижні навігаційні кнопки -->
         <Grid Grid.Row="1" Margin="0,15,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>

@@ -35,7 +35,6 @@
                            VerticalAlignment="Center"/>
             </StackPanel>
 
-            <!-- Пошуковий рядок -->
             <Border Grid.Column="1"
                     Background="#F4EAE0"
                     BorderBrush="#C4B4A4"
@@ -52,7 +51,6 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Текст-підказка (Placeholder) -->
                     <TextBlock x:Name="SearchPlaceholderTextBlock"
                                Grid.Column="0"
                                Text="Пошук серед моїх рецептів..."
@@ -62,7 +60,6 @@
                                IsHitTestVisible="False"
                                Margin="2,0,0,0"/>
 
-                    <!-- Поле вводу пошуку -->
                     <TextBox x:Name="SearchTextBox"
                              Grid.Column="0"
                              Background="Transparent"
@@ -75,7 +72,6 @@
                              TextChanged="SearchTextBox_TextChanged"
                              KeyDown="SearchTextBox_KeyDown"/>
 
-                    <!-- Кнопка очищення (хрестик) -->
                     <Button x:Name="ClearSearchButton"
                             Grid.Column="1"
                             Click="ClearSearchButton_Click"
@@ -99,7 +95,6 @@
                         </Button.Template>
                     </Button>
 
-                    <!-- Іконка / кнопка пошуку -->
                     <Button x:Name="SearchButton"
                             Grid.Column="2"
                             Click="SearchButton_Click"
@@ -120,7 +115,6 @@
                 </Grid>
             </Border>
 
-            <!-- Кнопка "Вийти" (повернення в профіль) -->
             <Button Grid.Column="2"
                     x:Name="ExitButton"
                     Click="ExitButton_Click"
@@ -143,7 +137,6 @@
             </Button>
         </Grid>
 
-        <!-- 2. Підзаголовок: "Мої рецепти" та лічильник результатів -->
         <Grid Grid.Row="2" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                 <TextBlock Text="Мої рецепти"
@@ -153,7 +146,6 @@
                            VerticalAlignment="Center"
                            Margin="0,0,16,0"/>
 
-                <!-- Лічильник знайдених результатів -->
                 <TextBlock x:Name="ResultsCountTextBlock"
                            Foreground="#7A6865"
                            FontSize="13"
@@ -163,7 +155,6 @@
             </StackPanel>
         </Grid>
 
-        <!-- 3. Основний контент: список власних рецептів -->
         <Grid Grid.Row="3">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <ListBox x:Name="RecipesListBox"

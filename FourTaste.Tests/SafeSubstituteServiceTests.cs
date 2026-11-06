@@ -40,7 +40,6 @@ namespace FourTaste.Tests
             var factory = new TestDbContextFactory(options);
             var db = factory.CreateDbContext();
 
-            // Заповнюємо довідники за замовчуванням
             db.AllergenCatalogItems.AddRange(SubstituteSeedData.GetAllergens());
             db.IngredientSubstitutes.AddRange(SubstituteSeedData.GetSubstitutes());
             db.SaveChanges();
@@ -88,7 +87,6 @@ namespace FourTaste.Tests
         [Fact]
         public async Task GetSafeSubstitutes_ReturnsSubstitutesWithoutAllergens()
         {
-            // Користувач з алергією лише на молоко
             var (service, _, recipeRepoMock, _) = CreateTestSetup(
                 new Allergy { Id = 1, UserId = 42, AllergenName = "молоко" });
 
@@ -100,7 +98,6 @@ namespace FourTaste.Tests
             Assert.NotNull(result.Value);
             var substitutes = result.Value.Substitutes;
 
-            // Вівсяне, кокосове та рисове молоко повинні бути запропоновані
             Assert.Contains(substitutes, s => s.Name == "Вівсяне молоко");
             Assert.Contains(substitutes, s => s.Name == "Кокосове молоко");
             Assert.Contains(substitutes, s => s.Name == "Рисове молоко");
@@ -109,7 +106,6 @@ namespace FourTaste.Tests
         [Fact]
         public async Task GetSafeSubstitutes_FiltersOutSubstituteContainingAnotherUserAllergen()
         {
-            // Користувач алергік і на молоко, і на горіхи
             var (service, _, recipeRepoMock, _) = CreateTestSetup(
                 new Allergy { Id = 1, UserId = 42, AllergenName = "молоко" },
                 new Allergy { Id = 2, UserId = 42, AllergenName = "горіхи" });
@@ -121,16 +117,13 @@ namespace FourTaste.Tests
             Assert.True(result.IsSuccess);
             var substitutes = result.Value!.Substitutes;
 
-            // Мигдальне молоко містить горіхи (AllergenCodes = "nuts") - його не має бути!
             Assert.DoesNotContain(substitutes, s => s.Name == "Мигдальне молоко");
-            // Вівсяне молоко не містить горіхів - має бути запропоновано
             Assert.Contains(substitutes, s => s.Name == "Вівсяне молоко");
         }
 
         [Fact]
         public async Task GetSafeSubstitutes_FiltersOutSubstitutesAcrossMultipleAllergies()
         {
-            // Користувач з алергією на молоко, сою та горіхи
             var (service, _, recipeRepoMock, _) = CreateTestSetup(
                 new Allergy { Id = 1, UserId = 42, AllergenName = "молоко" },
                 new Allergy { Id = 2, UserId = 42, AllergenName = "соя" },
@@ -143,17 +136,14 @@ namespace FourTaste.Tests
             Assert.True(result.IsSuccess);
             var substitutes = result.Value!.Substitutes;
 
-            // Мигдальне (горіхи) і соєве (соя) молоко відфільтровані
             Assert.DoesNotContain(substitutes, s => s.Name == "Мигдальне молоко");
             Assert.DoesNotContain(substitutes, s => s.Name == "Соєве молоко");
-            // Вівсяне молоко залишається
             Assert.Contains(substitutes, s => s.Name == "Вівсяне молоко");
         }
 
         [Fact]
         public async Task GetSafeSubstitutes_CrossAllergenGroup_MatchesCorrectly()
         {
-            // Користувач вказав алерген "лактоза" (перехресна категорія з milk)
             var (service, _, recipeRepoMock, _) = CreateTestSetup(
                 new Allergy { Id = 1, UserId = 42, AllergenName = "лактоза" });
 
@@ -225,20 +215,16 @@ namespace FourTaste.Tests
 
             Assert.True(result.IsSuccess);
             Assert.NotEmpty(result.Value!.Substitutes);
-            // Повинні бути тофу / рослинний сир
             Assert.Contains(result.Value.Substitutes, s => s.Name.Contains("Тофу"));
-            // НІ В ЯКОМУ РАЗІ не повинно бути олій (кулінарна перевірка)
             Assert.DoesNotContain(result.Value.Substitutes, s => s.Name == "Кокосова олія");
             Assert.DoesNotContain(result.Value.Substitutes, s => s.Name == "Оливкова олія");
             Assert.DoesNotContain(result.Value.Substitutes, s => s.Name == "Рисове молоко");
-            // Перевірка правильної ваги замість 1 шт.
             Assert.Equal("400-500г", result.Value.Substitutes[0].CalculatedAmount);
         }
 
         [Fact]
         public async Task GetSafeSubstitutes_CottageCheese_WhenUserAllergicToSoyAndNuts_ReturnsHypoallergenicSubstitutes()
         {
-            // Користувач з алергією на молоко/сир, сою та горіхи
             var (service, _, recipeRepoMock, _) = CreateTestSetup(
                 new Allergy { Id = 1, UserId = 42, AllergenName = "кисломолочний сир" },
                 new Allergy { Id = 2, UserId = 42, AllergenName = "соя" },
@@ -260,15 +246,12 @@ namespace FourTaste.Tests
 
             Assert.True(result.IsSuccess);
             Assert.NotEmpty(result.Value!.Substitutes);
-            // Жоден соєвий або горіховий замінник не повинен з'явитися
             Assert.DoesNotContain(result.Value.Substitutes, s => s.Name.Contains("Тофу"));
             Assert.DoesNotContain(result.Value.Substitutes, s => s.Name.Contains("кеш'ю"));
             Assert.DoesNotContain(result.Value.Substitutes, s => s.Name.Contains("Мигдальний"));
-            // Повинні бути повністю гіпоалергенні замінники
             Assert.Contains(result.Value.Substitutes, s => s.Name.Contains("Кокосова рікота"));
             Assert.Contains(result.Value.Substitutes, s => s.Name.Contains("насіння соняшника"));
             Assert.Contains(result.Value.Substitutes, s => s.Name.Contains("пшоно"));
-            // Перевірка екстракції кількості
             Assert.Equal("400-500г", result.Value.Substitutes[0].CalculatedAmount);
         }
 
@@ -296,7 +279,6 @@ namespace FourTaste.Tests
             Assert.NotEmpty(result.Value!.Substitutes);
             Assert.Contains(result.Value.Substitutes, s => s.Name == "Еритритол");
             Assert.Contains(result.Value.Substitutes, s => s.Name == "Сироп топінамбура");
-            // Перевірка екстракції кількості
             Assert.Equal("3ст. л.", result.Value.Substitutes[0].CalculatedAmount);
         }
 
@@ -306,7 +288,6 @@ namespace FourTaste.Tests
             var (service, db, recipeRepoMock, _) = CreateTestSetup(
                 new Allergy { Id = 1, UserId = 42, AllergenName = "молоко" });
 
-            // Додаємо неперевірений замінник (IsVerified = false)
             db.IngredientSubstitutes.Add(new IngredientSubstitute
             {
                 Id = 999,
@@ -323,7 +304,6 @@ namespace FourTaste.Tests
             var result = await service.GetSafeSubstitutesAsync(42, 1, 101);
 
             Assert.True(result.IsSuccess);
-            // Fail-safe правило повинно виключити неперевірений замінник
             Assert.DoesNotContain(result.Value!.Substitutes, s => s.Name == "Неперевірене молочко");
         }
 
@@ -348,7 +328,6 @@ namespace FourTaste.Tests
             var result = await service.GetSafeSubstitutesAsync(42, 3, 301);
             Assert.True(result.IsSuccess);
 
-            // Оливкова олія має ratio = 0.8 => 100 г * 0.8 = 80 г
             var oliveOil = result.Value!.Substitutes.FirstOrDefault(s => s.Name == "Оливкова олія");
             Assert.NotNull(oliveOil);
             Assert.Equal("80 г", oliveOil.CalculatedAmount);
@@ -384,7 +363,6 @@ namespace FourTaste.Tests
             var privateRecipe = CreateTestRecipe(id: 1, userId: 10, isPublic: false);
             recipeRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(privateRecipe);
 
-            // Користувач 42 намагається отримати доступ до приватного рецепта користувача 10
             var result = await service.GetSafeSubstitutesAsync(42, 1, 101);
 
             Assert.True(result.IsFailure);
@@ -394,13 +372,11 @@ namespace FourTaste.Tests
         [Fact]
         public async Task ApplySubstitution_FailsIfSubstituteIsUnsafeForUser()
         {
-            // Користувач має алергію на горіхи
             var (service, db, recipeRepoMock, _) = CreateTestSetup(
                 new Allergy { Id = 1, UserId = 42, AllergenName = "горіхи" });
 
             recipeRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(CreateTestRecipe(1));
 
-            // Замінник Id = 3 - Мигдальне молоко (містить горіхи)
             var result = await service.ApplySubstitutionAsync(42, 1, 101, 3);
 
             Assert.True(result.IsFailure);
@@ -415,13 +391,11 @@ namespace FourTaste.Tests
 
             recipeRepoMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(CreateTestRecipe(1));
 
-            // Замінник Id = 1 - Вівсяне молоко (безпечне)
             var applyRes = await service.ApplySubstitutionAsync(42, 1, 101, 1);
 
             Assert.True(applyRes.IsSuccess);
             Assert.Equal("Вівсяне молоко", applyRes.Value!.SubstituteIngredientName);
 
-            // Перевіряємо, що збереглося в базі
             var userSubstitutions = await service.GetUserSubstitutionsAsync(42, 1);
             Assert.True(userSubstitutions.IsSuccess);
             Assert.Single(userSubstitutions.Value!);

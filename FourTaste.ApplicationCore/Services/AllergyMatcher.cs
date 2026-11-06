@@ -80,13 +80,11 @@ namespace FourTaste.ApplicationCore.Services
                 return false;
             }
 
-            // Пряме зіставлення з назвами алергенів користувача
             if (normalizedAllergens.Any(al => normalizedIngredient.Contains(al, StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
             }
 
-            // Зіставлення через довідник категорій та перехресних синонімів
             var userCodes = ResolveUserAllergenCodes(normalizedAllergens, catalog);
             foreach (var item in catalog)
             {
@@ -122,20 +120,17 @@ namespace FourTaste.ApplicationCore.Services
                 return false;
             }
 
-            // Критична вимога 4 (Fail-safe): якщо склад не верифіковано - не пропонувати
             if (!substitute.IsVerified)
             {
                 return false;
             }
 
-            // Критична вимога 2: замінник не повинен містити жодного алергену користувача (за кодами)
             var substituteCodes = ParseCodes(substitute.AllergenCodes);
             if (substituteCodes.Any(c => userAllergenCodes.Contains(c)))
             {
                 return false;
             }
 
-            // Перевіряємо, чи містить назва замінника інші алергени користувача (крім замінюваного продукту)
             var normOrig = Normalize(substitute.OriginalIngredientName);
             var normSubstitute = Normalize(substitute.SubstituteName);
 
@@ -146,7 +141,6 @@ namespace FourTaste.ApplicationCore.Services
                     continue;
                 }
 
-                // Якщо це категорія самого оригінального інгредієнта, який замінюється (напр. молоко -> рослинне молоко)
                 if (normOrig == Normalize(item.Code) ||
                     normOrig == Normalize(item.NameUk) ||
                     ExtractKeywords(item.Keywords).Contains(normOrig))
@@ -174,7 +168,6 @@ namespace FourTaste.ApplicationCore.Services
             rawName = rawName.Trim();
             rawAmount = rawAmount?.Trim() ?? string.Empty;
 
-            // Перевіряємо, чи містить назва шаблон кількості/ваги
             var match = Regex.Match(
                 rawName,
                 @"^(.*?)(?:\s*[-–—:]\s*|\s*\()([\d\.,\s\-/]+(?:г|кг|мл|л|ст\.\s*л\.|ч\.\s*л\.|шт|ст|зубчик|дрібка|пакетик|склянк)[^\)]*)\)?$",
@@ -212,7 +205,6 @@ namespace FourTaste.ApplicationCore.Services
                 return originalAmount;
             }
 
-            // Перевірка на діапазон (наприклад "400-500г")
             var rangeMatch = Regex.Match(originalAmount, @"^([\d\.,]+)\s*[-–]\s*([\d\.,]+)\s*(.*)$");
             if (rangeMatch.Success)
             {

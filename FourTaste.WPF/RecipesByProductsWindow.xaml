@@ -1,4 +1,4 @@
-﻿<Window x:Class="FourTaste.WPF.RecipesByProductsWindow"
+<Window x:Class="FourTaste.WPF.RecipesByProductsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Рецепти з моїх продуктів" Height="680" Width="850" WindowStartupLocation="CenterOwner" Background="#E3D1BD"
@@ -14,7 +14,6 @@
 
         <TextBlock Grid.Row="0" Text="Рецепти з моїх продуктів" FontSize="24" FontWeight="Bold" Foreground="#4A3532" Margin="0,0,0,15"/>
 
-        <!-- Фільтри -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
             <StackPanel Margin="0,0,12,0">
                 <TextBlock Text="Категорія" Foreground="#4A3532" FontSize="12" Margin="0,0,0,3"/>
@@ -40,7 +39,6 @@
         <TextBlock Grid.Row="2" TextWrapping="Wrap" Foreground="#6B5148" FontSize="12" Margin="0,0,0,10"
                    Text="Рецепти з вашими алергенами виключаються за назвою інгредієнта. Завжди перевіряйте склад самостійно."/>
 
-        <!-- Результати -->
         <Grid Grid.Row="3">
             <ListBox x:Name="RecipesListBox" Background="Transparent" BorderBrush="Transparent" SelectionChanged="RecipesListBox_SelectionChanged"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">

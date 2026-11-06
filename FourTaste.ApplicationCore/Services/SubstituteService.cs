@@ -120,7 +120,6 @@ namespace FourTaste.ApplicationCore.Services
             var safeList = new List<SafeSubstituteItemDto>();
             foreach (var candidate in candidateSubstitutes)
             {
-                // Критична перевірка безпеки (Fail-safe та повний профіль алергій)
                 if (!AllergyMatcher.IsSubstituteSafe(candidate, userAllergenCodes, userAllergenNames, catalog))
                 {
                     continue;
@@ -181,7 +180,6 @@ namespace FourTaste.ApplicationCore.Services
                 return Result<AppliedSubstitutionDto>.Failure("Замінник не знайдено.");
             }
 
-            // Повторна серверна валідація безпечності (fail-safe + повний профіль алергій)
             var allergiesResult = await _allergyService.GetAllergiesByUserIdAsync(userId);
             var userAllergenNames = allergiesResult.IsSuccess && allergiesResult.Value != null
                 ? allergiesResult.Value.Where(a => !string.IsNullOrWhiteSpace(a.AllergenName)).Select(a => a.AllergenName.Trim()).ToList()
@@ -284,7 +282,6 @@ namespace FourTaste.ApplicationCore.Services
             var (cleanName, _) = AllergyMatcher.ExtractCleanNameAndAmount(ingredientName, string.Empty);
             var normalizedIng = AllergyMatcher.Normalize(cleanName);
 
-            // 1. Точний збіг за назвою оригінального інгредієнта
             var exactMatches = allSubstitutes
                 .Where(s => AllergyMatcher.Normalize(s.OriginalIngredientName) == normalizedIng)
                 .ToList();
@@ -294,7 +291,6 @@ namespace FourTaste.ApplicationCore.Services
                 return exactMatches;
             }
 
-            // 2. Специфічний збіг: назва інгредієнта містить оригінал (наприклад, "кисломолочний сир 9%" містить "кисломолочний сир", "пшеничне борошно" містить "борошно")
             var containingOriginals = allSubstitutes
                 .Select(s => AllergyMatcher.Normalize(s.OriginalIngredientName))
                 .Where(orig => !string.IsNullOrEmpty(orig) && normalizedIng.Contains(orig))
@@ -310,7 +306,6 @@ namespace FourTaste.ApplicationCore.Services
                     .ToList();
             }
 
-            // 3. Зворотний збіг (довідник містить слово з інгредієнта)
             var reverseOriginals = allSubstitutes
                 .Select(s => AllergyMatcher.Normalize(s.OriginalIngredientName))
                 .Where(orig => !string.IsNullOrEmpty(orig) && orig.Contains(normalizedIng))
@@ -326,7 +321,6 @@ namespace FourTaste.ApplicationCore.Services
                     .ToList();
             }
 
-            // 2. Якщо прямого збігу за назвою немає, шукаємо через категорію алергенів
             var matchedCategory = catalog.FirstOrDefault(c =>
                 AllergyMatcher.Normalize(c.NameUk) == normalizedIng ||
                 AllergyMatcher.Normalize(c.Code) == normalizedIng ||
