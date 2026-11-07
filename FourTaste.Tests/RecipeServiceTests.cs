@@ -17,6 +17,7 @@ namespace FourTaste.Tests
         private readonly Mock<IRecipeRepository> _repositoryMock;
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly Mock<IFridgeRepository> _fridgeRepositoryMock;
+        private readonly Mock<IFavoriteRepository> _favoriteRepositoryMock;
         private readonly Mock<IAllergyService> _allergyServiceMock;
         private readonly Mock<ILogger> _loggerMock;
         private readonly RecipeService _service;
@@ -26,6 +27,7 @@ namespace FourTaste.Tests
             _repositoryMock = new Mock<IRecipeRepository>();
             _userRepositoryMock = new Mock<IUserRepository>();
             _fridgeRepositoryMock = new Mock<IFridgeRepository>();
+            _favoriteRepositoryMock = new Mock<IFavoriteRepository>();
             _allergyServiceMock = new Mock<IAllergyService>();
             _loggerMock = new Mock<ILogger>();
             var thumbnailsMock = new Mock<IImageThumbnailGenerator>();
@@ -33,6 +35,7 @@ namespace FourTaste.Tests
                 _repositoryMock.Object,
                 _userRepositoryMock.Object,
                 _fridgeRepositoryMock.Object,
+                _favoriteRepositoryMock.Object,
                 _allergyServiceMock.Object,
                 thumbnailsMock.Object,
                 _loggerMock.Object);
@@ -275,6 +278,8 @@ namespace FourTaste.Tests
         }
 
         [Fact]
+
+
         public async Task GetRecipeDetails_PrivateRecipeOfAuthor_ReturnsSuccess()
         {
             _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(new Recipe { Id = 1, IsPublic = false, UserId = 5 });

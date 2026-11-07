@@ -23,13 +23,13 @@ namespace FourTaste.WPF
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
         public UserProfileWindow()
-            : this(
-                App.ServiceProvider?.GetRequiredService<MealPlanService>()!,
-                App.ServiceProvider?.GetRequiredService<AuthService>()!,
-                App.ServiceProvider?.GetRequiredService<IAllergyService>()!,
-                App.ServiceProvider?.GetRequiredService<UserService>()!,
-                App.ServiceProvider?.GetRequiredService<IRecipeService>()!,
-                App.ServiceProvider?.GetRequiredService<IFridgeService>()!)
+        : this(
+            App.ServiceProvider?.GetRequiredService<MealPlanService>()!,
+            App.ServiceProvider?.GetRequiredService<AuthService>()!,
+            App.ServiceProvider?.GetRequiredService<IAllergyService>()!,
+            App.ServiceProvider?.GetRequiredService<UserService>()!,
+            App.ServiceProvider?.GetRequiredService<IRecipeService>()!,
+            App.ServiceProvider?.GetRequiredService<IFridgeService>()!)
         {
         }
 
@@ -270,14 +270,19 @@ namespace FourTaste.WPF
             var fridgeWindow = new FridgeWindow(this._fridgeService, this.CurrentUserId);
             fridgeWindow.ShowDialog();
         }
-
+        private void FavoriteRecipesButton_Click(object sender, RoutedEventArgs e)
+        {
+            Log.Information("Користувач {UserId} відкриває вікно 'Обрані рецепти'", this.CurrentUserId);
+            var favoriteRecipesWindow = new FavoriteRecipesWindow(this._recipeService, this.CurrentUserId);
+            favoriteRecipesWindow.Show();
+            this.Close();
+        }
         private void OpenCuisinesButton_Click(object sender, RoutedEventArgs e)
         {
             Log.Information("Відкриття вікна 'Кухні світу'");
             var cuisinesWindow = new UserCuisinesWindow(this._recipeService, this.CurrentUserId);
             cuisinesWindow.ShowDialog();
         }
-
         private void CuisinesBlock_Click(object sender, MouseButtonEventArgs e)
         {
             OpenCuisinesButton_Click(sender, e);

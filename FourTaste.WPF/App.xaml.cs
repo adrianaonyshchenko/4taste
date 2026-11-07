@@ -148,6 +148,7 @@ namespace FourTaste.WPF
             services.AddTransient<EditIngredientsWindow>();
             services.AddTransient<IFridgeRepository, FridgeRepository>();
             services.AddTransient<IFridgeService, FridgeService>();
+            services.AddTransient<IFavoriteRepository, FavoriteRepository>();
             services.AddScoped<IReviewRepository, ReviewRepository>();
             services.AddScoped<IReviewService, ReviewService>();
             services.AddSingleton<IImageThumbnailGenerator, WpfImageThumbnailGenerator>();

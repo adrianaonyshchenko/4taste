@@ -18,6 +18,7 @@ namespace FourTaste.ApplicationCore.Services
         private readonly IRecipeRepository _recipeRepository;
         private readonly IUserRepository _userRepository;
         private readonly IFridgeRepository _fridgeRepository;
+        private readonly IFavoriteRepository _favoriteRepository;
         private readonly IAllergyService _allergyService;
         private readonly ILogger _logger;
         private readonly IImageThumbnailGenerator _thumbnails;
@@ -26,6 +27,7 @@ namespace FourTaste.ApplicationCore.Services
             IRecipeRepository recipeRepository,
             IUserRepository userRepository,
             IFridgeRepository fridgeRepository,
+            IFavoriteRepository favoriteRepository,
             IAllergyService allergyService,
             IImageThumbnailGenerator thumbnails,
             ILogger logger)
@@ -33,6 +35,7 @@ namespace FourTaste.ApplicationCore.Services
             _recipeRepository = recipeRepository;
             _userRepository = userRepository;
             _fridgeRepository = fridgeRepository;
+            _favoriteRepository = favoriteRepository;
             _allergyService = allergyService;
             _thumbnails = thumbnails;
             _logger = logger;
@@ -375,6 +378,62 @@ namespace FourTaste.ApplicationCore.Services
                 Recipe = recipe,
                 AuthorName = authorName,
             });
+        }
+
+        public async Task<Result> ToggleFavoriteAsync(int userId, int recipeId)
+        {
+            if (userId <= 0 || recipeId <= 0)
+            {
+                _logger.Warning("Помилка валідації: некоректний UserId ({UserId}) або RecipeId ({RecipeId}) при перемиканні обраного.", userId, recipeId);
+                return Result.Failure("Некоректні дані запиту.");
+            }
+
+            var recipe = await _recipeRepository.GetByIdAsync(recipeId);
+            if (recipe is null)
+            {
+                _logger.Warning("Обране: рецепт з Id {RecipeId} не знайдено.", recipeId);
+                return Result.Failure("Рецепт не знайдено.");
+            }
+
+            bool isFav = await _favoriteRepository.IsFavoriteAsync(userId, recipeId);
+            if (isFav)
+            {
+                await _favoriteRepository.RemoveFavoriteAsync(userId, recipeId);
+                _logger.Information("Користувач {UserId} видалив рецепт {RecipeId} з обраного.", userId, recipeId);
+            }
+            else
+            {
+                await _favoriteRepository.AddFavoriteAsync(userId, recipeId);
+                _logger.Information("Користувач {UserId} додав рецепт {RecipeId} до обраного.", userId, recipeId);
+            }
+
+            return Result.Success();
+        }
+
+        public async Task<Result<List<Recipe>>> GetFavoriteRecipesAsync(int userId)
+        {
+            if (userId <= 0)
+            {
+                _logger.Warning("Помилка валідації: некоректний UserId ({UserId}) при отриманні обраних рецептів.", userId);
+                return Result<List<Recipe>>.Failure("Некоректний ідентифікатор користувача.");
+            }
+
+            _logger.Information("Отримання списку обраних рецептів для користувача {UserId}.", userId);
+            var recipes = await _favoriteRepository.GetFavoriteRecipesByUserIdAsync(userId);
+
+            _logger.Information("Знайдено {Count} обраних рецептів для користувача {UserId}.", recipes.Count, userId);
+            return Result<List<Recipe>>.Success(recipes);
+        }
+
+        public async Task<Result<bool>> IsFavoriteAsync(int userId, int recipeId)
+        {
+            if (userId <= 0 || recipeId <= 0)
+            {
+                return Result<bool>.Failure("Некоректні дані.");
+            }
+
+            bool isFav = await _favoriteRepository.IsFavoriteAsync(userId, recipeId);
+            return Result<bool>.Success(isFav);
         }
 
         private static bool IsValidCookingTime(string? time)

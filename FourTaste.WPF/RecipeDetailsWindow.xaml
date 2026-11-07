@@ -248,14 +248,33 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
+                    <!-- Заголовок та кнопка улюбленого (сердечко) -->
                     <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
                         <TextBlock x:Name="TitleTextBlock" FontSize="26" FontWeight="Bold"
                                    Foreground="#4A352F" TextWrapping="Wrap" VerticalAlignment="Center"
-                                   Margin="0,0,160,0"/>
-                        <Border Background="#E3D7CB" CornerRadius="12" Padding="12,4"
-                                HorizontalAlignment="Right" VerticalAlignment="Top">
-                            <TextBlock x:Name="AuthorTextBlock" Foreground="#4A352F" FontWeight="SemiBold"/>
-                        </Border>
+                                   Grid.Column="0" Margin="0,0,10,0"/>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                            <!-- КНОПКА СЕРДЕЧКО (UC-34) -->
+                            <Button x:Name="FavoriteButton" Click="FavoriteButton_Click" Width="42" Height="42" Background="#E3D7CB" BorderBrush="Transparent" Cursor="Hand" Margin="0,0,10,0" ToolTip="Додати до обраного">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="21">
+                                            <TextBlock x:Name="HeartIcon" Text="♡" FontSize="22" Foreground="#D9534F" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+
+                            <Border Background="#E3D7CB" CornerRadius="12" Padding="12,4" VerticalAlignment="Center">
+                                <TextBlock x:Name="AuthorTextBlock" Foreground="#4A352F" FontWeight="SemiBold"/>
+                            </Border>
+                        </StackPanel>
                     </Grid>
 
                     <Grid Grid.Row="1" Margin="0,0,0,15">
@@ -307,6 +326,8 @@
                     <Grid Grid.Row="3" Margin="0,15,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
+
+
                             <ColumnDefinition Width="170"/>
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0" x:Name="AddToListButton" Content="Додати до списку"
@@ -341,3 +362,4 @@
         </Grid>
     </Grid>
 </Window>
+ 
