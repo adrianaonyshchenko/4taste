@@ -19,9 +19,11 @@ namespace FourTaste.Tests
             var mockFridgeRepo = new Mock<IFridgeRepository>();
             var mockFavoriteRepo = new Mock<IFavoriteRepository>();
             var mockAllergyService = new Mock<IAllergyService>();
+            var mockThumbnailGenerator = new Mock<IImageThumbnailGenerator>();
             var mockLogger = new Mock<ILogger>();
 
             var recipe = new Recipe { Id = 10, Title = "Тестовий рецепт", UserId = 1 };
+
             mockRecipeRepo.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(recipe);
             mockFavoriteRepo.Setup(r => r.IsFavoriteAsync(1, 10)).ReturnsAsync(false);
 
@@ -31,8 +33,9 @@ namespace FourTaste.Tests
                 mockFridgeRepo.Object,
                 mockFavoriteRepo.Object,
                 mockAllergyService.Object,
+                mockThumbnailGenerator.Object,
                 mockLogger.Object
-                );
+            );
 
             var result = await service.ToggleFavoriteAsync(1, 10);
 
@@ -45,15 +48,16 @@ namespace FourTaste.Tests
         [Fact]
         public async Task ToggleFavoriteAsync_ShouldRemoveFavorite_WhenAlreadyFavorite()
         {
-
             var mockRecipeRepo = new Mock<IRecipeRepository>();
             var mockUserRepo = new Mock<IUserRepository>();
             var mockFridgeRepo = new Mock<IFridgeRepository>();
             var mockFavoriteRepo = new Mock<IFavoriteRepository>();
             var mockAllergyService = new Mock<IAllergyService>();
+            var mockThumbnailGenerator = new Mock<IImageThumbnailGenerator>();
             var mockLogger = new Mock<ILogger>();
 
             var recipe = new Recipe { Id = 10, Title = "Тестовий рецепт", UserId = 1 };
+
             mockRecipeRepo.Setup(r => r.GetByIdAsync(10)).ReturnsAsync(recipe);
             mockFavoriteRepo.Setup(r => r.IsFavoriteAsync(1, 10)).ReturnsAsync(true);
 
@@ -63,6 +67,7 @@ namespace FourTaste.Tests
                 mockFridgeRepo.Object,
                 mockFavoriteRepo.Object,
                 mockAllergyService.Object,
+                mockThumbnailGenerator.Object,
                 mockLogger.Object);
 
             var result = await service.ToggleFavoriteAsync(1, 10);
@@ -79,12 +84,12 @@ namespace FourTaste.Tests
         [InlineData(-1, 5)]
         public async Task ToggleFavoriteAsync_ShouldReturnFailure_WhenIdsAreInvalid(int userId, int recipeId)
         {
-
             var mockRecipeRepo = new Mock<IRecipeRepository>();
             var mockUserRepo = new Mock<IUserRepository>();
             var mockFridgeRepo = new Mock<IFridgeRepository>();
             var mockFavoriteRepo = new Mock<IFavoriteRepository>();
             var mockAllergyService = new Mock<IAllergyService>();
+            var mockThumbnailGenerator = new Mock<IImageThumbnailGenerator>();
             var mockLogger = new Mock<ILogger>();
 
             var service = new RecipeService(
@@ -93,6 +98,7 @@ namespace FourTaste.Tests
                 mockFridgeRepo.Object,
                 mockFavoriteRepo.Object,
                 mockAllergyService.Object,
+                mockThumbnailGenerator.Object,
                 mockLogger.Object);
 
             var result = await service.ToggleFavoriteAsync(userId, recipeId);
@@ -111,11 +117,12 @@ namespace FourTaste.Tests
             var mockFridgeRepo = new Mock<IFridgeRepository>();
             var mockFavoriteRepo = new Mock<IFavoriteRepository>();
             var mockAllergyService = new Mock<IAllergyService>();
+            var mockThumbnailGenerator = new Mock<IImageThumbnailGenerator>();
             var mockLogger = new Mock<ILogger>();
 
             var expectedRecipes = new List<Recipe>
             {
-                new Recipe { Id = 1, Title = "Млиняники" },
+                new Recipe { Id = 1, Title = "Млинці" },
                 new Recipe { Id = 2, Title = "Борщ" }
             };
 
@@ -127,6 +134,7 @@ namespace FourTaste.Tests
                 mockFridgeRepo.Object,
                 mockFavoriteRepo.Object,
                 mockAllergyService.Object,
+                mockThumbnailGenerator.Object,
                 mockLogger.Object);
 
             var result = await service.GetFavoriteRecipesAsync(1);

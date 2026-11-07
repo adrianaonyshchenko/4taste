@@ -106,7 +106,6 @@ namespace FourTaste.WPF
         private async Task LoadRecipeDetailsAsync()
         {
             int? viewerId = SessionContext.CurrentUser?.ID;
-            var result = await _recipeService.GetRecipeDetailsAsync(_recipeId, viewerId);
 
             var detailsTask = _recipeService.GetRecipeDetailsAsync(_recipeId, viewerId);
             var allergiesTask = LoadUserAllergensAsync(viewerId);
@@ -124,7 +123,6 @@ namespace FourTaste.WPF
             }
 
             var details = result.Value!;
-            var recipe = details.Recipe;
             _currentRecipe = details.Recipe;
             var recipe = _currentRecipe;
 
@@ -142,7 +140,6 @@ namespace FourTaste.WPF
             EditRecipeButton.Visibility = isAuthor ? Visibility.Visible : Visibility.Collapsed;
             EditRecipeButton.IsEnabled = isAuthor;
 
-            // Перевіряємо чи рецепт в обраному для поточного користувача
             if (viewerId.HasValue)
             {
                 var favRes = await _recipeService.IsFavoriteAsync(viewerId.Value, _recipeId);
@@ -155,8 +152,6 @@ namespace FourTaste.WPF
                 FavoriteButton.Visibility = Visibility.Collapsed;
             }
 
-            var userAllergies = new List<string>();
-            if (viewerId.HasValue && _allergyService != null)
             _activeSubstitutions.Clear();
             _conflictingIngredients.Clear();
             if (viewerId.HasValue && _substituteService != null)
@@ -218,6 +213,35 @@ namespace FourTaste.WPF
         }
 
         private async void FavoriteButton_Click(object sender, RoutedEventArgs e)
+        {
+            int? viewerId = SessionContext.CurrentUser?.ID;
+            if (!viewerId.HasValue)
+            {
+                MessageBox.Show("Будь ласка, увійдіть у систему, щоб додавати рецепти в обране.", "Увага", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var result = await _recipeService.ToggleFavoriteAsync(viewerId.Value, _recipeId);
+            if (result.IsFailure)
+            {
+                MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            _isFavorite = !_isFavorite;
+            UpdateFavoriteButtonVisual();
+
+            Log.Information("Користувач {UserId} змінив статус обраного для рецепта {RecipeId}: {IsFavorite}", viewerId.Value, _recipeId, _isFavorite);
+        }
+
+        private void UpdateFavoriteButtonVisual()
+        {
+            if (FavoriteButton.Template.FindName("HeartIcon", FavoriteButton) is TextBlock heartIcon)
+            {
+                heartIcon.Text = _isFavorite ? "♥" : "♡";
+            }
+        }
+
         private async Task<List<string>> LoadUserAllergensAsync(int? viewerId)
         {
             if (!viewerId.HasValue || _allergyService == null)
@@ -236,6 +260,7 @@ namespace FourTaste.WPF
                 .Select(a => a.AllergenName.Trim().ToLower())
                 .ToList();
         }
+
         private void RenderIngredientsList()
         {
             if (_currentRecipe == null)
@@ -276,6 +301,8 @@ namespace FourTaste.WPF
             if (_conflictingIngredients.Count == 0)
             {
                 AllergenicIngredientsComboBox.ItemsSource = null;
+
+
                 AllergenicIngredientsComboBox.Visibility = Visibility.Collapsed;
                 SelectedAllergenNameTextBlock.Visibility = Visibility.Collapsed;
                 return;
@@ -318,29 +345,6 @@ namespace FourTaste.WPF
             int? viewerId = SessionContext.CurrentUser?.ID;
             if (!viewerId.HasValue)
             {
-                MessageBox.Show("Будь ласка, увійдіть у систему, щоб додавати рецепти в обране.", "Увага", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var result = await _recipeService.ToggleFavoriteAsync(viewerId.Value, _recipeId);
-            if (result.IsFailure)
-            {
-                MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            _isFavorite = !_isFavorite;
-            UpdateFavoriteButtonVisual();
-
-            Log.Information("Користувач {UserId} змінив статус обраного для рецепта {RecipeId}: {IsFavorite}", viewerId.Value, _recipeId, _isFavorite);
-        }
-
-        private void UpdateFavoriteButtonVisual()
-        {
-            if (FavoriteButton.Template.FindName("HeartIcon", FavoriteButton) is System.Windows.Controls.TextBlock heartIcon)
-            {
-                heartIcon.Text = _isFavorite ? "♥" : "♡";
-            }
                 MessageBox.Show(
                     "Для отримання безпечних замінників необхідно увійти до системи.",
                     "Потрібна авторизація",
@@ -596,3 +600,4 @@ namespace FourTaste.WPF
         }
     }
 }
+

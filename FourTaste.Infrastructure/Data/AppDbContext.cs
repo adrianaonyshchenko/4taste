@@ -75,15 +75,15 @@ namespace FourTaste.Infrastructure.Data
                                 ""Unit"" TEXT NOT NULL DEFAULT 'г'
                             );
                         ");
-this.Database.ExecuteSqlRaw(@"
+                        this.Database.ExecuteSqlRaw(@"
     CREATE TABLE IF NOT EXISTS ""UserFavoriteRecipes"" (
         ""UserId"" INTEGER NOT NULL,
         ""RecipeId"" INTEGER NOT NULL,
         CONSTRAINT ""PK_UserFavoriteRecipes"" PRIMARY KEY (""UserId"", ""RecipeId"")
     );
 ");
- 
-this.Database.ExecuteSqlRaw(@"
+
+                        this.Database.ExecuteSqlRaw(@"
     CREATE TABLE IF NOT EXISTS ""RecipeReviews"" (
         ""Id"" SERIAL PRIMARY KEY,
         ""RecipeId"" INTEGER NOT NULL REFERENCES ""Recipes""(""Id"") ON DELETE CASCADE,
@@ -93,18 +93,17 @@ this.Database.ExecuteSqlRaw(@"
         ""CreatedAt"" TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 ");
-this.Database.ExecuteSqlRaw(@"ALTER TABLE ""RecipeReviews"" ADD COLUMN IF NOT EXISTS ""Photo"" bytea NULL;");
-this.Database.ExecuteSqlRaw(@"CREATE UNIQUE INDEX IF NOT EXISTS ""IX_RecipeReviews_RecipeId_UserId"" ON ""RecipeReviews"" (""RecipeId"", ""UserId"");");
- 
-this.Database.ExecuteSqlRaw(@"
+                        this.Database.ExecuteSqlRaw(@"ALTER TABLE ""RecipeReviews"" ADD COLUMN IF NOT EXISTS ""Photo"" bytea NULL;");
+                        this.Database.ExecuteSqlRaw(@"CREATE UNIQUE INDEX IF NOT EXISTS ""IX_RecipeReviews_RecipeId_UserId"" ON ""RecipeReviews"" (""RecipeId"", ""UserId"");");
+
+                        this.Database.ExecuteSqlRaw(@"
     CREATE TABLE IF NOT EXISTS ""ReviewTags"" (
         ""Id"" SERIAL PRIMARY KEY,
         ""ReviewId"" INTEGER NOT NULL REFERENCES ""RecipeReviews""(""Id"") ON DELETE CASCADE,
         ""Name"" TEXT NOT NULL
     );
 ");
- 
-this.Database.ExecuteSqlRaw(@"
+                        this.Database.ExecuteSqlRaw(@"
     CREATE TABLE IF NOT EXISTS ""AllergenCatalogItems"" (
         ""Id"" SERIAL PRIMARY KEY,
         ""Code"" TEXT NOT NULL,
@@ -112,8 +111,8 @@ this.Database.ExecuteSqlRaw(@"
         ""Keywords"" TEXT NOT NULL
     );
 ");
- 
-this.Database.ExecuteSqlRaw(@"
+
+                        this.Database.ExecuteSqlRaw(@"
     CREATE TABLE IF NOT EXISTS ""IngredientSubstitutes"" (
         ""Id"" SERIAL PRIMARY KEY,
         ""OriginalIngredientName"" TEXT NOT NULL,
@@ -124,8 +123,8 @@ this.Database.ExecuteSqlRaw(@"
         ""IsVerified"" BOOLEAN NOT NULL DEFAULT TRUE
     );
 ");
- 
-this.Database.ExecuteSqlRaw(@"
+
+                        this.Database.ExecuteSqlRaw(@"
     CREATE TABLE IF NOT EXISTS ""UserRecipeSubstitutions"" (
         ""Id"" SERIAL PRIMARY KEY,
         ""UserId"" INTEGER NOT NULL,
