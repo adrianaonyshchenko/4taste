@@ -1,7 +1,7 @@
 <Window x:Class="FourTaste.WPF.EditRecipeWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Редагування рецепту" Height="760" Width="1000"
+        Title="Редагування рецепту" Height="780" Width="1000"
         WindowStartupLocation="CenterScreen" Background="#EADCC9"
         Loaded="Window_Loaded">
     <Window.Resources>
@@ -197,43 +197,57 @@
                             <TextBlock Grid.Row="0" Text="Порядок приготування" FontWeight="Bold" FontSize="14"
                                        Foreground="White" Margin="0,0,0,2"/>
 
-                            <TextBlock Grid.Row="1" Text="Змінити опис" FontSize="12"
+                            <TextBlock Grid.Row="1" Text="Змінити опис та WHY?" FontSize="12"
                                        Foreground="#EADCC9" Margin="0,0,0,8"/>
 
                             <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl x:Name="StepsItemsControl">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Grid Margin="0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="28"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="32"/>
-                                                </Grid.ColumnDefinitions>
+                                            <Border Background="#A6937C" CornerRadius="10" Padding="8" Margin="0,4">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="28"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="32"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
 
-                                                <TextBlock Grid.Column="0" Text="{Binding StepNumber, StringFormat={}{0}.}"
-                                                           FontWeight="Bold" Foreground="White" FontSize="14"
-                                                           VerticalAlignment="Top" Margin="0,4,0,0"/>
+                                                    <!-- Номер кроку -->
+                                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding StepNumber, StringFormat={}{0}.}"
+                                                               FontWeight="Bold" Foreground="White" FontSize="14"
+                                                               VerticalAlignment="Top" Margin="0,4,0,0"/>
 
-                                                <Border Grid.Column="1" Background="#A6937C" CornerRadius="8" Padding="6,4">
-                                                    <TextBox Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    <!-- Опис кроку -->
+                                                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                              Foreground="White" Background="Transparent" BorderBrush="Transparent"
-                                                             FontSize="13" TextWrapping="Wrap" AcceptsReturn="True"/>
-                                                </Border>
+                                                             FontSize="13" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="30"
+                                                             ToolTip="Опис кроку приготування"/>
 
-                                                <Button Grid.Column="2" Content="✕" Click="DeleteStepButton_Click"
-                                                        Tag="{Binding}" Background="#F29B9B" Foreground="#4A352F"
-                                                        FontWeight="Bold" Height="24" Width="24" Cursor="Hand"
-                                                        Margin="4,0,0,0" VerticalAlignment="Top">
-                                                    <Button.Template>
-                                                        <ControlTemplate TargetType="Button">
-                                                            <Border Background="{TemplateBinding Background}" CornerRadius="12">
-                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                            </Border>
-                                                        </ControlTemplate>
-                                                    </Button.Template>
-                                                </Button>
-                                            </Grid>
+                                                    <!-- Кнопка видалення -->
+                                                    <Button Grid.Row="0" Grid.Column="2" Content="✕" Click="DeleteStepButton_Click"
+                                                            Tag="{Binding}" Background="#F29B9B" Foreground="#4A352F"
+                                                            FontWeight="Bold" Height="24" Width="24" Cursor="Hand"
+                                                            Margin="4,0,0,0" VerticalAlignment="Top">
+                                                        <Button.Template>
+                                                            <ControlTemplate TargetType="Button">
+                                                                <Border Background="{TemplateBinding Background}" CornerRadius="12">
+                                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Border>
+                                                            </ControlTemplate>
+                                                        </Button.Template>
+                                                    </Button>
+
+                                                    <!-- Поле для WHY? -->
+                                                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Why, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                             Foreground="#F4EAE0" Background="#877063" BorderBrush="Transparent"
+                                                             FontSize="12" TextWrapping="Wrap" AcceptsReturn="True"
+                                                             Margin="0,6,0,0" Padding="6,4" ToolTip="Пояснення WHY? (необов'язково)"/>
+                                                </Grid>
+                                            </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>

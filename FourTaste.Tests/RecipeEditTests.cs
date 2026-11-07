@@ -17,6 +17,7 @@ namespace FourTaste.Tests
         private readonly Mock<IFridgeRepository> _fridgeRepositoryMock;
         private readonly Mock<IAllergyService> _allergyServiceMock;
         private readonly Mock<ILogger> _loggerMock;
+        private readonly Mock<IImageThumbnailGenerator> _thumbnailGeneratorMock;
         private readonly RecipeService _service;
 
         public RecipeEditTests()
@@ -26,11 +27,13 @@ namespace FourTaste.Tests
             _fridgeRepositoryMock = new Mock<IFridgeRepository>();
             _allergyServiceMock = new Mock<IAllergyService>();
             _loggerMock = new Mock<ILogger>();
+            _thumbnailGeneratorMock = new Mock<IImageThumbnailGenerator>();
             _service = new RecipeService(
                 _repositoryMock.Object,
                 _userRepositoryMock.Object,
                 _fridgeRepositoryMock.Object,
                 _allergyServiceMock.Object,
+                _thumbnailGeneratorMock.Object,
                 _loggerMock.Object);
         }
 

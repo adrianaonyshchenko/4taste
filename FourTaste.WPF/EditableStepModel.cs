@@ -7,6 +7,7 @@ namespace FourTaste.WPF
     {
         private int _stepNumber;
         private string _description = string.Empty;
+        public string Why { get; set; } = string.Empty;
 
         public int StepNumber
         {

@@ -1,0 +1,134 @@
+﻿<Window x:Class="FourTaste.WPF.CookingStepWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Покрокове приготування" Height="600" Width="850"
+        WindowStartupLocation="CenterScreen" Background="#EADCC9">
+    <Grid Margin="25">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Верхня панель: Назва рецепта та Таймер -->
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <TextBlock x:Name="RecipeTitleTextBlock" Text="Назва рецепта" FontWeight="Bold" FontSize="20" Foreground="#4A352F" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <TextBox x:Name="TimerInputTextBox" Width="80" Height="34" Text="05:00" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="15" Background="#E3D7CB" Foreground="#4A352F" BorderBrush="Transparent" Margin="0,0,10,0"/>
+                <Button x:Name="TimerButton" Content="Таймер" Click="TimerButton_Click" Width="90" Height="34" Background="#877063" Foreground="White" FontWeight="Bold" Cursor="Hand" BorderBrush="Transparent">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="14"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Центральний контент -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Ліва колонка: Фото та Інгредієнти -->
+            <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                <Border Height="160" Background="#B89F8B" CornerRadius="14" Margin="0,0,0,12" ClipToBounds="True">
+                    <Image x:Name="StepImageViewer" Stretch="UniformToFill"/>
+                </Border>
+                <Border Background="#B89F8B" CornerRadius="14" Padding="15" Height="220">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Інгредієнти" FontWeight="Bold" FontSize="15" Foreground="#4A352F" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <ItemsControl x:Name="IngredientsItemsControl">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Name}" Foreground="{Binding TextColor}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                            <Border Grid.Column="1" Background="#542E2B" CornerRadius="8" Padding="6,2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Amount}" Foreground="White" FontSize="11" FontWeight="Bold"/>
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <!-- Права колонка: Крок, Опис, Збільшення тексту та WHY? -->
+            <Border Grid.Column="1" Background="#B89F8B" CornerRadius="14" Padding="20">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <TextBlock x:Name="StepNumberTextBlock" Text="Крок 1" FontWeight="Bold" FontSize="18" Foreground="#4A352F" VerticalAlignment="Center"/>
+                        <Button Content="A+" Click="IncreaseTextSize_Click" Width="36" Height="28" HorizontalAlignment="Right" Background="#542E2B" Foreground="White" FontWeight="Bold" Cursor="Hand" BorderBrush="Transparent" ToolTip="Збільшити розмір тексту">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="10"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,10">
+                        <TextBlock x:Name="StepDescriptionTextBlock" Text="Опис кроку..." FontSize="16" Foreground="#4A352F" TextWrapping="Wrap" LineHeight="22"/>
+                    </ScrollViewer>
+
+                    <!-- Блок пояснення WHY? -->
+                    <Border x:Name="WhyContainerBorder" Grid.Row="2" Background="#E3D7CB" CornerRadius="12" Padding="12" Visibility="Collapsed" MaxHeight="120" Margin="0,5,0,0">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="WHY?" FontWeight="Bold" FontSize="13" Foreground="#542E2B" Margin="0,0,0,4"/>
+                                <TextBlock x:Name="WhyExplanationTextBlock" Text="Пояснення відсутнє." FontSize="13" Foreground="#4A352F" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Нижня панель кнопок -->
+        <Grid Grid.Row="2" Margin="0,15,0,0">
+            <Button Content="Вийти" Click="ExitButton_Click" Width="100" Height="40" HorizontalAlignment="Left" Background="#D5C4B4" Foreground="#4A352F" FontWeight="Bold" Cursor="Hand" BorderBrush="Transparent">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="18"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="WhyButton" Content="WHY?" Click="WhyButton_Click" Width="90" Height="40" Background="#877063" Foreground="White" FontWeight="Bold" Cursor="Hand" BorderBrush="Transparent" Margin="0,0,10,0">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="18"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+                <Button x:Name="NextButton" Content="Далі" Click="NextButton_Click" Width="120" Height="40" Background="#542E2B" Foreground="White" FontWeight="Bold" Cursor="Hand" BorderBrush="Transparent">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="18"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Input;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Models;
 using FourTaste.ApplicationCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,9 +14,21 @@ namespace FourTaste.WPF
 {
     public partial class CookingHistoryWindow : Window
     {
+        public class CookingHistoryDisplayItem
+        {
+            public int? RecipeId { get; set; }
+            public string RecipeName { get; set; } = string.Empty;
+            public byte[]? Photo { get; set; }
+            public string Category { get; set; } = string.Empty;
+            public string Cuisine { get; set; } = string.Empty;
+            public string Time { get; set; } = string.Empty;
+
+            public MealPlan OriginalMealPlan { get; set; } = null!;
+        }
+
         private readonly MealPlanService mealPlanService;
         private readonly IRecipeService recipeService;
-        private List<MealPlan> allCookedMeals = new ();
+        private List<CookingHistoryDisplayItem> allCookedMeals = new ();
 
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
@@ -77,7 +90,58 @@ namespace FourTaste.WPF
                 return;
             }
 
-            this.allCookedMeals = result.Value ?? new List<MealPlan>();
+            var rawMeals = result.Value ?? new List<MealPlan>();
+            this.allCookedMeals.Clear();
+
+            foreach (var meal in rawMeals)
+            {
+                byte[]? recipePhoto = null;
+                int? targetRecipeId = meal.RecipeId;
+                string category = string.Empty;
+                string cuisine = string.Empty;
+                string time = string.Empty;
+
+                if (!targetRecipeId.HasValue || targetRecipeId.Value <= 0)
+                {
+                    if (!string.IsNullOrWhiteSpace(meal.RecipeName))
+                    {
+                        var searchResult = await this.recipeService.SearchRecipesAsync(RecipeSearchCriteria.Public(meal.RecipeName.Trim(), RecipeSearchFilter.TitleOnly));
+                        if (searchResult.IsSuccess && searchResult.Value != null && searchResult.Value.Count > 0)
+                        {
+                            var foundRecipe = searchResult.Value.First();
+                            targetRecipeId = foundRecipe.Id;
+                            recipePhoto = foundRecipe.Photo;
+                            category = foundRecipe.Category ?? string.Empty;
+                            cuisine = foundRecipe.Cuisine ?? string.Empty;
+                            time = foundRecipe.Time ?? string.Empty;
+                        }
+                    }
+                }
+                else
+                {
+                    var detailsResult = await this.recipeService.GetRecipeDetailsAsync(targetRecipeId.Value, this.CurrentUserId);
+                    if (detailsResult.IsSuccess && detailsResult.Value?.Recipe != null)
+                    {
+                        var recipe = detailsResult.Value.Recipe;
+                        recipePhoto = recipe.Photo;
+                        category = recipe.Category ?? string.Empty;
+                        cuisine = recipe.Cuisine ?? string.Empty;
+                        time = recipe.Time ?? string.Empty;
+                    }
+                }
+
+                this.allCookedMeals.Add(new CookingHistoryDisplayItem
+                {
+                    RecipeId = targetRecipeId,
+                    RecipeName = meal.RecipeName ?? string.Empty,
+                    Photo = recipePhoto,
+                    Category = category,
+                    Cuisine = cuisine,
+                    Time = time,
+                    OriginalMealPlan = meal ?? new MealPlan(),
+                });
+            }
+
             this.ApplyFilter();
         }
 
@@ -200,7 +264,7 @@ namespace FourTaste.WPF
             if (createRecipeWindow.ShowDialog() == true)
             {
                 var detailsWindow = new RecipeDetailsWindow(this.recipeService, createRecipeWindow.CreatedRecipeId);
-                detailsWindow.Show();
+                detailsWindow.ShowDialog();
             }
 
             _ = this.LoadCookingHistoryAsync();
@@ -222,23 +286,27 @@ namespace FourTaste.WPF
 
         private void CookingHistoryListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (this.CookingHistoryListBox.SelectedItem is not MealPlan meal)
+            if (this.CookingHistoryListBox.SelectedItem is not CookingHistoryDisplayItem selectedItem)
             {
                 return;
             }
 
-            if (meal.RecipeId is not int recipeId)
+            if (!selectedItem.RecipeId.HasValue || selectedItem.RecipeId.Value <= 0)
             {
                 MessageBox.Show(
-                    "Ця страва додана вручну в календарі, тому для неї немає збереженого рецепта в каталозі.",
+                    "Ця страва була додана вручну через календар, тому для неї немає збереженого рецепта в каталозі.",
                     "Рецепт недоступний",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
+
+                this.CookingHistoryListBox.SelectedItem = null;
                 return;
             }
 
-            var detailsWindow = new RecipeDetailsWindow(this.recipeService, recipeId);
-            detailsWindow.Show();
+            var detailsWindow = new RecipeDetailsWindow(this.recipeService, selectedItem.RecipeId.Value);
+            detailsWindow.ShowDialog();
+
+            this.CookingHistoryListBox.SelectedItem = null;
         }
     }
 }

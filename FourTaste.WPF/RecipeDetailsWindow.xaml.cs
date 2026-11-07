@@ -539,5 +539,23 @@ namespace FourTaste.WPF
         {
             this.Close();
         }
+
+        private void CookButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentRecipe == null)
+            {
+                MessageBox.Show("Дані рецепта не завантажено.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var ingredientsList = IngredientsItemsControl.ItemsSource as List<RecipeIngredientDisplayModel>;
+
+            var cookingWindow = new CookingStepWindow(_currentRecipe, ingredientsList)
+            {
+                Owner = this,
+            };
+
+            cookingWindow.ShowDialog();
+        }
     }
 }
