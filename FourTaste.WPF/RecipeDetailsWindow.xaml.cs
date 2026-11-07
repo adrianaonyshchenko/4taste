@@ -81,7 +81,13 @@ namespace FourTaste.WPF
         {
             int? viewerId = SessionContext.CurrentUser?.ID;
 
-            var result = await _recipeService.GetRecipeDetailsAsync(_recipeId, viewerId);
+            var detailsTask = _recipeService.GetRecipeDetailsAsync(_recipeId, viewerId);
+            var allergiesTask = LoadUserAllergensAsync(viewerId);
+
+            await Task.WhenAll(detailsTask, allergiesTask);
+
+            var result = await detailsTask;
+            var userAllergies = await allergiesTask;
 
             if (result.IsFailure)
             {
@@ -103,25 +109,9 @@ namespace FourTaste.WPF
             int servings = recipe.Servings > 0 ? recipe.Servings : 1;
             ServingsTextBlock.Text = FormatServingsText(servings);
 
-            // Кнопка редагування рецепта (Use Case №30):
-            // Доступна виключно якщо поточний користувач є автором рецепта
             bool isAuthor = viewerId.HasValue && viewerId.Value == recipe.UserId;
             EditRecipeButton.Visibility = isAuthor ? Visibility.Visible : Visibility.Collapsed;
             EditRecipeButton.IsEnabled = isAuthor;
-
-            // Завантажуємо алергени користувача для підсвічування червоним
-            var userAllergies = new List<string>();
-            if (viewerId.HasValue && _allergyService != null)
-            {
-                var allergiesRes = await _allergyService.GetAllergiesByUserIdAsync(viewerId.Value);
-                if (allergiesRes.IsSuccess && allergiesRes.Value != null)
-                {
-                    userAllergies = allergiesRes.Value
-                        .Where(a => !string.IsNullOrWhiteSpace(a.AllergenName))
-                        .Select(a => a.AllergenName.Trim().ToLower())
-                        .ToList();
-                }
-            }
 
             var ingredientViewModels = recipe.Ingredients.Select(ing =>
             {
@@ -152,6 +142,25 @@ namespace FourTaste.WPF
             }
         }
 
+        private async Task<List<string>> LoadUserAllergensAsync(int? viewerId)
+        {
+            if (!viewerId.HasValue || _allergyService == null)
+            {
+                return new List<string>();
+            }
+
+            var res = await _allergyService.GetAllergiesByUserIdAsync(viewerId.Value);
+            if (res.IsFailure || res.Value is null)
+            {
+                return new List<string>();
+            }
+
+            return res.Value
+                .Where(a => !string.IsNullOrWhiteSpace(a.AllergenName))
+                .Select(a => a.AllergenName.Trim().ToLower())
+                .ToList();
+        }
+
         private async void EditRecipeButton_Click(object sender, RoutedEventArgs e)
         {
             var editWindow = new EditRecipeWindow(_recipeService, _allergyService, _recipeId)
@@ -169,6 +178,23 @@ namespace FourTaste.WPF
             {
                 await LoadRecipeDetailsAsync();
             }
+        }
+
+        private void ReviewsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var reviewService = App.ServiceProvider?.GetService<IReviewService>();
+            if (reviewService is null)
+            {
+                MessageBox.Show("Сервіс відгуків недоступний.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var window = new ReviewsWindow(reviewService, _recipeId, TitleTextBlock.Text)
+            {
+                Owner = this,
+            };
+
+            window.ShowDialog();
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)

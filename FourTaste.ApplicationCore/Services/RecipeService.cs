@@ -20,18 +20,21 @@ namespace FourTaste.ApplicationCore.Services
         private readonly IFridgeRepository _fridgeRepository;
         private readonly IAllergyService _allergyService;
         private readonly ILogger _logger;
+        private readonly IImageThumbnailGenerator _thumbnails;
 
         public RecipeService(
             IRecipeRepository recipeRepository,
             IUserRepository userRepository,
             IFridgeRepository fridgeRepository,
             IAllergyService allergyService,
+            IImageThumbnailGenerator thumbnails,
             ILogger logger)
         {
             _recipeRepository = recipeRepository;
             _userRepository = userRepository;
             _fridgeRepository = fridgeRepository;
             _allergyService = allergyService;
+            _thumbnails = thumbnails;
             _logger = logger;
         }
 
@@ -90,6 +93,7 @@ namespace FourTaste.ApplicationCore.Services
                 IsPublic = request.IsPublic,
                 UserId = request.UserId,
                 Photo = request.Photo,
+                PhotoThumbnail = _thumbnails.CreateThumbnail(request.Photo)
             };
 
             if (request.IngredientItems != null && request.IngredientItems.Count > 0)
@@ -144,7 +148,6 @@ namespace FourTaste.ApplicationCore.Services
                 return Result.Failure("Рецепт не знайдено.");
             }
 
-            // Перевірка прав доступу: лише автор може редагувати рецепт
             if (recipe.UserId != request.UserId)
             {
                 _logger.Warning("Спроба несанкціонованого редагування: користувач {UserId} намагався змінити рецепт {RecipeId} автора {AuthorId}.", request.UserId, request.Id, recipe.UserId);
@@ -224,6 +227,7 @@ namespace FourTaste.ApplicationCore.Services
             if (request.UpdatePhoto)
             {
                 recipe.Photo = request.Photo;
+                recipe.PhotoThumbnail = _thumbnails.CreateThumbnail(request.Photo);
             }
 
             recipe.Ingredients = validIngredients.Select(i => new Ingredient
@@ -262,7 +266,6 @@ namespace FourTaste.ApplicationCore.Services
                 return Result.Failure("Рецепт не знайдено.");
             }
 
-            // Перевірка прав доступу: лише автор може видалити рецепт
             if (recipe.UserId != userId)
             {
                 _logger.Warning("Спроба несанкціонованого видалення: користувач {UserId} намагався видалити рецепт {RecipeId} автора {AuthorId}.", userId, recipeId, recipe.UserId);
@@ -361,14 +364,16 @@ namespace FourTaste.ApplicationCore.Services
                 return Result<RecipeDetails>.Failure("Цей рецепт приватний.");
             }
 
-            var author = await _userRepository.GetByIdAsync(recipe.UserId);
+            string authorName = string.IsNullOrWhiteSpace(recipe.AuthorUsername)
+                ? "Невідомий автор"
+                : recipe.AuthorUsername;
 
             _logger.Information("Рецепт {RecipeId} переглянуто (глядач: {ViewerUserId})", recipeId, viewerUserId);
 
             return Result<RecipeDetails>.Success(new RecipeDetails
             {
                 Recipe = recipe,
-                AuthorName = author?.Username ?? "Невідомий автор",
+                AuthorName = authorName,
             });
         }
 

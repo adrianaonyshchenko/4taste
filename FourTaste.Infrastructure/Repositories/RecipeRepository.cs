@@ -32,12 +32,21 @@ namespace FourTaste.Infrastructure.Repositories
 
         public async Task<Recipe?> GetByIdAsync(int recipeId)
         {
-            using var context = await _contextFactory.CreateDbContextAsync();
-            return await context.Recipes
-                .AsNoTracking()
-                .Include(r => r.Ingredients)
-                .Include(r => r.Steps.OrderBy(s => s.StepNumber))
-                .FirstOrDefaultAsync(r => r.Id == recipeId);
+            var recipeTask = this.LoadRecipeWithAuthorAsync(recipeId);
+            var ingredientsTask = this.LoadIngredientsAsync(new List<int> { recipeId });
+            var stepsTask = this.LoadStepsAsync(recipeId);
+
+            await Task.WhenAll(recipeTask, ingredientsTask, stepsTask);
+
+            var recipe = await recipeTask;
+            if (recipe is null)
+            {
+                return null;
+            }
+
+            recipe.Ingredients = await ingredientsTask;
+            recipe.Steps = await stepsTask;
+            return recipe;
         }
 
         public async Task UpdateAsync(Recipe recipe)
@@ -60,6 +69,7 @@ namespace FourTaste.Infrastructure.Repositories
             existing.IsPublic = recipe.IsPublic;
             existing.Servings = recipe.Servings;
             existing.Photo = recipe.Photo;
+            existing.PhotoThumbnail = recipe.PhotoThumbnail;
 
             context.RemoveRange(existing.Ingredients);
             existing.Ingredients = recipe.Ingredients.Select(i => new Ingredient
@@ -100,8 +110,13 @@ namespace FourTaste.Infrastructure.Repositories
         {
             using var context = await _contextFactory.CreateDbContextAsync();
 
+            var allergens = Normalize(criteria.ExcludedAllergens);
+            var products = Normalize(criteria.AvailableProducts);
+            bool byProducts = products.Count > 0;
+            bool needIngredients = byProducts || allergens.Count > 0;
+
             var query =
-                from r in context.Recipes.AsNoTracking().Include(r => r.Ingredients)
+                from r in context.Recipes.AsNoTracking()
                 join u in context.Users.AsNoTracking() on r.UserId equals u.ID into authors
                 from a in authors.DefaultIfEmpty()
                 select new RecipeRow
@@ -174,11 +189,39 @@ namespace FourTaste.Infrastructure.Repositories
                 };
             }
 
-            var allergens = Normalize(criteria.ExcludedAllergens);
-            var products = Normalize(criteria.AvailableProducts);
-            bool byProducts = products.Count > 0;
+            var rows = await query.Select(x => new RecipeRow
+            {
+                Recipe = new Recipe
+                {
+                    Id = x.Recipe.Id,
+                    Title = x.Recipe.Title,
+                    Time = x.Recipe.Time,
+                    Category = x.Recipe.Category,
+                    Cuisine = x.Recipe.Cuisine,
+                    IsPublic = x.Recipe.IsPublic,
+                    UserId = x.Recipe.UserId,
+                    Servings = x.Recipe.Servings,
+                    Photo = x.Recipe.PhotoThumbnail ?? x.Recipe.Photo,
+                },
+                AuthorId = x.AuthorId,
+                AuthorUsername = x.AuthorUsername,
+                AuthorName = x.AuthorName,
+            }).ToListAsync();
 
-            var rows = await query.ToListAsync();
+            if (needIngredients && rows.Count > 0)
+            {
+                var ingredients = await LoadIngredientsAsync(context, rows.Select(r => r.Recipe.Id).ToList());
+                var byRecipe = ingredients
+                    .GroupBy(i => i.RecipeId)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var row in rows)
+                {
+                    row.Recipe.Ingredients = byRecipe.TryGetValue(row.Recipe.Id, out var list)
+                        ? list
+                        : new List<Ingredient>();
+                }
+            }
 
             if (allergens.Count > 0)
             {
@@ -204,24 +247,37 @@ namespace FourTaste.Infrastructure.Repositories
 
             foreach (var row in rows)
             {
-                if (row.AuthorId is null)
-                {
-                    row.Recipe.AuthorUsername = string.Empty;
-                    row.Recipe.AuthorName = UnknownAuthor;
-                }
-                else
-                {
-                    row.Recipe.AuthorUsername = row.AuthorUsername ?? string.Empty;
-                    row.Recipe.AuthorName = string.IsNullOrWhiteSpace(row.AuthorName)
-                        ? row.AuthorUsername ?? string.Empty
-                        : row.AuthorName;
-                }
-
+                ApplyAuthor(row);
                 row.Recipe.MatchedIngredientsCount = row.MatchedCount;
                 row.Recipe.TotalIngredientsCount = row.TotalCount;
             }
 
             return rows.Select(x => x.Recipe).ToList();
+        }
+
+        private static void ApplyAuthor(RecipeRow row)
+        {
+            if (row.AuthorId is null)
+            {
+                row.Recipe.AuthorUsername = string.Empty;
+                row.Recipe.AuthorName = UnknownAuthor;
+            }
+            else
+            {
+                row.Recipe.AuthorUsername = row.AuthorUsername ?? string.Empty;
+                row.Recipe.AuthorName = string.IsNullOrWhiteSpace(row.AuthorName)
+                    ? row.AuthorUsername ?? string.Empty
+                    : row.AuthorName;
+            }
+        }
+
+        private static async Task<List<Ingredient>> LoadIngredientsAsync(AppDbContext context, List<int> recipeIds)
+        {
+            return await context.Set<Ingredient>()
+                .AsNoTracking()
+                .Where(i => recipeIds.Contains(i.RecipeId))
+                .OrderBy(i => i.Id)
+                .ToListAsync();
         }
 
         private static List<string> Normalize(IEnumerable<string>? values)
@@ -231,6 +287,48 @@ namespace FourTaste.Infrastructure.Repositories
                 .Select(v => v.Trim().ToLower())
                 .Distinct()
                 .ToList() ?? new List<string>();
+        }
+
+        private async Task<Recipe?> LoadRecipeWithAuthorAsync(int recipeId)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            var row = await (
+                from r in context.Recipes.AsNoTracking()
+                where r.Id == recipeId
+                join u in context.Users.AsNoTracking() on r.UserId equals u.ID into authors
+                from a in authors.DefaultIfEmpty()
+                select new RecipeRow
+                {
+                    Recipe = r,
+                    AuthorId = (int?)a.ID,
+                    AuthorUsername = a.Username,
+                    AuthorName = a.Name,
+                }).FirstOrDefaultAsync();
+
+            if (row is null)
+            {
+                return null;
+            }
+
+            ApplyAuthor(row);
+            return row.Recipe;
+        }
+
+        private async Task<List<Ingredient>> LoadIngredientsAsync(List<int> recipeIds)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await LoadIngredientsAsync(context, recipeIds);
+        }
+
+        private async Task<List<RecipeStep>> LoadStepsAsync(int recipeId)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Set<RecipeStep>()
+                .AsNoTracking()
+                .Where(s => s.RecipeId == recipeId)
+                .OrderBy(s => s.StepNumber)
+                .ToListAsync();
         }
 
         private sealed class RecipeRow
