@@ -51,31 +51,23 @@ namespace FourTaste.WPF
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            this.UpdateProfileAvatar();
             this.UpdateSearchControls();
 
-            if (this.CurrentUserId > 0 && (SessionContext.CurrentUser?.Avatar == null || SessionContext.CurrentUser.Avatar.Length == 0))
-            {
-                int uid = this.CurrentUserId;
-                var dbBytes = await Task.Run(() => AvatarService.LoadAvatarBytes(uid));
-                if (dbBytes != null && dbBytes.Length > 0 && SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == uid)
-                {
-                    SessionContext.CurrentUser.Avatar = dbBytes;
-                    this.UpdateProfileAvatar();
-                }
-            }
-
+            var avatarTask = this.UpdateProfileAvatarAsync();
             await this.SearchAsync(immediate: true);
+            await avatarTask;
         }
 
-        private void UpdateProfileAvatar()
+        private async Task UpdateProfileAvatarAsync()
         {
             if (this.CurrentUserId <= 0)
             {
                 return;
             }
 
-            var avatarImage = AvatarService.LoadAvatar(this.CurrentUserId);
+            int userId = this.CurrentUserId;
+            var avatarImage = await Task.Run(() => AvatarService.LoadAvatar(userId));
+
             if (avatarImage != null)
             {
                 this.UserAvatarImageBrush.ImageSource = avatarImage;

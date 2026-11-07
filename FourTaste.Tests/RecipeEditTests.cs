@@ -18,6 +18,7 @@ namespace FourTaste.Tests
         private readonly Mock<IFavoriteRepository> _favoriteRepositoryMock;
         private readonly Mock<IAllergyService> _allergyServiceMock;
         private readonly Mock<ILogger> _loggerMock;
+        private readonly Mock<IImageThumbnailGenerator> _thumbnailGeneratorMock;
         private readonly RecipeService _service;
 
         public RecipeEditTests()
@@ -28,12 +29,14 @@ namespace FourTaste.Tests
             _favoriteRepositoryMock = new Mock<IFavoriteRepository>();
             _allergyServiceMock = new Mock<IAllergyService>();
             _loggerMock = new Mock<ILogger>();
+            _thumbnailGeneratorMock = new Mock<IImageThumbnailGenerator>();
             _service = new RecipeService(
                 _repositoryMock.Object,
                 _userRepositoryMock.Object,
                 _fridgeRepositoryMock.Object,
                 _favoriteRepositoryMock.Object,
                 _allergyServiceMock.Object,
+                _thumbnailGeneratorMock.Object,
                 _loggerMock.Object);
         }
 
@@ -108,7 +111,6 @@ namespace FourTaste.Tests
             var recipe = CreateSampleRecipe(id: 1, userId: 10);
             _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(recipe);
 
-            // User 99 tries to edit user 10's recipe
             var request = CreateValidUpdateRequest(id: 1, userId: 99);
             var result = await _service.UpdateRecipeAsync(request);
 

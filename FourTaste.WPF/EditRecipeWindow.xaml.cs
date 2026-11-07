@@ -103,7 +103,6 @@ namespace FourTaste.WPF
                 return;
             }
 
-            // Отримуємо рецепт
             var result = await _recipeService.GetRecipeDetailsAsync(_recipeId, currentUserId);
             if (result.IsFailure)
             {
@@ -114,7 +113,6 @@ namespace FourTaste.WPF
 
             var recipe = result.Value!.Recipe;
 
-            // Перевірка авторизації: лише автор може відкрити редагування
             if (recipe.UserId != currentUserId.Value)
             {
                 MessageBox.Show("Ви можете редагувати виключно власні рецепти.", "Доступ заборонено", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -122,7 +120,6 @@ namespace FourTaste.WPF
                 return;
             }
 
-            // Завантажуємо алергени користувача
             if (_allergyService != null)
             {
                 var allergiesResult = await _allergyService.GetAllergiesByUserIdAsync(currentUserId.Value);
@@ -135,7 +132,6 @@ namespace FourTaste.WPF
                 }
             }
 
-            // Заповнення полів даними рецепта
             TitleTextBox.Text = recipe.Title;
             TimeTextBox.Text = string.IsNullOrWhiteSpace(recipe.Time) ? "00:00" : recipe.Time;
 
@@ -156,7 +152,6 @@ namespace FourTaste.WPF
             _servings = recipe.Servings > 0 ? recipe.Servings : 1;
             UpdateServingsDisplay();
 
-            // Фото
             _selectedPhoto = recipe.Photo;
             var photoBitmap = ToBitmapImage(_selectedPhoto);
             if (photoBitmap != null)
@@ -170,28 +165,37 @@ namespace FourTaste.WPF
                 PhotoPlaceholder.Visibility = Visibility.Visible;
             }
 
-            // Інгредієнти
             _ingredients.Clear();
             foreach (var ing in recipe.Ingredients)
             {
                 _ingredients.Add(CreateIngredientDisplayModel(ing.Name, ing.Amount));
             }
 
-            // Кроки
             _steps.Clear();
             int stepNum = 1;
             foreach (var step in recipe.Steps.OrderBy(s => s.StepNumber))
             {
+                string desc = step.Description ?? string.Empty;
+                string why = string.Empty;
+
+                int whyIndex = desc.IndexOf("|WHY:", StringComparison.Ordinal);
+                if (whyIndex >= 0)
+                {
+                    why = desc.Substring(whyIndex + 5).Trim();
+                    desc = desc.Substring(0, whyIndex).Trim();
+                }
+
                 _steps.Add(new EditableStepModel
                 {
                     StepNumber = stepNum++,
-                    Description = step.Description,
+                    Description = desc,
+                    Why = why,
                 });
             }
 
             if (_steps.Count == 0)
             {
-                _steps.Add(new EditableStepModel { StepNumber = 1, Description = string.Empty });
+                _steps.Add(new EditableStepModel { StepNumber = 1, Description = string.Empty, Why = string.Empty });
             }
         }
 
@@ -306,6 +310,7 @@ namespace FourTaste.WPF
             {
                 StepNumber = _steps.Count + 1,
                 Description = string.Empty,
+                Why = string.Empty,
             });
         }
 
@@ -379,10 +384,17 @@ namespace FourTaste.WPF
                 return;
             }
 
-            var stepsList = _steps
-                .Where(s => !string.IsNullOrWhiteSpace(s.Description))
-                .Select(s => s.Description.Trim())
-                .ToList();
+            // Формуємо список кроків разом з полем WHY? (формат: "Опис кроку|WHY:текст")
+            var stepsList = new List<string>();
+            foreach (var s in _steps.Where(s => !string.IsNullOrWhiteSpace(s.Description)))
+            {
+                string stepEntry = s.Description.Trim();
+                if (!string.IsNullOrWhiteSpace(s.Why))
+                {
+                    stepEntry += $"|WHY:{s.Why.Trim()}";
+                }
+                stepsList.Add(stepEntry);
+            }
 
             if (stepsList.Count == 0)
             {

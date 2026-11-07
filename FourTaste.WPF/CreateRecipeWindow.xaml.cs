@@ -129,12 +129,22 @@ namespace FourTaste.WPF
 
         private void AddStepButton_Click(object sender, RoutedEventArgs e)
         {
-            string input = Microsoft.VisualBasic.Interaction.InputBox("Введіть опис кроку приготування:", "Додати крок", " ");
-            if (!string.IsNullOrWhiteSpace(input))
+            string descInput = Microsoft.VisualBasic.Interaction.InputBox("Введіть опис кроку приготування:", "Додати крок", string.Empty);
+            if (string.IsNullOrWhiteSpace(descInput))
             {
-                _stepsList.Add(input.Trim());
-                StepsListBox.Items.Refresh();
+                return;
             }
+
+            string whyInput = Microsoft.VisualBasic.Interaction.InputBox("Введіть пояснення 'WHY?' для цього кроку (необов'язково):", "Пояснення кроку", string.Empty);
+
+            string stepEntry = descInput.Trim();
+            if (!string.IsNullOrWhiteSpace(whyInput))
+            {
+                stepEntry += $"|WHY:{whyInput.Trim()}";
+            }
+
+            this._stepsList.Add(stepEntry);
+            this.StepsListBox.Items.Refresh();
         }
 
         private void UploadPhotoButton_Click(object sender, RoutedEventArgs e)

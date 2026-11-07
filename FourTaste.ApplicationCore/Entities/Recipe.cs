@@ -21,6 +21,7 @@ namespace FourTaste.ApplicationCore.Entities
         public int UserId { get; set; }
 
         public byte[]? Photo { get; set; }
+        public byte[]? PhotoThumbnail { get; set; }
 
         public int Servings { get; set; } = 1;
 

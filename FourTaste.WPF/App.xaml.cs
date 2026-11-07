@@ -47,6 +47,11 @@ namespace FourTaste.WPF
                     var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
                     using var ctx = await factory.CreateDbContextAsync();
                     ctx.EnsureDatabaseReady();
+                    await BackfillRecipeThumbnailsAsync(provider);
+
+                    var subRepo = provider.GetRequiredService<FourTaste.ApplicationCore.Interfaces.ISubstituteRepository>();
+                    await subRepo.GetAllergenCatalogAsync();
+                    await subRepo.GetAllSubstitutesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -68,6 +73,43 @@ namespace FourTaste.WPF
             base.OnExit(e);
         }
 
+        private static async Task BackfillRecipeThumbnailsAsync(IServiceProvider provider)
+        {
+            var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+            var generator = provider.GetRequiredService<IImageThumbnailGenerator>();
+
+            using var listContext = await factory.CreateDbContextAsync();
+            var ids = await listContext.Recipes
+                .AsNoTracking()
+                .Where(r => r.Photo != null && r.PhotoThumbnail == null)
+                .Select(r => r.Id)
+                .ToListAsync();
+
+            foreach (int id in ids)
+            {
+                using var context = await factory.CreateDbContextAsync();
+                var recipe = await context.Recipes.FirstOrDefaultAsync(r => r.Id == id);
+                if (recipe?.Photo is null)
+                {
+                    continue;
+                }
+
+                var thumbnail = generator.CreateThumbnail(recipe.Photo);
+                if (thumbnail is null)
+                {
+                    Log.Warning("Не вдалося створити мініатюру для рецепта {RecipeId}", id);
+                    continue;
+                }
+
+                recipe.PhotoThumbnail = thumbnail;
+                await context.SaveChangesAsync();
+            }
+
+            if (ids.Count > 0)
+            {
+                Log.Information("Створено мініатюри для {Count} рецептів", ids.Count);
+            }
+        }
         private static void ConfigureServices(IServiceCollection services)
         {
             services.AddLogging();
@@ -90,6 +132,8 @@ namespace FourTaste.WPF
 
             services.AddScoped<IRecipeRepository, RecipeRepository>();
             services.AddScoped<IRecipeService, RecipeService>();
+            services.AddScoped<ISubstituteRepository, SubstituteRepository>();
+            services.AddScoped<ISubstituteService, SubstituteService>();
 
             services.AddTransient<ManageAllergiesWindow>();
             services.AddTransient<RegisterWindow>();
@@ -105,6 +149,9 @@ namespace FourTaste.WPF
             services.AddTransient<IFridgeRepository, FridgeRepository>();
             services.AddTransient<IFridgeService, FridgeService>();
             services.AddTransient<IFavoriteRepository, FavoriteRepository>();
+            services.AddScoped<IReviewRepository, ReviewRepository>();
+            services.AddScoped<IReviewService, ReviewService>();
+            services.AddSingleton<IImageThumbnailGenerator, WpfImageThumbnailGenerator>();
         }
 
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

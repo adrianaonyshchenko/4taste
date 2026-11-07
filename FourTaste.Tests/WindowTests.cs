@@ -67,5 +67,43 @@ namespace FourTaste.Tests
 
             Assert.Null(exception);
         }
+
+        [Fact]
+        public void RecipeDetailsWindow_InitializesSuccessfully()
+        {
+            Exception? exception = null;
+            bool substitutePanelFound = false;
+            bool findButtonFound = false;
+
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    var mockRecipe = new Mock<IRecipeService>();
+                    var mockAllergy = new Mock<IAllergyService>();
+                    var mockSubstitute = new Mock<ISubstituteService>();
+                    var window = new RecipeDetailsWindow(mockRecipe.Object, mockAllergy.Object, mockSubstitute.Object, 1);
+                    Assert.NotNull(window);
+
+                    var panel = window.FindName("SubstitutePanel") as FrameworkElement;
+                    substitutePanelFound = panel != null;
+
+                    var button = window.FindName("FindSubstituteButton") as Button;
+                    findButtonFound = button != null;
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+            });
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+
+            Assert.Null(exception);
+            Assert.True(substitutePanelFound);
+            Assert.True(findButtonFound);
+        }
     }
 }

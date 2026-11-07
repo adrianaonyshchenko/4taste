@@ -263,6 +263,7 @@ namespace FourTaste.WPF
             myRecipesWindow.Show();
             this.Close();
         }
+
         private void MyFridgeButton_Click(object sender, RoutedEventArgs e)
         {
             Log.Information("Користувач відкриває вікно 'Мої продукти' (Холодильник)");
