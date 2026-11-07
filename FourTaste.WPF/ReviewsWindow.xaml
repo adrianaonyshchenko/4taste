@@ -1,0 +1,310 @@
+﻿<Window x:Class="FourTaste.WPF.ReviewsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Відгуки" Height="760" Width="900"
+        WindowStartupLocation="CenterOwner" Background="#EADCC9"
+        Loaded="Window_Loaded">
+    <Window.Resources>
+        <SolidColorBrush x:Key="StarFilledBrush" Color="#FFB818"/>
+        <SolidColorBrush x:Key="StarEmptyBrush" Color="#D9D9D9"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+
+        <Style x:Key="PillButton" TargetType="Button">
+            <Setter Property="Background" Value="#D5C4B4"/>
+            <Setter Property="Foreground" Value="#4A352F"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}"
+                                CornerRadius="18" Padding="14,5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Root" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="RoundIconButton" TargetType="Button">
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Background" Value="#542E2B"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="13">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StarButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="30"/>
+            <Setter Property="Padding" Value="2,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{StaticResource StarEmptyBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TagChipStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="#D5C4B4"/>
+            <Setter Property="Foreground" Value="#4A352F"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Root" Background="{TemplateBinding Background}"
+                                CornerRadius="14" Padding="12,4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#542E2B"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="25">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+            <TextBlock x:Name="TitleTextBlock" FontSize="22" FontWeight="Bold"
+                       Foreground="#4A352F" TextWrapping="Wrap"/>
+            <TextBlock Text="ДНК рецепту" FontWeight="Bold" Foreground="#4A352F" Margin="0,12,0,6"/>
+            <ItemsControl x:Name="DnaItemsControl">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="#E3D7CB" CornerRadius="12" Padding="10,3" Margin="0,0,6,6">
+                            <TextBlock Foreground="#4A352F" FontSize="12" FontWeight="SemiBold">
+                                <Run Text="{Binding Key, Mode=OneWay}"/>
+                                <Run Text=" × "/>
+                                <Run Text="{Binding Value, Mode=OneWay}"/>
+                            </TextBlock>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="DnaEmptyTextBlock" Text="Тегів ще немає" Foreground="#7A685D"
+                       FontSize="13" Visibility="Collapsed"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <ItemsControl x:Name="ReviewsItemsControl">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#B89F8B" CornerRadius="18" Padding="16" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20" Background="#542E2B">
+                                            <TextBlock Text="{Binding Initial}" Visibility="{Binding InitialVisibility}"
+                                                        Foreground="White" FontWeight="Bold" FontSize="16"
+                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <Ellipse>
+                                            <Ellipse.Fill>
+                                                <ImageBrush ImageSource="{Binding Avatar}" Stretch="UniformToFill"/>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding AuthorName}" FontWeight="Bold"
+                                                       FontSize="15" Foreground="#4A352F"/>
+                                            <TextBlock Text="{Binding DateText}" FontSize="12" Foreground="#4A352F" Opacity="0.7"/>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="2" FontSize="22" VerticalAlignment="Center">
+                                            <Run Text="{Binding FilledStars, Mode=OneWay}" Foreground="{StaticResource StarFilledBrush}"/><Run Text="{Binding EmptyStars, Mode=OneWay}" Foreground="{StaticResource StarEmptyBrush}"/>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <TextBlock Grid.Row="1" Text="{Binding Text}" TextWrapping="Wrap" FontSize="14"
+                                               Foreground="#4A352F" Margin="0,10,0,0"
+                                               Visibility="{Binding HasText, Converter={StaticResource BoolToVisibility}}"/>
+
+                                    <Border Grid.Row="2" CornerRadius="12" ClipToBounds="True" HorizontalAlignment="Left"
+                                            MaxWidth="320" MaxHeight="220" Margin="0,10,0,0"
+                                            Visibility="{Binding HasPhoto, Converter={StaticResource BoolToVisibility}}">
+                                        <Image Source="{Binding Photo}" Stretch="Uniform"/>
+                                    </Border>
+
+                                    <ItemsControl Grid.Row="3" ItemsSource="{Binding Tags}" Margin="0,10,0,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#947A66" CornerRadius="12" Padding="10,3" Margin="0,0,6,6">
+                                                    <TextBlock Text="{Binding}" Foreground="White" FontSize="12"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0"
+                                                Visibility="{Binding IsOwn, Converter={StaticResource BoolToVisibility}}">
+                                        <Button Content="Редагувати" Style="{StaticResource PillButton}"
+                                                Background="#947A66" Foreground="White" Height="34" FontSize="13"
+                                                Margin="0,0,8,0" Click="EditReviewButton_Click"/>
+                                        <Button Content="Видалити" Style="{StaticResource PillButton}"
+                                                Background="#D8B5A8" Foreground="#D9534F" Height="34" FontSize="13"
+                                                Click="DeleteReviewButton_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock x:Name="EmptyTextBlock" Text="Відгуків ще немає. Будьте першим!"
+                           Foreground="#4A352F" FontSize="15" HorizontalAlignment="Center"
+                           Margin="0,30" Visibility="Collapsed"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Margin="0,4,0,12">
+            <TextBlock x:Name="InfoTextBlock" Text="Завантаження…" Foreground="#4A352F" FontSize="14"
+                       FontWeight="SemiBold" HorizontalAlignment="Center" TextWrapping="Wrap" Margin="0,4"/>
+
+            <Border x:Name="WriteReviewCard" Visibility="Collapsed" Background="#B89F8B" CornerRadius="18" Padding="16">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20" Background="#EBB832">
+                            <TextBlock x:Name="FormInitialTextBlock" Foreground="#4A352F" FontWeight="Bold"
+                                       FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <TextBlock Grid.Column="1" x:Name="FormAuthorTextBlock" Margin="12,0,0,0"
+                                   VerticalAlignment="Center" FontWeight="Bold" FontSize="15" Foreground="#4A352F"/>
+
+                        <StackPanel Grid.Column="2" x:Name="StarsPanel" Orientation="Horizontal">
+                            <Button Tag="1" Content="★" Style="{StaticResource StarButton}" Click="StarButton_Click"/>
+                            <Button Tag="2" Content="★" Style="{StaticResource StarButton}" Click="StarButton_Click"/>
+                            <Button Tag="3" Content="★" Style="{StaticResource StarButton}" Click="StarButton_Click"/>
+                            <Button Tag="4" Content="★" Style="{StaticResource StarButton}" Click="StarButton_Click"/>
+                            <Button Tag="5" Content="★" Style="{StaticResource StarButton}" Click="StarButton_Click"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Background="#D5C4B4" CornerRadius="12" Padding="10,6" Margin="0,10,0,0">
+                        <Grid>
+                            <TextBox x:Name="ReviewTextBox" Background="Transparent" BorderThickness="0"
+                                     Foreground="#4A352F" FontSize="14" TextWrapping="Wrap" AcceptsReturn="True"
+                                     MinHeight="60" MaxHeight="120" VerticalScrollBarVisibility="Auto"/>
+                            <TextBlock Text="Написати відгук" Foreground="#7A685D" FontSize="14"
+                                       VerticalAlignment="Top" Margin="2,0,0,0" IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=ReviewTextBox}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </Border>
+
+                    <Grid x:Name="PhotoPreviewPanel" Margin="0,10,0,0" HorizontalAlignment="Left" Visibility="Collapsed">
+                        <Border CornerRadius="12" ClipToBounds="True" MaxWidth="200" MaxHeight="120">
+                            <Image x:Name="PhotoPreviewImage" Stretch="Uniform"/>
+                        </Border>
+                        <Button Content="✕" Style="{StaticResource RoundIconButton}" Click="RemovePhotoButton_Click"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0"
+                                ToolTip="Прибрати фото"/>
+                    </Grid>
+
+                    <WrapPanel x:Name="TagChipsPanel" Margin="0,10,0,0" Visibility="Collapsed"/>
+
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <Button x:Name="AddPhotoButton" Content="+ Фото" Style="{StaticResource PillButton}"
+                                    Background="#947A66" Foreground="White" Margin="0,0,10,0"
+                                    Click="AddPhotoButton_Click"/>
+                            <Button x:Name="ToggleTagsButton" Content="+ Тег" Style="{StaticResource PillButton}"
+                                    Background="#947A66" Foreground="White" Click="ToggleTagsButton_Click"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button x:Name="CancelEditButton" Content="Скасувати" Style="{StaticResource PillButton}"
+                                    Background="#D5C4B4" Margin="0,0,10,0" Visibility="Collapsed"
+                                    Click="CancelEditButton_Click"/>
+                            <Button x:Name="PublishButton" Content="Опублікувати" Style="{StaticResource PillButton}"
+                                    Background="#542E2B" Foreground="White" Click="PublishButton_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <Button Grid.Row="3" x:Name="BackButton" Content="Назад" Click="BackButton_Click"
+                Style="{StaticResource PillButton}" Background="#B89F8B" Height="44" Width="140"
+                HorizontalAlignment="Left"/>
+    </Grid>
+</Window>

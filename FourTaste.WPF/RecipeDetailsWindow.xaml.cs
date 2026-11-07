@@ -109,7 +109,13 @@ namespace FourTaste.WPF
         {
             int? viewerId = SessionContext.CurrentUser?.ID;
 
-            var result = await _recipeService.GetRecipeDetailsAsync(_recipeId, viewerId);
+            var detailsTask = _recipeService.GetRecipeDetailsAsync(_recipeId, viewerId);
+            var allergiesTask = LoadUserAllergensAsync(viewerId);
+
+            await Task.WhenAll(detailsTask, allergiesTask);
+
+            var result = await detailsTask;
+            var userAllergies = await allergiesTask;
 
             if (result.IsFailure)
             {
@@ -136,6 +142,7 @@ namespace FourTaste.WPF
             EditRecipeButton.Visibility = isAuthor ? Visibility.Visible : Visibility.Collapsed;
             EditRecipeButton.IsEnabled = isAuthor;
 
+            var ingredientViewModels = recipe.Ingredients.Select(ing =>
             _activeSubstitutions.Clear();
             _conflictingIngredients.Clear();
             if (viewerId.HasValue && _substituteService != null)
@@ -196,6 +203,23 @@ namespace FourTaste.WPF
             }
         }
 
+        private async Task<List<string>> LoadUserAllergensAsync(int? viewerId)
+        {
+            if (!viewerId.HasValue || _allergyService == null)
+            {
+                return new List<string>();
+            }
+
+            var res = await _allergyService.GetAllergiesByUserIdAsync(viewerId.Value);
+            if (res.IsFailure || res.Value is null)
+            {
+                return new List<string>();
+            }
+
+            return res.Value
+                .Where(a => !string.IsNullOrWhiteSpace(a.AllergenName))
+                .Select(a => a.AllergenName.Trim().ToLower())
+                .ToList();
         private void RenderIngredientsList()
         {
             if (_currentRecipe == null)
@@ -492,6 +516,23 @@ namespace FourTaste.WPF
             {
                 await LoadRecipeDetailsAsync();
             }
+        }
+
+        private void ReviewsButton_Click(object sender, RoutedEventArgs e)
+        {
+            var reviewService = App.ServiceProvider?.GetService<IReviewService>();
+            if (reviewService is null)
+            {
+                MessageBox.Show("Сервіс відгуків недоступний.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var window = new ReviewsWindow(reviewService, _recipeId, TitleTextBlock.Text)
+            {
+                Owner = this,
+            };
+
+            window.ShowDialog();
         }
 
         private void BackButton_Click(object sender, RoutedEventArgs e)

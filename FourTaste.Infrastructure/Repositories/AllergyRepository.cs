@@ -16,7 +16,7 @@ namespace FourTaste.Infrastructure.Repositories
 
         public async Task<Allergy?> GetByIdAsync(int id) => await _context.Allergies.FindAsync(id);
 
-        public async Task<IReadOnlyList<Allergy>> ListAsync() => await _context.Allergies.ToListAsync();
+        public async Task<IReadOnlyList<Allergy>> ListAsync() => await _context.Allergies.AsNoTracking().ToListAsync();
 
         public async Task AddAsync(Allergy entity)
         {

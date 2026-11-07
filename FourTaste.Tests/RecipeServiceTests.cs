@@ -28,11 +28,13 @@ namespace FourTaste.Tests
             _fridgeRepositoryMock = new Mock<IFridgeRepository>();
             _allergyServiceMock = new Mock<IAllergyService>();
             _loggerMock = new Mock<ILogger>();
+            var thumbnailsMock = new Mock<IImageThumbnailGenerator>();
             _service = new RecipeService(
                 _repositoryMock.Object,
                 _userRepositoryMock.Object,
                 _fridgeRepositoryMock.Object,
                 _allergyServiceMock.Object,
+                thumbnailsMock.Object,
                 _loggerMock.Object);
         }
 
@@ -229,9 +231,8 @@ namespace FourTaste.Tests
         [Fact]
         public async Task GetRecipeDetails_PublicRecipe_ReturnsSuccessForGuest()
         {
-            var recipe = new Recipe { Id = 1, Title = "Борщ", IsPublic = true, UserId = 5 };
+            var recipe = new Recipe { Id = 1, Title = "Борщ", IsPublic = true, UserId = 5, AuthorUsername = "chef" };
             _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(recipe);
-            _userRepositoryMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(new User { ID = 5, Username = "chef" });
 
             var result = await _service.GetRecipeDetailsAsync(1, null);
 
