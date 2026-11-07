@@ -9,16 +9,12 @@ namespace FourTaste.Infrastructure.Data
         private static bool isDatabaseInitialized;
 
         public DbSet<User> Users { get; set; } = null!;
-
         public DbSet<Allergy> Allergies { get; set; } = null!;
-
         public DbSet<MealPlan> MealPlans { get; set; } = null!;
-
         public DbSet<Recipe> Recipes { get; set; } = null!;
-
         public DbSet<UserFridgeItem> UserFridgeItems { get; set; } = null!;
-
         public DbSet<UserShoppingItem> UserShoppingItems { get; set; } = null!;
+        public DbSet<UserFavoriteRecipe> UserFavoriteRecipes { get; set; } = null!;
 
         public AppDbContext()
         {
@@ -35,20 +31,17 @@ namespace FourTaste.Infrastructure.Data
             {
                 return;
             }
-
             lock (InitLock)
             {
                 if (!isDatabaseInitialized)
                 {
                     this.Database.EnsureCreated();
-
                     if (this.Database.IsRelational())
                     {
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""Avatar"" bytea NULL;");
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Photo"" bytea NULL;");
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""Recipes"" ADD COLUMN IF NOT EXISTS ""Servings"" INTEGER NOT NULL DEFAULT 1;");
 
-                        // Холодильник
                         this.Database.ExecuteSqlRaw(@"
                             CREATE TABLE IF NOT EXISTS ""UserFridgeItems"" (
                                 ""Id"" SERIAL PRIMARY KEY,
@@ -61,7 +54,6 @@ namespace FourTaste.Infrastructure.Data
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""UserFridgeItems"" ADD COLUMN IF NOT EXISTS ""Quantity"" INTEGER NOT NULL DEFAULT 1;");
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""UserFridgeItems"" ADD COLUMN IF NOT EXISTS ""Unit"" TEXT NOT NULL DEFAULT 'г';");
 
-                        // Список покупок
                         this.Database.ExecuteSqlRaw(@"
                             CREATE TABLE IF NOT EXISTS ""UserShoppingItems"" (
                                 ""Id"" SERIAL PRIMARY KEY,
@@ -71,8 +63,15 @@ namespace FourTaste.Infrastructure.Data
                                 ""Unit"" TEXT NOT NULL DEFAULT 'г'
                             );
                         ");
-                    }
 
+                        this.Database.ExecuteSqlRaw(@"
+                            CREATE TABLE IF NOT EXISTS ""UserFavoriteRecipes"" (
+                                ""Id"" SERIAL PRIMARY KEY,
+                                ""UserId"" INTEGER NOT NULL,
+                                ""RecipeId"" INTEGER NOT NULL
+                            );
+                        ");
+                    }
                     isDatabaseInitialized = true;
                 }
             }

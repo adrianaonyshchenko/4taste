@@ -104,6 +104,7 @@ namespace FourTaste.WPF
             services.AddTransient<EditIngredientsWindow>();
             services.AddTransient<IFridgeRepository, FridgeRepository>();
             services.AddTransient<IFridgeService, FridgeService>();
+            services.AddTransient<IFavoriteRepository, FavoriteRepository>();
         }
 
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

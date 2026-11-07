@@ -15,6 +15,7 @@ namespace FourTaste.Tests
         private readonly Mock<IRecipeRepository> _repositoryMock;
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly Mock<IFridgeRepository> _fridgeRepositoryMock;
+        private readonly Mock<IFavoriteRepository> _favoriteRepositoryMock;
         private readonly Mock<IAllergyService> _allergyServiceMock;
         private readonly Mock<ILogger> _loggerMock;
         private readonly RecipeService _service;
@@ -24,12 +25,14 @@ namespace FourTaste.Tests
             _repositoryMock = new Mock<IRecipeRepository>();
             _userRepositoryMock = new Mock<IUserRepository>();
             _fridgeRepositoryMock = new Mock<IFridgeRepository>();
+            _favoriteRepositoryMock = new Mock<IFavoriteRepository>();
             _allergyServiceMock = new Mock<IAllergyService>();
             _loggerMock = new Mock<ILogger>();
             _service = new RecipeService(
                 _repositoryMock.Object,
                 _userRepositoryMock.Object,
                 _fridgeRepositoryMock.Object,
+                _favoriteRepositoryMock.Object,
                 _allergyServiceMock.Object,
                 _loggerMock.Object);
         }
@@ -121,7 +124,7 @@ namespace FourTaste.Tests
             _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(recipe);
 
             var request = CreateValidUpdateRequest(id: 1, userId: 10);
-            request.Title = "   ";
+            request.Title = " ";
 
             var result = await _service.UpdateRecipeAsync(request);
 
@@ -152,7 +155,7 @@ namespace FourTaste.Tests
             _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(recipe);
 
             var request = CreateValidUpdateRequest(id: 1, userId: 10);
-            request.Cuisine = "   ";
+            request.Cuisine = " ";
 
             var result = await _service.UpdateRecipeAsync(request);
 
@@ -203,7 +206,7 @@ namespace FourTaste.Tests
             var request = CreateValidUpdateRequest(id: 1, userId: 10);
             request.Ingredients = new List<RecipeIngredientDto>
             {
-                new RecipeIngredientDto { Name = "Сіль", Amount = "   " },
+                new RecipeIngredientDto { Name = "Сіль", Amount = " " },
             };
 
             var result = await _service.UpdateRecipeAsync(request);
@@ -289,29 +292,29 @@ namespace FourTaste.Tests
         public async Task CreateRecipe_WithIngredientItems_SavesIngredientsCorrectly()
         {
             Recipe? captured = null;
-            _repositoryMock.Setup(r => r.AddAsync(It.IsAny<Recipe>()))
+        _repositoryMock.Setup(r => r.AddAsync(It.IsAny<Recipe>()))
                 .Callback<Recipe>(rec => captured = rec)
                 .Returns(Task.CompletedTask);
 
-            var request = new CreateRecipeRequest
-            {
-                Title = "Смачний суп",
-                Time = "00:45",
-                Category = "Супи та бульйони",
-                Cuisine = "Українська",
-                IsPublic = true,
-                UserId = 10,
-                IngredientItems = new List<RecipeIngredientDto>
+        var request = new CreateRecipeRequest
+        {
+            Title = "Смачний суп",
+            Time = "00:45",
+            Category = "Супи та бульйони",
+            Cuisine = "Українська",
+            IsPublic = true,
+            UserId = 10,
+            IngredientItems = new List<RecipeIngredientDto>
                 {
                     new RecipeIngredientDto { Name = "М'ясо", Amount = "500г." },
                     new RecipeIngredientDto { Name = "Картопля", Amount = "3 шт." },
                 },
-                Steps = new List<string> { "Зварити все" },
-            };
+            Steps = new List<string> { "Зварити все" },
+        };
 
-            var result = await _service.CreateRecipeAsync(request);
+        var result = await _service.CreateRecipeAsync(request);
 
-            Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess);
             Assert.NotNull(captured);
             Assert.Equal(2, captured!.Ingredients.Count);
             Assert.Equal("М'ясо", captured.Ingredients[0].Name);
@@ -319,5 +322,6 @@ namespace FourTaste.Tests
             Assert.Equal("Картопля", captured.Ingredients[1].Name);
             Assert.Equal("3 шт.", captured.Ingredients[1].Amount);
         }
-    }
 }
+}
+ 
