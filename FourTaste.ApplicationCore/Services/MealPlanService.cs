@@ -49,6 +49,36 @@ namespace FourTaste.ApplicationCore.Services
             return Result<MealPlan>.Success(created);
         }
 
+        public async Task<Result<MealPlan>> RecordCookedRecipeAsync(int userId, string recipeName, DateTime date, int? recipeId = null)
+        {
+            if (userId <= 0)
+            {
+                _logger.Warning("Спроба додати приготовану страву без валідного UserId: {UserId}", userId);
+                return Result<MealPlan>.Failure("Користувач не визначений.");
+            }
+
+            if (string.IsNullOrWhiteSpace(recipeName))
+            {
+                _logger.Warning("Спроба додати порожню назву страви до історії");
+                return Result<MealPlan>.Failure("Введіть назву страви.");
+            }
+
+            var mealPlan = new MealPlan
+            {
+                UserId = userId,
+                RecipeId = recipeId,
+                RecipeName = recipeName.Trim(),
+                PlannedDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc),
+                IsCooked = true,
+            };
+
+            var created = await _repository.AddAsync(mealPlan);
+
+            _logger.Information("Користувач {UserId} успішно записав приготовану страву '{RecipeName}' на дату {Date}", userId, recipeName, date.ToShortDateString());
+
+            return Result<MealPlan>.Success(created);
+        }
+
         public async Task<List<MealPlan>> GetUserPlansForDateAsync(int userId, DateTime date)
         {
             if (userId <= 0)
