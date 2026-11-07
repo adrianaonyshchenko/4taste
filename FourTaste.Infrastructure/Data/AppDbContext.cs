@@ -10,24 +10,15 @@ namespace FourTaste.Infrastructure.Data
         private static bool isDatabaseInitialized;
 
         public DbSet<User> Users { get; set; } = null!;
-
         public DbSet<Allergy> Allergies { get; set; } = null!;
-
         public DbSet<MealPlan> MealPlans { get; set; } = null!;
-
         public DbSet<Recipe> Recipes { get; set; } = null!;
-
         public DbSet<UserFridgeItem> UserFridgeItems { get; set; } = null!;
-
         public DbSet<UserShoppingItem> UserShoppingItems { get; set; } = null!;
-
         public DbSet<RecipeReview> RecipeReviews { get; set; } = null!;
-
         public DbSet<ReviewTag> ReviewTags { get; set; } = null!;
         public DbSet<AllergenCatalogItem> AllergenCatalogItems { get; set; } = null!;
-
         public DbSet<IngredientSubstitute> IngredientSubstitutes { get; set; } = null!;
-
         public DbSet<UserRecipeSubstitution> UserRecipeSubstitutions { get; set; } = null!;
 
         public AppDbContext()
@@ -98,6 +89,7 @@ namespace FourTaste.Infrastructure.Data
                         ");
                         this.Database.ExecuteSqlRaw(@"ALTER TABLE ""RecipeReviews"" ADD COLUMN IF NOT EXISTS ""Photo"" bytea NULL;");
                         this.Database.ExecuteSqlRaw(@"CREATE UNIQUE INDEX IF NOT EXISTS ""IX_RecipeReviews_RecipeId_UserId"" ON ""RecipeReviews"" (""RecipeId"", ""UserId"");");
+
                         this.Database.ExecuteSqlRaw(@"
                             CREATE TABLE IF NOT EXISTS ""ReviewTags"" (
                                 ""Id"" SERIAL PRIMARY KEY,
@@ -105,6 +97,8 @@ namespace FourTaste.Infrastructure.Data
                                 ""Name"" TEXT NOT NULL
                             );
                         ");
+
+                        this.Database.ExecuteSqlRaw(@"
                             CREATE TABLE IF NOT EXISTS ""AllergenCatalogItems"" (
                                 ""Id"" SERIAL PRIMARY KEY,
                                 ""Code"" TEXT NOT NULL,

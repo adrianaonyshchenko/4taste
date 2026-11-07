@@ -142,7 +142,6 @@ namespace FourTaste.WPF
             EditRecipeButton.Visibility = isAuthor ? Visibility.Visible : Visibility.Collapsed;
             EditRecipeButton.IsEnabled = isAuthor;
 
-            var ingredientViewModels = recipe.Ingredients.Select(ing =>
             _activeSubstitutions.Clear();
             _conflictingIngredients.Clear();
             if (viewerId.HasValue && _substituteService != null)
@@ -220,6 +219,7 @@ namespace FourTaste.WPF
                 .Where(a => !string.IsNullOrWhiteSpace(a.AllergenName))
                 .Select(a => a.AllergenName.Trim().ToLower())
                 .ToList();
+        }
         private void RenderIngredientsList()
         {
             if (_currentRecipe == null)
