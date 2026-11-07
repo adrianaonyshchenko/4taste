@@ -48,6 +48,10 @@ namespace FourTaste.WPF
                     using var ctx = await factory.CreateDbContextAsync();
                     ctx.EnsureDatabaseReady();
                     await BackfillRecipeThumbnailsAsync(provider);
+
+                    var subRepo = provider.GetRequiredService<FourTaste.ApplicationCore.Interfaces.ISubstituteRepository>();
+                    await subRepo.GetAllergenCatalogAsync();
+                    await subRepo.GetAllSubstitutesAsync();
                 }
                 catch (Exception ex)
                 {
@@ -128,6 +132,8 @@ namespace FourTaste.WPF
 
             services.AddScoped<IRecipeRepository, RecipeRepository>();
             services.AddScoped<IRecipeService, RecipeService>();
+            services.AddScoped<ISubstituteRepository, SubstituteRepository>();
+            services.AddScoped<ISubstituteService, SubstituteService>();
 
             services.AddTransient<ManageAllergiesWindow>();
             services.AddTransient<RegisterWindow>();

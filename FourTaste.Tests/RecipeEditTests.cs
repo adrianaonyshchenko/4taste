@@ -105,7 +105,6 @@ namespace FourTaste.Tests
             var recipe = CreateSampleRecipe(id: 1, userId: 10);
             _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(recipe);
 
-            // User 99 tries to edit user 10's recipe
             var request = CreateValidUpdateRequest(id: 1, userId: 99);
             var result = await _service.UpdateRecipeAsync(request);
 
