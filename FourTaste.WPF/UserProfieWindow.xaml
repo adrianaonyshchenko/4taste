@@ -66,6 +66,24 @@
                     </Button>
                 </StackPanel>
             </Border>
+
+            <Button x:Name="HomeButton"
+                    Click="HomeButton_Click"
+                    Content="Головна"
+                    Height="40"
+                    Background="#4A3532"
+                    Foreground="White"
+                    FontWeight="Bold"
+                    FontSize="15"
+                    BorderBrush="Transparent"
+                    Margin="0,15,0,0"
+                    Cursor="Hand">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="14"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
         </StackPanel>
 
         <!-- Права колонка: Керування профілем, списки та розділи -->
