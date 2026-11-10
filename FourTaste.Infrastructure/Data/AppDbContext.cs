@@ -21,6 +21,8 @@ namespace FourTaste.Infrastructure.Data
         public DbSet<AllergenCatalogItem> AllergenCatalogItems { get; set; } = null!;
         public DbSet<IngredientSubstitute> IngredientSubstitutes { get; set; } = null!;
         public DbSet<UserRecipeSubstitution> UserRecipeSubstitutions { get; set; } = null!;
+        public DbSet<Room> Rooms { get; set; } = null!;
+        public DbSet<RoomMember> RoomMembers { get; set; } = null!;
 
         public AppDbContext()
         {
@@ -145,6 +147,29 @@ namespace FourTaste.Infrastructure.Data
                                 ""RecipeId"" INTEGER NOT NULL
                             );
                         ");
+
+                        this.Database.ExecuteSqlRaw(@"
+                            CREATE TABLE IF NOT EXISTS ""Rooms"" (
+                                ""Id"" SERIAL PRIMARY KEY,
+                                ""Name"" TEXT NOT NULL,
+                                ""Description"" TEXT NULL,
+                                ""OwnerId"" INTEGER NOT NULL REFERENCES ""Users""(""ID"") ON DELETE CASCADE,
+                                ""InviteCode"" TEXT NOT NULL,
+                                ""CreatedAt"" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                            );
+                        ");
+                        this.Database.ExecuteSqlRaw(@"CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Rooms_InviteCode"" ON ""Rooms"" (""InviteCode"");");
+
+                        this.Database.ExecuteSqlRaw(@"
+                            CREATE TABLE IF NOT EXISTS ""RoomMembers"" (
+                                ""Id"" SERIAL PRIMARY KEY,
+                                ""RoomId"" INTEGER NOT NULL REFERENCES ""Rooms""(""Id"") ON DELETE CASCADE,
+                                ""UserId"" INTEGER NOT NULL REFERENCES ""Users""(""ID"") ON DELETE CASCADE,
+                                ""Role"" INTEGER NOT NULL,
+                                ""JoinedAt"" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                            );
+                        ");
+                        this.Database.ExecuteSqlRaw(@"CREATE UNIQUE INDEX IF NOT EXISTS ""IX_RoomMembers_RoomId_UserId"" ON ""RoomMembers"" (""RoomId"", ""UserId"");");
                     }
                     isDatabaseInitialized = true;
                 }
@@ -178,6 +203,20 @@ namespace FourTaste.Infrastructure.Data
                     .WithMany()
                     .HasForeignKey(r => r.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Room>(entity =>
+            {
+                entity.HasIndex(r => r.InviteCode).IsUnique();
+                entity.HasMany(r => r.Members)
+                    .WithOne()
+                    .HasForeignKey(m => m.RoomId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<RoomMember>(entity =>
+            {
+                entity.HasIndex(m => new { m.RoomId, m.UserId }).IsUnique();
             });
         }
     }

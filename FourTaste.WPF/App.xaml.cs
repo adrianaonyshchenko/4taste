@@ -151,6 +151,10 @@ namespace FourTaste.WPF
             services.AddTransient<IFavoriteRepository, FavoriteRepository>();
             services.AddScoped<IReviewRepository, ReviewRepository>();
             services.AddScoped<IReviewService, ReviewService>();
+            services.AddScoped<IRoomRepository, RoomRepository>();
+            services.AddScoped<IRoomService, RoomService>();
+            services.AddTransient<CreateRoomWindow>();
+            services.AddTransient<RoomDetailsWindow>();
             services.AddSingleton<IImageThumbnailGenerator, WpfImageThumbnailGenerator>();
         }
 

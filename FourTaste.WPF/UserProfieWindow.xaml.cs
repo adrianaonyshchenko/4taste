@@ -287,5 +287,12 @@ namespace FourTaste.WPF
         {
             OpenCuisinesButton_Click(sender, e);
         }
+
+        private void HomeButton_Click(object sender, RoutedEventArgs e)
+        {
+            var recipesWindow = App.ServiceProvider?.GetService<PublicRecipesWindow>() ?? new PublicRecipesWindow(this._recipeService);
+            recipesWindow.Show();
+            this.Close();
+        }
     }
 }
