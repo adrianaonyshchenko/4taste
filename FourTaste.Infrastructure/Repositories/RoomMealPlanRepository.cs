@@ -24,6 +24,15 @@ namespace FourTaste.Infrastructure.Data
                 .ToListAsync();
         }
 
+        public async Task<List<RoomMealPlan>> GetByRoomIdWithRecipesAsync(int roomId)
+        {
+            return await _context.RoomMealPlans
+                .Where(m => m.RoomId == roomId)
+                .Include(m => m.Recipe!)
+                    .ThenInclude(r => r.Ingredients)
+                .ToListAsync();
+        }
+
         public async Task<RoomMealPlan?> GetByIdAsync(int id)
         {
             return await _context.RoomMealPlans
@@ -40,7 +49,6 @@ namespace FourTaste.Infrastructure.Data
             {
                 mealPlan.PlannedDate = mealPlan.PlannedDate.ToUniversalTime();
             }
-
             await _context.RoomMealPlans.AddAsync(mealPlan);
             await _context.SaveChangesAsync();
         }
@@ -55,7 +63,6 @@ namespace FourTaste.Infrastructure.Data
             {
                 mealPlan.PlannedDate = mealPlan.PlannedDate.ToUniversalTime();
             }
-
             _context.RoomMealPlans.Update(mealPlan);
             await _context.SaveChangesAsync();
         }

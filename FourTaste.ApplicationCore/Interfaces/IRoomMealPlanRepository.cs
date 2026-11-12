@@ -12,5 +12,6 @@ namespace FourTaste.ApplicationCore.Interfaces
         Task AddAsync(RoomMealPlan mealPlan);
         Task UpdateAsync(RoomMealPlan mealPlan);
         Task DeleteAsync(int id);
+        Task<List<RoomMealPlan>> GetByRoomIdWithRecipesAsync(int roomId);
     }
 }

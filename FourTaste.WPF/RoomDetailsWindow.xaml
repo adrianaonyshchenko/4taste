@@ -117,7 +117,6 @@
                                             Padding="10,5"
                                             Margin="0,0,6,6">
                                         <StackPanel Orientation="Horizontal">
-                                            <!-- Іконка власника кімнати -->
                                             <TextBlock x:Name="OwnerIcon" 
                                                        Text="👑 " 
                                                        FontSize="11" 
@@ -230,7 +229,9 @@
                 <Border Grid.Row="0"
                         Background="#B89F8B"
                         CornerRadius="18"
-                        Padding="14"
+             
+ 
+Padding="14"
                         Margin="0,0,0,14">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -254,7 +255,7 @@
                             <Calendar x:Name="RoomCalendar"
                                       Background="Transparent"
                                       BorderBrush="Transparent"
-SelectedDatesChanged="RoomCalendar_SelectedDatesChanged"/>
+                                      SelectedDatesChanged="RoomCalendar_SelectedDatesChanged"/>
                         </Viewbox>
                     </Grid>
                 </Border>
@@ -335,8 +336,20 @@ SelectedDatesChanged="RoomCalendar_SelectedDatesChanged"/>
                                     FontSize="12"
                                     FontWeight="Bold"
                                     Height="32"
-                                    Padding="14,0"
+                                    Padding="10,0"
+                                    Margin="0,0,6,0"
                                     Click="PlanMealButton_Click"/>
+
+                            <Button x:Name="GenerateShoppingListButton"
+                                    Content="Згенерувати список"
+                                    Style="{StaticResource RoundedButtonStyle}"
+                                    Background="#877063"
+                                    Foreground="White"
+                                    FontSize="12"
+                                    FontWeight="Bold"
+                                    Height="32"
+                                    Padding="10,0"
+                                    Click="GenerateShoppingListButton_Click"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -367,16 +380,37 @@ SelectedDatesChanged="RoomCalendar_SelectedDatesChanged"/>
                                    Foreground="#4A352F"
                                    Margin="0,0,0,8"/>
 
-                        <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                            <TextBlock Text="Спільний список покупок"
-                                       Foreground="#5C4740"
-                                       FontSize="13"
-                                       TextAlignment="Center"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock x:Name="ShoppingListPlaceholderText"
+                                           Text="Список порожній. Натисніть «Згенерувати список»"
+                                           Foreground="#5C4740"
+                                           FontSize="12"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Margin="0,15,0,15"/>
 
-                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button Content="Редагувати"
+                                <ItemsControl x:Name="ShoppingListItemsControl">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#E3D7CB" CornerRadius="8" Padding="8,6" Margin="0,3">
+                                                <TextBlock Text="{Binding ProductName}"
+                                                           Foreground="#4A352F"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center"
+                                                           TextWrapping="Wrap"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                            <Button x:Name="ClearShoppingListButton"
+                                    Content="Очистити список"
                                     Style="{StaticResource RoundedButtonStyle}"
                                     Background="#877063"
                                     Foreground="White"
@@ -384,17 +418,7 @@ SelectedDatesChanged="RoomCalendar_SelectedDatesChanged"/>
                                     FontWeight="Bold"
                                     Height="30"
                                     Padding="10,0"
-                                    Margin="0,0,6,0"
-                                    IsEnabled="False"/>
-                            <Button Content="Зберегти"
-                                    Style="{StaticResource RoundedButtonStyle}"
-                                    Background="#542E2B"
-                                    Foreground="White"
-                                    FontSize="11"
-                                    FontWeight="Bold"
-                                    Height="30"
-                                    Padding="10,0"
-                                    IsEnabled="False"/>
+                                    Click="ClearShoppingListButton_Click"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -412,7 +436,10 @@ SelectedDatesChanged="RoomCalendar_SelectedDatesChanged"/>
                         HorizontalAlignment="Center"
                         Click="ExitButton_Click"/>
             </Grid>
+
+
         </Grid>
     </Grid>
 </Window>
+ 
  

@@ -19,22 +19,24 @@ namespace FourTaste.WPF
         private readonly IRoomService _roomService;
         private readonly IRoomMealPlanService _roomMealPlanService;
         private readonly IRecipeService _recipeService;
+        private readonly ShoppingListService _shoppingListService;
         private List<RoomMealPlan> _allMealPlans = new ();
 
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
         public RoomDetailsWindow(RoomDto room, IRoomService roomService)
-            : this(room, roomService, App.ServiceProvider?.GetService<IRoomMealPlanService>() ?? throw new InvalidOperationException("IServiceProvider is not initialized."), App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService is not initialized."))
+            : this(room, roomService, App.ServiceProvider?.GetService<IRoomMealPlanService>() ?? throw new InvalidOperationException("IServiceProvider is not initialized."), App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService is not initialized."), App.ServiceProvider?.GetService<ShoppingListService>() ?? throw new InvalidOperationException("ShoppingListService is not initialized."))
         {
         }
 
-        public RoomDetailsWindow(RoomDto room, IRoomService roomService, IRoomMealPlanService roomMealPlanService, IRecipeService recipeService)
+        public RoomDetailsWindow(RoomDto room, IRoomService roomService, IRoomMealPlanService roomMealPlanService, IRecipeService recipeService, ShoppingListService shoppingListService)
         {
             InitializeComponent();
             _room = room ?? throw new ArgumentNullException(nameof(room));
             _roomService = roomService ?? throw new ArgumentNullException(nameof(roomService));
             _roomMealPlanService = roomMealPlanService ?? throw new ArgumentNullException(nameof(roomMealPlanService));
             _recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
+            _shoppingListService = shoppingListService ?? throw new ArgumentNullException(nameof(shoppingListService));
 
             RoomCalendar.SelectedDate = DateTime.Today;
         }
@@ -73,6 +75,7 @@ namespace FourTaste.WPF
             }
 
             await LoadMealPlansAsync();
+            await LoadShoppingListAsync();
         }
 
         private async Task LoadMealPlansAsync()
@@ -82,6 +85,17 @@ namespace FourTaste.WPF
             {
                 _allMealPlans = result.Value;
                 UpdateMealPlansDisplay();
+            }
+        }
+
+        private async Task LoadShoppingListAsync()
+        {
+            var repo = App.ServiceProvider?.GetService<IShoppingListRepository>();
+            if (repo != null)
+            {
+                var items = await repo.GetByRoomIdAsync(_room.Id);
+                ShoppingListItemsControl.ItemsSource = items;
+                ShoppingListPlaceholderText.Visibility = items == null || items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
@@ -142,6 +156,44 @@ namespace FourTaste.WPF
             }
 
             await LoadMealPlansAsync();
+        }
+
+        private async void GenerateShoppingListButton_Click(object sender, RoutedEventArgs e)
+        {
+            var result = await _shoppingListService.GenerateShoppingListFromMealPlanAsync(_room.Id);
+            if (result.IsFailure)
+            {
+                MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Попередження, якщо у меню є страви, додані вручну
+            if (!string.IsNullOrEmpty(result.Value))
+            {
+                MessageBox.Show(result.Value, "Увага (ручні страви)", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Список покупок успішно згенеровано зі спільного меню!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            await LoadShoppingListAsync();
+        }
+
+        private async void ClearShoppingListButton_Click(object sender, RoutedEventArgs e)
+        {
+            var confirm = MessageBox.Show("Ви дійсно хочете очистити весь список покупок?", "Підтвердження", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            var repo = App.ServiceProvider?.GetService<IShoppingListRepository>();
+            if (repo != null)
+            {
+                await repo.ClearRoomListAsync(_room.Id);
+                await LoadShoppingListAsync();
+            }
         }
 
         private async void DeleteMealPlan_Click(object sender, RoutedEventArgs e)
@@ -206,6 +258,8 @@ namespace FourTaste.WPF
                 ItemsSource = recipes,
                 Height = 28,
                 VerticalContentAlignment = VerticalAlignment.Center
+
+
             };
             Grid.SetColumn(comboBox, 0);
             inputGrid.Children.Add(comboBox);
@@ -300,7 +354,7 @@ namespace FourTaste.WPF
             return null;
         }
 
-        private void RoomCodeButton_Click(object sender, RoutedEventArgs e)
+        private async void RoomCodeButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new RoomCreatedDialog(
                 _room.Name,

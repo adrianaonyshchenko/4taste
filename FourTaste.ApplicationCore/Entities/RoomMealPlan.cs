@@ -9,6 +9,7 @@ namespace FourTaste.ApplicationCore.Entities
         public int UserId { get; set; } 
         public string? RecipeName { get; set; } = string.Empty;
         public int? RecipeId { get; set; }
+        public Recipe? Recipe { get; set; }
         public DateTime PlannedDate { get; set; }
         public bool IsCooked { get; set; } = false;
     }
