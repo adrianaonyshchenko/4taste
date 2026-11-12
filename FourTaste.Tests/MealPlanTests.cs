@@ -36,7 +36,7 @@ namespace FourTaste.Tests
 
             _mockRepository.Setup(r => r.AddAsync(It.IsAny<MealPlan>())).ReturnsAsync(expectedPlan);
 
-            var result = await _service.AddCustomRecipeToPlanAsync(userId, recipeName, targetDate);
+            var result = await _service.AddCustomRecipeToPlanAsync(userId, recipeName, null, targetDate);
 
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Value);
@@ -76,7 +76,7 @@ namespace FourTaste.Tests
             _mockRepository.Setup(r => r.AddAsync(It.IsAny<MealPlan>())).ThrowsAsync(new Exception("Database error"));
 
             await Assert.ThrowsAsync<Exception>(() =>
-                _service.AddCustomRecipeToPlanAsync(userId, recipeName, targetDate));
+                _service.AddCustomRecipeToPlanAsync(userId, recipeName, null, targetDate));
         }
 
         [Fact]
