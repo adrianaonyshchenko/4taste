@@ -296,6 +296,7 @@ namespace FourTaste.WPF
 
             var createRoomWindow = new CreateRoomWindow(roomService);
             createRoomWindow.Owner = this;
+
             if (createRoomWindow.ShowDialog() == true)
             {
                 await this.LoadUserRoomsAsync();

@@ -235,6 +235,58 @@ namespace FourTaste.ApplicationCore.Services
             }
         }
 
+        public async Task<Result<RoomDto>> JoinRoomByCodeAsync(string inviteCode, int userId)
+        {
+            if (userId <= 0)
+            {
+                _logger.Warning("Спроба приєднання до кімнати неавторизованим користувачем.");
+                return Result<RoomDto>.Failure("Увійдіть в акаунт, щоб приєднатися до кімнати.");
+            }
+
+            string code = inviteCode?.Trim().ToUpperInvariant() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                _logger.Warning("Помилка валідації: код запрошення порожній.");
+                return Result<RoomDto>.Failure("Введіть код запрошення.");
+            }
+
+            var room = await _roomRepository.GetByInviteCodeAsync(code);
+            if (room is null)
+            {
+                _logger.Warning("Кімнату з кодом {InviteCode} не знайдено.", code);
+                return Result<RoomDto>.Failure("Кімнату з таким кодом не знайдено.");
+            }
+
+            if (room.OwnerId == userId || room.Members.Any(m => m.UserId == userId))
+            {
+                return Result<RoomDto>.Failure("Ви вже є учасником цієї кімнати.");
+            }
+
+            var newMember = new RoomMember
+            {
+                RoomId = room.Id,
+                UserId = userId,
+                Role = RoomRole.Member,
+                JoinedAt = DateTime.UtcNow
+            };
+
+            await _roomRepository.AddMemberAsync(newMember);
+
+            _logger.Information("Користувач {UserId} успішно приєднався до кімнати {RoomId} за кодом.", userId, room.Id);
+
+            var dto = new RoomDto
+            {
+                Id = room.Id,
+                Name = room.Name,
+                Description = room.Description,
+                OwnerId = room.OwnerId,
+                InviteCode = room.InviteCode,
+                CreatedAt = room.CreatedAt
+            };
+
+            return Result<RoomDto>.Success(dto);
+        }
+
         private async Task<string> GenerateUniqueInviteCodeAsync()
         {
             const int maxRetries = 10;

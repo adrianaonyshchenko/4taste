@@ -1,9 +1,10 @@
+using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Models;
+using FourTaste.ApplicationCore.Services;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using FourTaste.ApplicationCore.Interfaces;
-using FourTaste.ApplicationCore.Models;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FourTaste.WPF
 {
@@ -26,12 +27,7 @@ namespace FourTaste.WPF
 
         private void RoomNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (NamePlaceholder != null)
-            {
-                NamePlaceholder.Visibility = string.IsNullOrEmpty(RoomNameTextBox.Text)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-            }
+            NamePlaceholder?.Visibility = string.IsNullOrEmpty(RoomNameTextBox?.Text) ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void RoomDescriptionTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -98,6 +94,51 @@ namespace FourTaste.WPF
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = false;
+            this.Close();
+        }
+
+        private void JoinCodeTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (CodePlaceholder != null)
+            {
+                CodePlaceholder.Visibility = string.IsNullOrEmpty(JoinCodeTextBox.Text)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
+        }
+
+        private async void JoinButton_Click(object sender, RoutedEventArgs e)
+        {
+            int currentUserId = SessionContext.CurrentUser?.ID ?? 0;
+            if (currentUserId <= 0)
+            {
+                MessageBox.Show("Будь ласка, увійдіть у систему.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string code = JoinCodeTextBox.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                MessageBox.Show("Введіть код запрошення.", "Помилка валідації", MessageBoxButton.OK, MessageBoxImage.Warning);
+                JoinCodeTextBox.Focus();
+                return;
+            }
+
+            JoinButton.IsEnabled = false;
+
+            var result = await _roomService.JoinRoomByCodeAsync(code, currentUserId);
+
+            JoinButton.IsEnabled = true;
+
+            if (result.IsFailure)
+            {
+                MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            MessageBox.Show($"Ви успішно приєдналися до кімнати «{result.Value?.Name}»!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+
+            this.DialogResult = true;
             this.Close();
         }
     }

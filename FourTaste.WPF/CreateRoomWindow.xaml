@@ -165,7 +165,7 @@
                                          FontSize="14"
                                          VerticalAlignment="Center"
                                          CaretBrush="#4A352F"
-                                         IsEnabled="False"/>
+                                         TextChanged="JoinCodeTextBox_TextChanged"/>
                             </Grid>
                         </Border>
                     </StackPanel>
@@ -181,8 +181,7 @@
                             Height="40"
                             Width="180"
                             HorizontalAlignment="Center"
-                            IsEnabled="False"
-                            ToolTip="Функція приєднання до кімнати буде доступна у наступній версії"/>
+                            Click="JoinButton_Click"/>
                 </Grid>
             </Border>
         </Grid>
