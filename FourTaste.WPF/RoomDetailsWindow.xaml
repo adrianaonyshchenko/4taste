@@ -111,15 +111,31 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#E3D7CB"
+                                    <Border x:Name="MemberBorder"
+                                            Background="#E3D7CB"
                                             CornerRadius="10"
-                                            Padding="10,4"
+                                            Padding="10,5"
                                             Margin="0,0,6,6">
-                                        <TextBlock Text="{Binding Name}"
-                                                   Foreground="#4A352F"
-                                                   FontWeight="Bold"
-                                                   FontSize="12"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <!-- Іконка власника кімнати -->
+                                            <TextBlock x:Name="OwnerIcon" 
+                                                       Text="👑 " 
+                                                       FontSize="11" 
+                                                       VerticalAlignment="Center" 
+                                                       Visibility="Collapsed"/>
+                                            <TextBlock Text="{Binding Name}"
+                                                       Foreground="#4A352F"
+                                                       FontWeight="Bold"
+                                                       FontSize="12"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
                                     </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="Власник">
+                                            <Setter TargetName="MemberBorder" Property="Background" Value="#D5B89F"/>
+                                            <Setter TargetName="OwnerIcon" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

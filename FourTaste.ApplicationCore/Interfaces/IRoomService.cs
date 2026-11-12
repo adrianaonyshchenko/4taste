@@ -12,5 +12,6 @@ namespace FourTaste.ApplicationCore.Interfaces
         Task<Result<RoomDetailsDto>> GetRoomDetailsAsync(int roomId, int userId);
         Task<Result> DeleteRoomAsync(int roomId, int userId);
         Task<Result> LeaveRoomAsync(int roomId, int userId);
+        Task<Result<RoomDto>> JoinRoomByCodeAsync(string inviteCode, int userId);
     }
 }

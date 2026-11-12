@@ -94,7 +94,7 @@
                     <Border x:Name="WhyContainerBorder" Grid.Row="2" Background="#E3D7CB" CornerRadius="12" Padding="12" Visibility="Collapsed" MaxHeight="120" Margin="0,5,0,0">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="WHY?" FontWeight="Bold" FontSize="13" Foreground="#542E2B" Margin="0,0,0,4"/>
+                                <TextBlock Text="ЧОМУ?" FontWeight="Bold" FontSize="13" Foreground="#542E2B" Margin="0,0,0,4"/>
                                 <TextBlock x:Name="WhyExplanationTextBlock" Text="Пояснення відсутнє." FontSize="13" Foreground="#4A352F" TextWrapping="Wrap"/>
                             </StackPanel>
                         </ScrollViewer>

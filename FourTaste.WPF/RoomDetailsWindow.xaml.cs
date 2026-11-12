@@ -53,6 +53,11 @@ namespace FourTaste.WPF
             DeleteRoomButton.Visibility = isOwner ? Visibility.Visible : Visibility.Collapsed;
             LeaveRoomButton.Visibility = isOwner ? Visibility.Collapsed : Visibility.Visible;
 
+            if (RemoveMemberButton != null)
+            {
+                RemoveMemberButton.Visibility = isOwner ? Visibility.Visible : Visibility.Collapsed;
+            }
+
             var result = await _roomService.GetRoomDetailsAsync(_room.Id, this.CurrentUserId);
             if (result.IsSuccess && result.Value != null)
             {
