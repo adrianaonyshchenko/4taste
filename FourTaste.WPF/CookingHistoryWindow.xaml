@@ -147,43 +147,69 @@
             </Button>
         </Grid>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
-            <Border x:Name="AddRecipeButton"
-                    Width="110" Height="64"
-                    Background="#EBB832"
-                    CornerRadius="18"
-                    Margin="0,0,12,0"
-                    Cursor="Hand"
-                    MouseLeftButtonUp="AddRecipeButton_Click">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="+" FontSize="22" FontWeight="Bold" Foreground="#4A3532" HorizontalAlignment="Center" Margin="0,-4,0,-2"/>
-                    <TextBlock Text="Додати&#10;рецепт" TextAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="#4A3532" LineHeight="13"/>
-                </StackPanel>
-            </Border>
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled"
+                      Margin="0,0,0,16">
+            <StackPanel Orientation="Horizontal">
+                <Border x:Name="AddRecipeButton"
+                        Width="110" Height="64"
+                        Background="#EBB832"
+                        CornerRadius="18"
+                        Margin="0,0,12,0"
+                        Cursor="Hand"
+                        MouseLeftButtonUp="AddRecipeButton_Click">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="+" FontSize="22" FontWeight="Bold" Foreground="#4A3532" HorizontalAlignment="Center" Margin="0,-4,0,-2"/>
+                        <TextBlock Text="Додати&#10;рецепт" TextAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="#4A3532" LineHeight="13"/>
+                    </StackPanel>
+                </Border>
 
-            <Border Width="120" Height="64"
-                    Background="#BCA99B"
-                    CornerRadius="18"
-                    Margin="0,0,12,0">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="+" FontSize="22" FontWeight="Bold" Foreground="#4A352F" HorizontalAlignment="Center" Margin="0,-4,0,-2"/>
-                    <TextBlock Text="Створити&#10;кімнату" TextAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="#4A352F" LineHeight="13"/>
-                </StackPanel>
-            </Border>
+                <Border x:Name="CreateRoomButton"
+                        Width="120" Height="64"
+                        Background="#BCA99B"
+                        CornerRadius="18"
+                        Margin="0,0,12,0"
+                        Cursor="Hand"
+                        MouseLeftButtonUp="CreateRoomButton_Click">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="+" FontSize="22" FontWeight="Bold" Foreground="#4A352F" HorizontalAlignment="Center" Margin="0,-4,0,-2"/>
+                        <TextBlock Text="Створити&#10;кімнату" TextAlignment="Center" FontSize="11" FontWeight="Bold" Foreground="#4A352F" LineHeight="13"/>
+                    </StackPanel>
+                </Border>
 
-            <Border Width="120" Height="64"
-                    Background="#877063"
-                    CornerRadius="18"
-                    Margin="0,0,12,0">
-                <TextBlock Text="Назва&#10;кімнати 1" TextAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="White" LineHeight="15"/>
-            </Border>
-
-            <Border Width="120" Height="64"
-                    Background="#877063"
-                    CornerRadius="18">
-                <TextBlock Text="Назва&#10;кімнати 2" TextAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold" Foreground="White" LineHeight="15"/>
-            </Border>
-        </StackPanel>
+                <ItemsControl x:Name="UserRoomsItemsControl">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="120" Height="64"
+                                    Background="#877063"
+                                    CornerRadius="18"
+                                    Margin="0,0,12,0"
+                                    Cursor="Hand"
+                                    Tag="{Binding}"
+                                    ToolTip="{Binding Description}"
+                                    MouseLeftButtonUp="RoomButton_Click">
+                                <TextBlock Text="{Binding Name}"
+                                           TextAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center"
+                                           Margin="8,0"
+                                           TextWrapping="Wrap"
+                                           FontSize="12"
+                                           FontWeight="Bold"
+                                           Foreground="White"
+                                           LineHeight="15"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
 
         <Grid Grid.Row="2" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">

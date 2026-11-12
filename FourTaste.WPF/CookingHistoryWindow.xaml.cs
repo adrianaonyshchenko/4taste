@@ -28,6 +28,7 @@ namespace FourTaste.WPF
 
         private readonly MealPlanService mealPlanService;
         private readonly IRecipeService recipeService;
+        private readonly IRoomService? _roomService;
         private List<CookingHistoryDisplayItem> allCookedMeals = new ();
 
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
@@ -40,16 +41,24 @@ namespace FourTaste.WPF
         }
 
         public CookingHistoryWindow(MealPlanService mealPlanService, IRecipeService recipeService)
+            : this(mealPlanService, recipeService, App.ServiceProvider?.GetService<IRoomService>())
+        {
+        }
+
+        public CookingHistoryWindow(MealPlanService mealPlanService, IRecipeService recipeService, IRoomService? roomService)
         {
             this.InitializeComponent();
             this.mealPlanService = mealPlanService ?? throw new ArgumentNullException(nameof(mealPlanService));
             this.recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
+            this._roomService = roomService;
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.UpdateProfileAvatar();
+            var roomsTask = this.LoadUserRoomsAsync();
             await this.LoadCookingHistoryAsync();
+            await roomsTask;
         }
 
         private void UpdateProfileAvatar()
@@ -268,6 +277,73 @@ namespace FourTaste.WPF
             }
 
             _ = this.LoadCookingHistoryAsync();
+        }
+
+        private async void CreateRoomButton_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (this.CurrentUserId <= 0)
+            {
+                MessageBox.Show("Увійдіть в акаунт, щоб створити кімнату.", "Авторизація", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var roomService = this._roomService ?? App.ServiceProvider?.GetService<IRoomService>();
+            if (roomService is null)
+            {
+                MessageBox.Show("Сервіс кімнат недоступний.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var createRoomWindow = new CreateRoomWindow(roomService);
+            createRoomWindow.Owner = this;
+            if (createRoomWindow.ShowDialog() == true)
+            {
+                await this.LoadUserRoomsAsync();
+            }
+        }
+
+        private async void RoomButton_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.Tag is RoomDto roomDto)
+            {
+                var roomService = this._roomService ?? App.ServiceProvider?.GetService<IRoomService>();
+                if (roomService is null)
+                {
+                    return;
+                }
+
+                var roomWindow = new RoomDetailsWindow(roomDto, roomService);
+                roomWindow.Owner = this;
+                if (roomWindow.ShowDialog() == true)
+                {
+                    await this.LoadUserRoomsAsync();
+                }
+            }
+        }
+
+        private async Task LoadUserRoomsAsync()
+        {
+            if (this.CurrentUserId <= 0)
+            {
+                if (this.UserRoomsItemsControl != null)
+                {
+                    this.UserRoomsItemsControl.ItemsSource = null;
+                }
+
+                return;
+            }
+
+            var roomService = this._roomService ?? App.ServiceProvider?.GetService<IRoomService>();
+            if (roomService is null)
+            {
+                return;
+            }
+
+            var result = await roomService.GetUserRoomsAsync(this.CurrentUserId);
+            if (result.IsSuccess && this.UserRoomsItemsControl != null)
+            {
+                this.UserRoomsItemsControl.ItemsSource = result.Value;
+            }
         }
 
         private void CookingHistoryButton_Click(object sender, RoutedEventArgs e)
