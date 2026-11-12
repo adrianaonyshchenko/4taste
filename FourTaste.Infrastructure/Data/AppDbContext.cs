@@ -27,7 +27,7 @@ namespace FourTaste.Infrastructure.Data
         public DbSet<Room> Rooms { get; set; } = null!;
         public DbSet<RoomMember> RoomMembers { get; set; } = null!;
         public DbSet<RoomMealPlan> RoomMealPlans { get; set; } = null!;
-
+        public DbSet<ShoppingListItem> ShoppingListItems { get; set; } = null!;
         public AppDbContext()
         {
         }
