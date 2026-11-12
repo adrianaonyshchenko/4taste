@@ -276,7 +276,10 @@ SelectedDatesChanged="RoomCalendar_SelectedDatesChanged"/>
                                 <ItemsControl x:Name="RoomMealPlansItemsControl">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#E3D7CB" CornerRadius="8" Padding="8" Margin="0,4">
+                                            <Border Background="#E3D7CB" CornerRadius="8" Padding="8" Margin="0,4"
+                                                    Cursor="Hand"
+                                                    ToolTip="Натисніть, щоб переглянути рецепт"
+                                                    MouseLeftButtonUp="MealPlanBorder_MouseLeftButtonUp">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>

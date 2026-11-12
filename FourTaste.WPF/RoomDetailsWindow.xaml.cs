@@ -1,14 +1,15 @@
+using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Interfaces;
+using FourTaste.ApplicationCore.Models;
+using FourTaste.ApplicationCore.Services;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using FourTaste.ApplicationCore.Entities;
-using FourTaste.ApplicationCore.Interfaces;
-using FourTaste.ApplicationCore.Models;
-using FourTaste.ApplicationCore.Services;
-using Microsoft.Extensions.DependencyInjection;
+using System.Windows.Input;
 
 namespace FourTaste.WPF
 {
@@ -17,21 +18,23 @@ namespace FourTaste.WPF
         private readonly RoomDto _room;
         private readonly IRoomService _roomService;
         private readonly IRoomMealPlanService _roomMealPlanService;
+        private readonly IRecipeService _recipeService;
         private List<RoomMealPlan> _allMealPlans = new ();
 
         private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
 
         public RoomDetailsWindow(RoomDto room, IRoomService roomService)
-            : this(room, roomService, App.ServiceProvider?.GetService<IRoomMealPlanService>() ?? throw new InvalidOperationException("IServiceProvider is not initialized."))
+            : this(room, roomService, App.ServiceProvider?.GetService<IRoomMealPlanService>() ?? throw new InvalidOperationException("IServiceProvider is not initialized."), App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService is not initialized."))
         {
         }
 
-        public RoomDetailsWindow(RoomDto room, IRoomService roomService, IRoomMealPlanService roomMealPlanService)
+        public RoomDetailsWindow(RoomDto room, IRoomService roomService, IRoomMealPlanService roomMealPlanService, IRecipeService recipeService)
         {
             InitializeComponent();
             _room = room ?? throw new ArgumentNullException(nameof(room));
             _roomService = roomService ?? throw new ArgumentNullException(nameof(roomService));
             _roomMealPlanService = roomMealPlanService ?? throw new ArgumentNullException(nameof(roomMealPlanService));
+            _recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
 
             RoomCalendar.SelectedDate = DateTime.Today;
         }
@@ -109,17 +112,27 @@ namespace FourTaste.WPF
                 return;
             }
 
-            string? inputRecipe = PromptInput("Скласти меню", "Введіть назву страви для спільного меню:");
-            if (string.IsNullOrWhiteSpace(inputRecipe))
+            var criteria = new RecipeSearchCriteria();
+            var recipesResult = await _recipeService.SearchRecipesAsync(criteria);
+
+            var availableRecipes = recipesResult.IsSuccess
+                ? recipesResult.Value?.Where(r => r.UserId == CurrentUserId || r.IsPublic).ToList() ?? new List<Recipe>()
+                : new List<Recipe>();
+
+            var inputResult = PromptRecipeInput("Скласти меню", "Введіть назву або оберіть існуючий рецепт:", availableRecipes);
+
+            if (inputResult == null || string.IsNullOrWhiteSpace(inputResult.Value.Name))
             {
                 return;
             }
 
             var selectedDate = RoomCalendar.SelectedDate.Value;
-            var addResult = await _roomMealPlanService.AddRoomMealPlanAsync(_room.Id, CurrentUserId, inputRecipe, null, selectedDate);
+
+            var addResult = await _roomMealPlanService.AddRoomMealPlanAsync(_room.Id, CurrentUserId, inputResult.Value.Name, inputResult.Value.RecipeId, selectedDate);
+
             if (addResult.IsFailure)
             {
-                MessageBox.Show(addResult.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, addResult.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -147,13 +160,13 @@ namespace FourTaste.WPF
             }
         }
 
-        private string? PromptInput(string title, string promptText)
+        private (string Name, int? RecipeId)? PromptRecipeInput(string title, string promptText, List<Recipe> recipes)
         {
             var promptWindow = new Window
             {
                 Title = title,
-                Width = 350,
-                Height = 160,
+                Width = 380,
+                Height = 170,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Owner = this,
                 Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#E5D3BD")!,
@@ -170,25 +183,63 @@ namespace FourTaste.WPF
                 Text = promptText,
                 Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#4A352F")!,
                 FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 8),
-                TextWrapping = TextWrapping.Wrap
+                Margin = new Thickness(0, 0, 0, 8)
             };
             Grid.SetRow(textBlock, 0);
             grid.Children.Add(textBlock);
 
-            var textBox = new TextBox
+            var inputGrid = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+            inputGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            inputGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var comboBox = new ComboBox
             {
+                IsEditable = true,
+                IsTextSearchEnabled = true,
+                DisplayMemberPath = "Title",
+                SelectedValuePath = "Id",
+                ItemsSource = recipes,
                 Height = 28,
-                VerticalContentAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 0, 12)
+                VerticalContentAlignment = VerticalAlignment.Center
             };
-            Grid.SetRow(textBox, 1);
-            grid.Children.Add(textBox);
+            Grid.SetColumn(comboBox, 0);
+            inputGrid.Children.Add(comboBox);
+
+            var createBtn = new Button
+            {
+                Content = "+",
+                Width = 28,
+                Height = 28,
+                Margin = new Thickness(8, 0, 0, 0),
+                Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#B89F8B")!,
+                Foreground = System.Windows.Media.Brushes.White,
+                FontWeight = FontWeights.Bold,
+                ToolTip = "Створити новий рецепт"
+            };
+            createBtn.Click += async (s, ev) =>
+            {
+                var createWin = new CreateRecipeWindow(_recipeService, CurrentUserId);
+                if (createWin.ShowDialog() == true)
+                {
+                    var fresh = await _recipeService.SearchRecipesAsync(new RecipeSearchCriteria());
+                    if (fresh.IsSuccess)
+                    {
+                        recipes = fresh.Value?.Where(r => r.UserId == CurrentUserId || r.IsPublic).ToList() ?? new List<Recipe>();
+                        comboBox.ItemsSource = recipes;
+                        comboBox.SelectedValue = createWin.CreatedRecipeId;
+                    }
+                }
+            };
+            Grid.SetColumn(createBtn, 1);
+            inputGrid.Children.Add(createBtn);
+
+            Grid.SetRow(inputGrid, 1);
+            grid.Children.Add(inputGrid);
 
             var buttonPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
             Grid.SetRow(buttonPanel, 2);
 
-            string? resultText = null;
+            (string Name, int? RecipeId)? resultData = null;
 
             var okButton = new Button
             {
@@ -202,7 +253,19 @@ namespace FourTaste.WPF
             };
             okButton.Click += (s, ev) =>
             {
-                resultText = textBox.Text;
+                string text = comboBox.Text?.Trim() ?? string.Empty;
+                int? selectedId = comboBox.SelectedValue as int?;
+
+                if (selectedId == null && !string.IsNullOrEmpty(text))
+                {
+                    var matched = recipes.FirstOrDefault(r => r.Title.Equals(text, StringComparison.OrdinalIgnoreCase));
+                    if (matched != null)
+                    {
+                        selectedId = matched.Id;
+                    }
+                }
+
+                resultData = (text, selectedId);
                 promptWindow.DialogResult = true;
                 promptWindow.Close();
             };
@@ -216,21 +279,18 @@ namespace FourTaste.WPF
                 Foreground = System.Windows.Media.Brushes.White,
                 FontWeight = FontWeights.Bold
             };
-            cancelButton.Click += (s, ev) =>
-            {
-                promptWindow.Close();
-            };
+            cancelButton.Click += (s, ev) => promptWindow.Close();
 
             buttonPanel.Children.Add(okButton);
             buttonPanel.Children.Add(cancelButton);
             grid.Children.Add(buttonPanel);
 
             promptWindow.Content = grid;
-            textBox.Focus();
+            comboBox.Focus();
 
             if (promptWindow.ShowDialog() == true)
             {
-                return resultText;
+                return resultData;
             }
             return null;
         }
@@ -292,6 +352,27 @@ namespace FourTaste.WPF
             MessageBox.Show("Ви вийшли з кімнати.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
             this.DialogResult = true;
             this.Close();
+        }
+
+        private void MealPlanBorder_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is DependencyObject source && source is Button)
+            {
+                return;
+            }
+
+            if (sender is FrameworkElement element && element.DataContext is RoomMealPlan mealPlan)
+            {
+                if (mealPlan.RecipeId.HasValue && mealPlan.RecipeId.Value > 0)
+                {
+                    var detailsWindow = new RecipeDetailsWindow(_recipeService, mealPlan.RecipeId.Value);
+                    detailsWindow.ShowDialog();
+                }
+                else
+                {
+                    MessageBox.Show("Цю страву було введено вручну, тому для неї немає детального опису рецепта.", "Інформація", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
         }
 
         private void ExitButton_Click(object sender, RoutedEventArgs e)

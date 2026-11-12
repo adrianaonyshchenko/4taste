@@ -63,11 +63,18 @@ namespace FourTaste.Tests
 
             var service = new RoomMealPlanService(mockRepo.Object, mockLogger.Object);
             var date = DateTime.Today;
+            int testRecipeId = 99; 
 
-            var result = await service.AddRoomMealPlanAsync(1, 2, "Оладки", null, date);
+            var result = await service.AddRoomMealPlanAsync(1, 2, "Оладки", testRecipeId, date);
 
             Assert.True(result.IsSuccess);
-            mockRepo.Verify(r => r.AddAsync(It.Is<RoomMealPlan>(p => p.RoomId == 1 && p.UserId == 2 && p.RecipeName == "Оладки")), Times.Once);
+
+            mockRepo.Verify(r => r.AddAsync(It.Is<RoomMealPlan>(p =>
+                p.RoomId == 1 &&
+                p.UserId == 2 &&
+                p.RecipeName == "Оладки" &&
+                p.RecipeId == testRecipeId)), Times.Once);
+
             mockLogger.Verify(l => l.Information(It.IsAny<string>(), "Оладки", 1, It.IsAny<string>()), Times.Once);
         }
 

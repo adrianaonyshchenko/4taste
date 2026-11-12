@@ -20,7 +20,7 @@ namespace FourTaste.ApplicationCore.Services
             _logger = logger;
         }
 
-        public async Task<Result<MealPlan>> AddCustomRecipeToPlanAsync(int userId, string recipeName, DateTime date)
+        public async Task<Result<MealPlan>> AddCustomRecipeToPlanAsync(int userId, string recipeName, int? recipeId, DateTime date)
         {
             if (userId <= 0)
             {
@@ -37,6 +37,7 @@ namespace FourTaste.ApplicationCore.Services
             var mealPlan = new MealPlan
             {
                 UserId = userId,
+                RecipeId = recipeId, 
                 RecipeName = recipeName.Trim(),
                 PlannedDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc),
                 IsCooked = false,
@@ -44,7 +45,7 @@ namespace FourTaste.ApplicationCore.Services
 
             var created = await _repository.AddAsync(mealPlan);
 
-            _logger.Information("Користувач {UserId} успішно додав страву '{RecipeName}' на дату {Date}", userId, recipeName, date.ToShortDateString());
+            _logger.Information("Користувач {UserId} успішно додав страву '{RecipeName}' (RecipeId: {RecipeId}) на дату {Date}", userId, recipeName, recipeId, date.ToShortDateString());
 
             return Result<MealPlan>.Success(created);
         }
