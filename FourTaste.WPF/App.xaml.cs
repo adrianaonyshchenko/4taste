@@ -55,7 +55,7 @@ namespace FourTaste.WPF
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "РќРµ РІРґР°Р»РѕСЃСЏ РІРёРєРѕРЅР°С‚Рё РїСЂРѕРіСЂС–РІ Р±Р°Р·Рё РґР°РЅРёС…");
+                    Log.Error(ex, "Не вдалося виконати прогрів бази даних");
                 }
             });
 
@@ -160,10 +160,10 @@ namespace FourTaste.WPF
 
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {
-            Log.Error(e.Exception, "РќРµРїРµСЂРµРґР±Р°С‡СѓРІР°РЅР° РєСЂРёС‚РёС‡РЅР° РїРѕРјРёР»РєР° РІ UI РїРѕС‚РѕС†С– (DispatcherUnhandledException)");
+            Log.Error(e.Exception, "Непередбачувана критична помилка в UI потоці (DispatcherUnhandledException)");
             MessageBox.Show(
-                $"Р’РёРЅРёРєР»Р° РєСЂРёС‚РёС‡РЅР° С‚РµС…РЅС–С‡РЅР° РїРѕРјРёР»РєР°:\n{e.Exception.Message}\n\nР—РІРµСЂРЅС–С‚СЊСЃСЏ РґРѕ Р°РґРјС–РЅС–СЃС‚СЂР°С‚РѕСЂР° Р°Р±Рѕ РїРµСЂРµРІС–СЂС‚Рµ РїС–РґРєР»СЋС‡РµРЅРЅСЏ РґРѕ Р±Р°Р·Рё РґР°РЅРёС… С‡Рё РјРµСЂРµР¶С–.",
-                "РљСЂРёС‚РёС‡РЅР° РїРѕРјРёР»РєР°",
+                $"Виникла критична технічна помилка:\n{e.Exception.Message}\n\nЗверніться до адміністратора або перевірте підключення до бази даних чи мережі.",
+                "Критична помилка",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             e.Handled = true;
@@ -173,13 +173,13 @@ namespace FourTaste.WPF
         {
             if (e.ExceptionObject is Exception ex)
             {
-                Log.Fatal(ex, "РљСЂРёС‚РёС‡РЅР° РЅРµРїРµСЂРµС…РѕРїР»РµРЅР° РїРѕРјРёР»РєР° РґРѕРјРµРЅСѓ Р·Р°СЃС‚РѕСЃСѓРЅРєСѓ (AppDomain.UnhandledException)");
+                Log.Fatal(ex, "Критична неперехоплена помилка домену застосунку (AppDomain.UnhandledException)");
             }
         }
 
         private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
         {
-            Log.Error(e.Exception, "РќРµРїРµСЂРµС…РѕРїР»РµРЅР° РїРѕРјРёР»РєР° С„РѕРЅРѕРІРѕС— Р·Р°РґР°С‡С– (TaskScheduler.UnobservedTaskException)");
+            Log.Error(e.Exception, "Неперехоплена помилка фонової задачі (TaskScheduler.UnobservedTaskException)");
             e.SetObserved();
         }
     }
