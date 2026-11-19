@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
@@ -136,7 +136,7 @@ namespace FourTaste.WPF
             {
                 this.StopTimer();
 
-                int userId = SessionContext.CurrentUser?.ID ?? 0;
+                int userId = App.CurrentUser.UserId;
                 if (userId > 0 && this._mealPlanService != null)
                 {
                     string recipeTitle = !string.IsNullOrWhiteSpace(this._recipe.Title) ? this._recipe.Title : "Рецепт";

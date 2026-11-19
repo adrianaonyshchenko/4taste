@@ -71,31 +71,12 @@ namespace FourTaste.WPF
 
         private static BitmapImage? ToBitmapImage(byte[]? bytes)
         {
-            if (bytes is null || bytes.Length == 0)
-            {
-                return null;
-            }
-
-            try
-            {
-                using var stream = new MemoryStream(bytes);
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.StreamSource = stream;
-                image.EndInit();
-                image.Freeze();
-                return image;
-            }
-            catch
-            {
-                return null;
-            }
+            return ImageDecoder.Decode(bytes);
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            int? currentUserId = SessionContext.CurrentUser?.ID;
+            int? currentUserId = App.CurrentUser.CurrentUser?.ID;
             if (currentUserId is null || currentUserId <= 0)
             {
                 MessageBox.Show("Будь ласка, увійдіть у систему для редагування рецепта.", "Помилка авторизації", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -241,24 +222,23 @@ namespace FourTaste.WPF
 
             if (openFileDialog.ShowDialog() == true)
             {
-                try
+                if (new FileInfo(openFileDialog.FileName).Length > 5 * 1024 * 1024)
                 {
-                    var bytes = File.ReadAllBytes(openFileDialog.FileName);
-                    if (bytes.Length > 5 * 1024 * 1024)
-                    {
-                        MessageBox.Show("Розмір фотографії не може перевищувати 5 МБ.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
+                    MessageBox.Show("Розмір фотографії не може перевищувати 5 МБ.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
 
-                    _selectedPhoto = bytes;
-                    var bitmap = ToBitmapImage(_selectedPhoto);
-                    RecipeImage.Source = bitmap;
-                    PhotoPlaceholder.Visibility = Visibility.Collapsed;
-                }
-                catch (Exception ex)
+                var bytes = File.ReadAllBytes(openFileDialog.FileName);
+                var bitmap = ToBitmapImage(bytes);
+                if (bitmap is null)
                 {
-                    MessageBox.Show($"Не вдалося завантажити зображення: {ex.Message}", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Не вдалося завантажити зображення. Спробуйте інший файл.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
+
+                _selectedPhoto = bytes;
+                RecipeImage.Source = bitmap;
+                PhotoPlaceholder.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -329,7 +309,7 @@ namespace FourTaste.WPF
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            int? currentUserId = SessionContext.CurrentUser?.ID;
+            int? currentUserId = App.CurrentUser.CurrentUser?.ID;
             if (currentUserId is null || currentUserId <= 0)
             {
                 MessageBox.Show("Необхідно авторизуватися.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -384,7 +364,6 @@ namespace FourTaste.WPF
                 return;
             }
 
-            // Формуємо список кроків разом з полем WHY? (формат: "Опис кроку|WHY:текст")
             var stepsList = new List<string>();
             foreach (var s in _steps.Where(s => !string.IsNullOrWhiteSpace(s.Description)))
             {
@@ -443,7 +422,7 @@ namespace FourTaste.WPF
 
         private async void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            int? currentUserId = SessionContext.CurrentUser?.ID;
+            int? currentUserId = App.CurrentUser.CurrentUser?.ID;
             if (currentUserId is null || currentUserId <= 0)
             {
                 MessageBox.Show("Необхідно авторизуватися.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);

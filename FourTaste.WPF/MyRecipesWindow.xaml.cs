@@ -22,7 +22,7 @@ namespace FourTaste.WPF
         public MyRecipesWindow()
             : this(
                 App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService не зареєстровано."),
-                SessionContext.CurrentUser?.ID ?? 0)
+                App.CurrentUser.UserId)
         {
         }
 

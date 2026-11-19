@@ -24,27 +24,20 @@ namespace FourTaste.WPF
             TitleTextBlock.Text = headerText;
             InviteCodeTextBox.Text = inviteCode;
 
-            try
-            {
-                Clipboard.SetDataObject(_code, true);
-            }
-            catch
-            {
-            }
+            Loaded += (_, _) => CopyCodeToClipboard();
         }
 
         private void CopyButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                Clipboard.SetDataObject(_code, true);
-                CopyButton.Content = "Скопійовано! ✓";
-            }
-            catch
-            {
-                InviteCodeTextBox.SelectAll();
-                InviteCodeTextBox.Focus();
-            }
+            CopyCodeToClipboard();
+            CopyButton.Content = "Скопійовано! ✓";
+        }
+
+        private void CopyCodeToClipboard()
+        {
+            InviteCodeTextBox.SelectAll();
+            InviteCodeTextBox.Focus();
+            Clipboard.SetDataObject(_code, true);
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)

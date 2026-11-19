@@ -1,4 +1,4 @@
-﻿using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Models;
 using FourTaste.ApplicationCore.Services;
@@ -35,7 +35,7 @@ namespace FourTaste.WPF
             TitleTextBlock.Text = $"Відгуки: {recipeTitle}";
             ReviewTextBox.MaxLength = ReviewOptions.MaxTextLength;
 
-            var currentUser = SessionContext.CurrentUser;
+            var currentUser = App.CurrentUser.CurrentUser;
             FormAuthorTextBlock.Text = currentUser?.Username ?? string.Empty;
             FormInitialTextBlock.Text = ReviewCardViewModel.GetInitial(currentUser?.Username);
 
@@ -45,7 +45,7 @@ namespace FourTaste.WPF
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            var result = await _reviewService.GetOverviewAsync(_recipeId, SessionContext.CurrentUser?.ID);
+            var result = await _reviewService.GetOverviewAsync(_recipeId, App.CurrentUser.CurrentUser?.ID);
 
             if (result.IsFailure)
             {
@@ -86,16 +86,15 @@ namespace FourTaste.WPF
                 return;
             }
 
-            try
+            var photo = ReviewPhotoHelper.CompressToJpeg(dialog.FileName);
+            if (photo is null)
             {
-                _photo = ReviewPhotoHelper.CompressToJpeg(dialog.FileName);
-            }
-            catch (Exception ex) when (ex is NotSupportedException or FileFormatException or IOException or UnauthorizedAccessException)
-            {
-                Log.Warning(ex, "Не вдалося прочитати зображення для відгуку: {FileName}", dialog.FileName);
+                Log.Warning("Не вдалося прочитати зображення для відгуку: {FileName}", dialog.FileName);
                 MessageBox.Show("Не вдалося відкрити це зображення. Спробуйте інший файл.", "Фото", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            _photo = photo;
 
             ShowPhotoPreview();
         }
@@ -114,19 +113,19 @@ namespace FourTaste.WPF
                 FillForm(card.Review);
                 PublishButton.Content = "Зберегти зміни";
                 CancelEditButton.Visibility = Visibility.Visible;
-                UpdateFormState(SessionContext.CurrentUser?.ID);
+                UpdateFormState(App.CurrentUser.CurrentUser?.ID);
             }
         }
 
         private void CancelEditButton_Click(object sender, RoutedEventArgs e)
         {
             ResetForm();
-            UpdateFormState(SessionContext.CurrentUser?.ID);
+            UpdateFormState(App.CurrentUser.CurrentUser?.ID);
         }
 
         private async void DeleteReviewButton_Click(object sender, RoutedEventArgs e)
         {
-            var currentUser = SessionContext.CurrentUser;
+            var currentUser = App.CurrentUser.CurrentUser;
             if (currentUser is null || _overview is null)
             {
                 return;
@@ -163,7 +162,7 @@ namespace FourTaste.WPF
 
         private async void PublishButton_Click(object sender, RoutedEventArgs e)
         {
-            var currentUser = SessionContext.CurrentUser;
+            var currentUser = App.CurrentUser.CurrentUser;
             if (currentUser is null || _overview is null)
             {
                 MessageBox.Show("Увійдіть в акаунт, щоб залишити відгук.", "Відгуки", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -250,7 +249,7 @@ namespace FourTaste.WPF
                 return;
             }
 
-            int? viewerId = SessionContext.CurrentUser?.ID;
+            int? viewerId = App.CurrentUser.CurrentUser?.ID;
 
             var cards = _overview.Reviews
                 .Select(r => new ReviewCardViewModel(r, viewerId))
@@ -270,58 +269,52 @@ namespace FourTaste.WPF
 
         private async Task LoadAvatarsAsync(IReadOnlyList<ReviewCardViewModel> cards)
         {
-            try
+            int? viewerId = App.CurrentUser.CurrentUser?.ID;
+
+            var missing = cards
+                .Select(c => c.Review.UserId)
+                .Distinct()
+                .Where(id => id != viewerId && !ReviewAvatarCache.TryGet(id, out _))
+                .ToList();
+
+            if (missing.Count > 0)
             {
-                int? viewerId = SessionContext.CurrentUser?.ID;
-
-                var missing = cards
-                    .Select(c => c.Review.UserId)
-                    .Distinct()
-                    .Where(id => id != viewerId && !ReviewAvatarCache.TryGet(id, out _))
-                    .ToList();
-
-                if (missing.Count > 0)
+                var result = await _reviewService.GetAuthorAvatarsAsync(missing);
+                if (result.IsFailure)
                 {
-                    var result = await _reviewService.GetAuthorAvatarsAsync(missing);
-                    if (result.IsFailure)
-                    {
-                        Log.Warning("Не вдалося завантажити аватарки авторів відгуків: {Error}", result.Error);
-                        return;
-                    }
-
-                    var bytesById = result.Value!;
-                    var decoded = await Task.Run(() => missing.ToDictionary(
-                        id => id,
-                        id => bytesById.TryGetValue(id, out var bytes) ? ReviewPhotoHelper.ToAvatarImage(bytes) : null));
-
-                    foreach (var pair in decoded)
-                    {
-                        ReviewAvatarCache.Set(pair.Key, pair.Value);
-                    }
-                }
-
-                if (!IsLoaded)
-                {
+                    Log.Warning("Не вдалося завантажити аватарки авторів відгуків: {Error}", result.Error);
                     return;
                 }
 
-                foreach (var card in cards)
+                var bytesById = result.Value!;
+                var decoded = await Task.Run(() => missing.ToDictionary(
+                    id => id,
+                    id => bytesById.TryGetValue(id, out var bytes) ? ReviewPhotoHelper.ToAvatarImage(bytes) : null));
+
+                foreach (var pair in decoded)
                 {
-                    if (viewerId.HasValue && card.Review.UserId == viewerId.Value)
-                    {
-                        card.Avatar = ReviewPhotoHelper.ToAvatarImage(SessionContext.CurrentUser?.Avatar);
-                    }
-                    else if (ReviewAvatarCache.TryGet(card.Review.UserId, out var avatar))
-                    {
-                        card.Avatar = avatar;
-                    }
+                    ReviewAvatarCache.Set(pair.Key, pair.Value);
                 }
             }
-            catch (Exception ex)
+
+            if (!IsLoaded)
             {
-                Log.Warning(ex, "Помилка завантаження аватарок у відгуках");
+                return;
+            }
+
+            foreach (var card in cards)
+            {
+                if (viewerId.HasValue && card.Review.UserId == viewerId.Value)
+                {
+                    card.Avatar = ReviewPhotoHelper.ToAvatarImage(App.CurrentUser.CurrentUser?.Avatar);
+                }
+                else if (ReviewAvatarCache.TryGet(card.Review.UserId, out var avatar))
+                {
+                    card.Avatar = avatar;
+                }
             }
         }
+
         private void UpdateFormState(int? viewerId)
         {
             if (_overview is null)

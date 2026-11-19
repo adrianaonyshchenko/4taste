@@ -1,17 +1,19 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Services;
+using FourTaste.Infrastructure.Data;
 using FourTaste.WPF;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using Serilog;
 using Xunit;
 
 namespace FourTaste.Tests
 {
-    [Collection("SessionContext")]
     public class UserAvatarTests
     {
         [Fact]
@@ -78,54 +80,95 @@ namespace FourTaste.Tests
         [Fact]
         public void AvatarService_HasAvatar_ShouldReturnFalse_WhenUserIdInvalid()
         {
-            Assert.False(AvatarService.HasAvatar(0));
-            Assert.False(AvatarService.HasAvatar(-1));
+            var avatars = CreateAvatarService(CurrentUserMock.Anonymous(), out _);
+
+            Assert.False(avatars.HasAvatar(0));
+            Assert.False(avatars.HasAvatar(-1));
         }
 
         [Fact]
         public void AvatarService_LoadAvatar_ShouldReturnNull_WhenUserIdInvalid()
         {
-            Assert.Null(AvatarService.LoadAvatar(0));
-            Assert.Null(AvatarService.LoadAvatar(-1));
+            var avatars = CreateAvatarService(CurrentUserMock.Anonymous(), out _);
+
+            Assert.Null(avatars.LoadAvatar(0));
+            Assert.Null(avatars.LoadAvatar(-1));
         }
 
         [Fact]
         public void AvatarService_LoadAvatarBytes_ShouldReturnNull_WhenUserIdInvalid()
         {
-            Assert.Null(AvatarService.LoadAvatarBytes(0));
-            Assert.Null(AvatarService.LoadAvatarBytes(-1));
+            var avatars = CreateAvatarService(CurrentUserMock.Anonymous(), out _);
+
+            Assert.Null(avatars.LoadAvatarBytes(0));
+            Assert.Null(avatars.LoadAvatarBytes(-1));
         }
 
         [Fact]
-        public void AvatarService_SessionSync_UpdatesSessionContext()
+        public void AvatarService_SaveAndDelete_SyncsCurrentUserFileAndDatabase()
         {
-            int testUserId = 8888;
-            var testUser = new User { ID = testUserId, Username = "tester" };
-            SessionContext.CurrentUser = testUser;
-
-            try
+            const int testUserId = 8888;
+            var currentUser = CurrentUserMock.Authenticated(testUserId);
+            var sessionUser = currentUser.Object.CurrentUser!;
+            var avatars = CreateAvatarService(currentUser, out var factory);
+            using (var seed = factory.CreateDbContext())
             {
-                byte[] fakePng = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
-                bool saved = AvatarService.SaveAvatar(testUserId, fakePng);
-
-                Assert.True(saved);
-                Assert.NotNull(testUser.Avatar);
-                Assert.Equal(fakePng, testUser.Avatar);
-                Assert.True(AvatarService.HasAvatar(testUserId));
-
-                bool deleted = AvatarService.DeleteAvatar(testUserId);
-                Assert.True(deleted);
-                Assert.Null(testUser.Avatar);
+                seed.Users.Add(new User { ID = testUserId, Username = "tester", Email = "t@t.com", Name = "T", PasswordHash = "x" });
+                seed.SaveChanges();
             }
-            finally
+
+            byte[] fakePng = new byte[] { 0x89, 0x50, 0x4E, 0x47 };
+
+            Assert.True(avatars.SaveAvatar(testUserId, fakePng));
+            Assert.Equal(fakePng, sessionUser.Avatar);
+            Assert.True(File.Exists(avatars.GetAvatarFilePath(testUserId)));
+            Assert.True(avatars.HasAvatar(testUserId));
+            using (var check = factory.CreateDbContext())
             {
-                SessionContext.Clear();
-                string path = AvatarService.GetAvatarFilePath(testUserId);
-                if (File.Exists(path))
-                {
-                    File.Delete(path);
-                }
+                Assert.Equal(fakePng, check.Users.Single(u => u.ID == testUserId).Avatar);
             }
+
+            Assert.True(avatars.DeleteAvatar(testUserId));
+            Assert.Null(sessionUser.Avatar);
+            Assert.False(File.Exists(avatars.GetAvatarFilePath(testUserId)));
+            using (var check = factory.CreateDbContext())
+            {
+                Assert.Null(check.Users.Single(u => u.ID == testUserId).Avatar);
+            }
+        }
+
+        [Fact]
+        public void AvatarService_LoadAvatarBytes_ShouldLoadOtherUserFromDatabaseAndCacheLocally()
+        {
+            byte[] stored = new byte[] { 1, 2, 3 };
+            var avatars = CreateAvatarService(CurrentUserMock.Authenticated(1), out var factory);
+            using (var seed = factory.CreateDbContext())
+            {
+                seed.Users.Add(new User { ID = 2, Username = "other", Email = "o@o.com", Name = "O", PasswordHash = "x", Avatar = stored });
+                seed.SaveChanges();
+            }
+
+            Assert.Equal(stored, avatars.LoadAvatarBytes(2));
+            Assert.Equal(stored, File.ReadAllBytes(avatars.GetAvatarFilePath(2)));
+        }
+
+        private static AvatarService CreateAvatarService(Mock<ICurrentUserService> currentUser, out IDbContextFactory<AppDbContext> factory)
+        {
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            factory = new TestDbContextFactory(options);
+            string directory = Path.Combine(Path.GetTempPath(), "FourTasteTests", Guid.NewGuid().ToString());
+            return new AvatarService(currentUser.Object, factory, directory);
+        }
+
+        private sealed class TestDbContextFactory : IDbContextFactory<AppDbContext>
+        {
+            private readonly DbContextOptions<AppDbContext> options;
+
+            public TestDbContextFactory(DbContextOptions<AppDbContext> options) => this.options = options;
+
+            public AppDbContext CreateDbContext() => new AppDbContext(this.options);
         }
     }
 }

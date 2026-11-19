@@ -10,36 +10,31 @@ namespace FourTaste.ApplicationCore.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository userRepository;
+        private readonly ICurrentUserSession session;
         private readonly ILogger logger;
 
-        public AuthService(IUserRepository userRepository, ILogger? logger = null)
+        public AuthService(IUserRepository userRepository, ICurrentUserSession session, ILogger? logger = null)
         {
             this.userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.logger = logger ?? Log.Logger;
         }
 
-        public Task<Result> LogoutAsync(int userId = 0)
+        public Task<Result> LogoutAsync()
         {
-            var currentUser = SessionContext.CurrentUser;
-            SessionContext.Clear();
+            var currentUser = this.session.CurrentUser;
+            this.session.SignOut();
 
-            if (currentUser != null)
-            {
-                this.logger.Information(
-                    "Користувач {UserId} ({Username}) вийшов із системи (сесію очищено)",
-                    currentUser.ID,
-                    currentUser.Username);
-            }
-            else if (userId > 0)
-            {
-                this.logger.Information(
-                    "Користувач з ID {UserId} вийшов із системи (сесію очищено)",
-                    userId);
-            }
-            else
+            if (currentUser is null)
             {
                 this.logger.Information("Сесію користувача успішно очищено (Logout)");
+                return Task.FromResult(Result.Success());
             }
+
+            this.logger.Information(
+                "Користувач {UserId} ({Username}) вийшов із системи (сесію очищено)",
+                currentUser.ID,
+                currentUser.Username);
 
             return Task.FromResult(Result.Success());
         }
@@ -78,6 +73,7 @@ namespace FourTaste.ApplicationCore.Services
                 return Result<User>.Failure("Невірна електронна пошта або пароль.");
             }
 
+            this.session.SignIn(user);
             this.logger.Information("Користувач з поштою {Email} успішно увійшов у систему.", email);
 
             return Result<User>.Success(user);

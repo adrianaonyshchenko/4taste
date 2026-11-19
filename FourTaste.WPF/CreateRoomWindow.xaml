@@ -98,15 +98,21 @@
                                            Text="Додайте опис"
                                            Foreground="#7A685D"
                                            FontSize="14"
-                                           VerticalAlignment="Center"
+                                           VerticalAlignment="Top"
+                                           Margin="2,0,0,0"
                                            IsHitTestVisible="False"/>
                                 <TextBox x:Name="RoomDescriptionTextBox"
                                          MaxLength="500"
+                                         Height="76"
+                                         TextWrapping="Wrap"
+                                         AcceptsReturn="True"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Disabled"
+                                         VerticalContentAlignment="Top"
                                          Background="Transparent"
                                          BorderThickness="0"
                                          Foreground="#4A352F"
                                          FontSize="14"
-                                         VerticalAlignment="Center"
                                          CaretBrush="#4A352F"
                                          TextChanged="RoomDescriptionTextBox_TextChanged"/>
                             </Grid>

@@ -2,350 +2,163 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Windows.Media.Imaging;
-using FourTaste.ApplicationCore.Services;
+using FourTaste.ApplicationCore.Entities;
+using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Serilog;
 
 namespace FourTaste.WPF
 {
-    public static class AvatarService
+    public sealed class AvatarService
     {
-        private static readonly string AvatarsDirectory = Path.Combine(
+        public const int MaxAvatarBytes = 5 * 1024 * 1024;
+
+        private static readonly string DefaultAvatarsDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "FourTaste",
             "Avatars");
 
-        static AvatarService()
+        private readonly ICurrentUserService currentUser;
+        private readonly IDbContextFactory<AppDbContext> contextFactory;
+        private readonly string avatarsDirectory;
+
+        public AvatarService(ICurrentUserService currentUser, IDbContextFactory<AppDbContext> contextFactory)
+            : this(currentUser, contextFactory, DefaultAvatarsDirectory)
         {
-            try
-            {
-                if (!Directory.Exists(AvatarsDirectory))
-                {
-                    Directory.CreateDirectory(AvatarsDirectory);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Не вдалося створити директорію для аватарок");
-            }
         }
 
-        public static string GetAvatarFilePath(int userId)
+        public AvatarService(ICurrentUserService currentUser, IDbContextFactory<AppDbContext> contextFactory, string avatarsDirectory)
         {
-            return Path.Combine(AvatarsDirectory, $"user_{userId}.png");
+            this.currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
+            this.contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+            this.avatarsDirectory = avatarsDirectory;
+            Directory.CreateDirectory(avatarsDirectory);
         }
 
-        public static bool HasAvatar(int userId)
+        public string GetAvatarFilePath(int userId)
         {
-            if (userId <= 0)
-            {
-                return false;
-            }
-
-            if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId)
-            {
-                if (SessionContext.CurrentUser.Avatar != null && SessionContext.CurrentUser.Avatar.Length > 0)
-                {
-                    return true;
-                }
-            }
-
-            string path = GetAvatarFilePath(userId);
-            if (File.Exists(path))
-            {
-                return true;
-            }
-
-            var dbBytes = LoadAvatarFromDatabase(userId);
-            return dbBytes != null && dbBytes.Length > 0;
+            return Path.Combine(this.avatarsDirectory, $"user_{userId}.png");
         }
 
-        public static BitmapImage? LoadAvatar(int userId)
+        public bool HasAvatar(int userId)
+        {
+            return this.LoadAvatarBytes(userId) is not null;
+        }
+
+        public BitmapImage? LoadAvatar(int userId)
+        {
+            return ImageDecoder.Decode(this.LoadAvatarBytes(userId));
+        }
+
+        public byte[]? LoadAvatarBytes(int userId)
         {
             if (userId <= 0)
             {
                 return null;
             }
 
-            string path = GetAvatarFilePath(userId);
-
-            if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId)
+            var sessionUser = this.GetSessionUser(userId);
+            if (sessionUser?.Avatar is { Length: > 0 } sessionAvatar)
             {
-                if (SessionContext.CurrentUser.Avatar != null && SessionContext.CurrentUser.Avatar.Length > 0)
-                {
-                    if (!File.Exists(path))
-                    {
-                        try
-                        {
-                            File.WriteAllBytes(path, SessionContext.CurrentUser.Avatar);
-                        }
-                        catch
-                        {
-                        }
-                    }
+                return sessionAvatar;
+            }
 
-                    return ToBitmapImage(SessionContext.CurrentUser.Avatar);
-                }
+            byte[]? bytes = sessionUser is not null
+                ? this.LoadAvatarFromDatabase(userId) ?? this.ReadLocalFile(userId)
+                : this.ReadLocalFile(userId) ?? this.LoadAvatarFromDatabase(userId);
 
-                byte[]? dbBytes = LoadAvatarFromDatabase(userId);
-                if (dbBytes != null && dbBytes.Length > 0)
-                {
-                    SessionContext.CurrentUser.Avatar = dbBytes;
-                    try
-                    {
-                        File.WriteAllBytes(path, dbBytes);
-                    }
-                    catch
-                    {
-                    }
-
-                    return ToBitmapImage(dbBytes);
-                }
-
-                if (File.Exists(path))
-                {
-                    try
-                    {
-                        byte[] localBytes = File.ReadAllBytes(path);
-                        if (localBytes.Length > 0 && localBytes.Length <= 5 * 1024 * 1024)
-                        {
-                            SessionContext.CurrentUser.Avatar = localBytes;
-                            SaveAvatarToDatabase(userId, localBytes);
-                            return ToBitmapImage(localBytes);
-                        }
-                    }
-                    catch
-                    {
-                    }
-                }
-
+            if (bytes is null)
+            {
                 return null;
             }
 
-            if (File.Exists(path))
-            {
-                try
-                {
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.UriSource = new Uri(path, UriKind.Absolute);
-                    bitmap.EndInit();
-                    bitmap.Freeze();
-                    return bitmap;
-                }
-                catch
-                {
-                }
-            }
-
-            byte[]? remoteBytes = LoadAvatarFromDatabase(userId);
-            if (remoteBytes != null && remoteBytes.Length > 0)
-            {
-                try
-                {
-                    File.WriteAllBytes(path, remoteBytes);
-                }
-                catch
-                {
-                }
-
-                return ToBitmapImage(remoteBytes);
-            }
-
-            return null;
+            this.CacheLocally(userId, bytes);
+            sessionUser?.Avatar = bytes;
+            return bytes;
         }
 
-        public static bool SaveAvatar(int userId, string sourceFilePath)
+        public bool SaveAvatar(int userId, string sourceFilePath)
         {
-            if (userId <= 0 || string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath))
+            if (string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath) || new FileInfo(sourceFilePath).Length > MaxAvatarBytes)
             {
                 return false;
             }
 
-            try
-            {
-                byte[] bytes = File.ReadAllBytes(sourceFilePath);
-                return SaveAvatar(userId, bytes);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Помилка читання файлу аватарки для користувача {UserId}", userId);
-                return false;
-            }
+            return this.SaveAvatar(userId, File.ReadAllBytes(sourceFilePath));
         }
 
-        public static bool SaveAvatar(int userId, byte[] bytes)
+        public bool SaveAvatar(int userId, byte[] bytes)
         {
-            if (userId <= 0 || bytes == null || bytes.Length == 0 || bytes.Length > 5 * 1024 * 1024)
+            if (userId <= 0 || bytes is not { Length: > 0 and <= MaxAvatarBytes })
             {
                 return false;
             }
 
-            try
-            {
-                string targetPath = GetAvatarFilePath(userId);
-                File.WriteAllBytes(targetPath, bytes);
-
-                if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId)
-                {
-                    SessionContext.CurrentUser.Avatar = bytes;
-                }
-
-                SaveAvatarToDatabase(userId, bytes);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Помилка збереження аватарки користувача {UserId}", userId);
-                return false;
-            }
+            File.WriteAllBytes(this.GetAvatarFilePath(userId), bytes);
+            this.GetSessionUser(userId)?.Avatar = bytes;
+            this.SaveAvatarToDatabase(userId, bytes);
+            return true;
         }
 
-        public static bool DeleteAvatar(int userId)
+        public bool DeleteAvatar(int userId)
         {
             if (userId <= 0)
             {
                 return false;
             }
 
-            try
-            {
-                string path = GetAvatarFilePath(userId);
-                if (File.Exists(path))
-                {
-                    try
-                    {
-                        File.Delete(path);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warning(ex, "Не вдалося видалити локальний файл аватарки {Path}", path);
-                    }
-                }
+            File.Delete(this.GetAvatarFilePath(userId));
+            this.GetSessionUser(userId)?.Avatar = null;
+            this.SaveAvatarToDatabase(userId, null);
+            return true;
+        }
 
-                if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId)
-                {
-                    SessionContext.CurrentUser.Avatar = null;
-                }
+        private User? GetSessionUser(int userId)
+        {
+            var user = this.currentUser.CurrentUser;
+            return user?.ID == userId ? user : null;
+        }
 
-                SaveAvatarToDatabase(userId, null);
-                return true;
-            }
-            catch (Exception ex)
+        private byte[]? ReadLocalFile(int userId)
+        {
+            var file = new FileInfo(this.GetAvatarFilePath(userId));
+            return file.Exists && file.Length is > 0 and <= MaxAvatarBytes
+                ? File.ReadAllBytes(file.FullName)
+                : null;
+        }
+
+        private void CacheLocally(int userId, byte[] bytes)
+        {
+            string path = this.GetAvatarFilePath(userId);
+            if (!File.Exists(path))
             {
-                Log.Error(ex, "Помилка видалення аватарки користувача {UserId}", userId);
-                return false;
+                File.WriteAllBytes(path, bytes);
             }
         }
 
-        public static BitmapImage? ToBitmapImage(byte[]? bytes)
+        private byte[]? LoadAvatarFromDatabase(int userId)
         {
-            if (bytes == null || bytes.Length == 0)
-            {
-                return null;
-            }
-
-            try
-            {
-                using var stream = new MemoryStream(bytes);
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.StreamSource = stream;
-                bitmap.EndInit();
-                bitmap.Freeze();
-                return bitmap;
-            }
-            catch
-            {
-                return null;
-            }
+            using var context = this.contextFactory.CreateDbContext();
+            context.EnsureDatabaseReady();
+            var avatar = context.Users.AsNoTracking()
+                .Where(u => u.ID == userId)
+                .Select(u => u.Avatar)
+                .FirstOrDefault();
+            return avatar is { Length: > 0 } ? avatar : null;
         }
 
-        public static byte[]? LoadAvatarBytes(int userId)
+        private void SaveAvatarToDatabase(int userId, byte[]? avatarBytes)
         {
-            if (userId <= 0)
+            using var context = this.contextFactory.CreateDbContext();
+            context.EnsureDatabaseReady();
+            var user = context.Users.FirstOrDefault(u => u.ID == userId);
+            if (user is null)
             {
-                return null;
+                return;
             }
 
-            if (SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == userId && SessionContext.CurrentUser.Avatar != null && SessionContext.CurrentUser.Avatar.Length > 0)
-            {
-                return SessionContext.CurrentUser.Avatar;
-            }
-
-            string path = GetAvatarFilePath(userId);
-            if (File.Exists(path))
-            {
-                try
-                {
-                    byte[] localBytes = File.ReadAllBytes(path);
-                    if (localBytes.Length > 0 && localBytes.Length <= 5 * 1024 * 1024)
-                    {
-                        return localBytes;
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            return LoadAvatarFromDatabase(userId);
-        }
-
-        private static byte[]? LoadAvatarFromDatabase(int userId)
-        {
-            try
-            {
-                var factory = App.ServiceProvider?.GetService<IDbContextFactory<AppDbContext>>();
-                if (factory != null)
-                {
-                    using var context = factory.CreateDbContext();
-                    context.EnsureDatabaseReady();
-                    var user = context.Users.AsNoTracking().FirstOrDefault(u => u.ID == userId);
-                    return user?.Avatar;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Помилка завантаження аватарки з бази даних для ID {UserId}", userId);
-            }
-
-            return null;
-        }
-
-        private static void SaveAvatarToDatabase(int userId, byte[]? avatarBytes)
-        {
-            try
-            {
-                var factory = App.ServiceProvider?.GetService<IDbContextFactory<AppDbContext>>();
-                if (factory != null)
-                {
-                    using var context = factory.CreateDbContext();
-                    context.EnsureDatabaseReady();
-
-                    if (avatarBytes == null || avatarBytes.Length == 0)
-                    {
-                        context.Database.ExecuteSqlRaw(
-                            @"UPDATE ""Users"" SET ""Avatar"" = NULL WHERE ""ID"" = {0}",
-                            userId);
-                    }
-                    else
-                    {
-                        context.Database.ExecuteSqlRaw(
-                            @"UPDATE ""Users"" SET ""Avatar"" = {0} WHERE ""ID"" = {1}",
-                            avatarBytes,
-                            userId);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Помилка збереження аватарки в базі даних для ID {UserId}", userId);
-            }
+            user.Avatar = avatarBytes;
+            context.SaveChanges();
         }
     }
 }

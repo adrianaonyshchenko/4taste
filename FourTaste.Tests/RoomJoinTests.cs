@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
@@ -14,15 +14,13 @@ namespace FourTaste.Tests
 {
     public class RoomJoinTests
     {
-        private readonly Mock<IRoomRepository> _roomRepositoryMock;
-        private readonly Mock<ILogger> _loggerMock;
-        private readonly RoomService _roomService;
+        private readonly Mock<IRoomRepository> _roomRepositoryMock = new Mock<IRoomRepository>();
+        private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
 
-        public RoomJoinTests()
+        private RoomService CreateServiceFor(int userId)
         {
-            _roomRepositoryMock = new Mock<IRoomRepository>();
-            _loggerMock = new Mock<ILogger>();
-            _roomService = new RoomService(_roomRepositoryMock.Object, _loggerMock.Object);
+            var currentUser = userId > 0 ? CurrentUserMock.Authenticated(userId) : CurrentUserMock.Anonymous();
+            return new RoomService(_roomRepositoryMock.Object, currentUser.Object, _loggerMock.Object);
         }
 
         [Fact]
@@ -49,7 +47,7 @@ namespace FourTaste.Tests
           .Setup(r => r.AddMemberAsync(It.IsAny<RoomMember>()))
           .ReturnsAsync(true);
 
-            var result = await _roomService.JoinRoomByCodeAsync(inviteCode, userId);
+            var result = await CreateServiceFor(userId).JoinRoomByCodeAsync(inviteCode);
 
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Value);
@@ -66,13 +64,10 @@ namespace FourTaste.Tests
         [Fact]
         public async Task JoinRoomByCodeAsync_InvalidUserId_ShouldReturnFailure()
         {
-            // Arrange
             int invalidUserId = 0;
 
-            // Act
-            var result = await _roomService.JoinRoomByCodeAsync("SOMECODE", invalidUserId);
+            var result = await CreateServiceFor(invalidUserId).JoinRoomByCodeAsync("SOMECODE");
 
-            // Assert
             Assert.True(result.IsFailure);
             Assert.Equal("Увійдіть в акаунт, щоб приєднатися до кімнати.", result.Error);
             _roomRepositoryMock.Verify(r => r.AddMemberAsync(It.IsAny<RoomMember>()), Times.Never);
@@ -81,7 +76,6 @@ namespace FourTaste.Tests
         [Fact]
         public async Task JoinRoomByCodeAsync_RoomNotFound_ShouldReturnFailure()
         {
-            // Arrange
             string inviteCode = "WRONGCODE";
             int userId = 3;
 
@@ -89,10 +83,8 @@ namespace FourTaste.Tests
                 .Setup(r => r.GetByInviteCodeAsync(inviteCode))
                 .ReturnsAsync((Room?)null);
 
-            // Act
-            var result = await _roomService.JoinRoomByCodeAsync(inviteCode, userId);
+            var result = await CreateServiceFor(userId).JoinRoomByCodeAsync(inviteCode);
 
-            // Assert
             Assert.True(result.IsFailure);
             Assert.Equal("Кімнату з таким кодом не знайдено.", result.Error);
         }
@@ -100,7 +92,6 @@ namespace FourTaste.Tests
         [Fact]
         public async Task JoinRoomByCodeAsync_UserAlreadyMember_ShouldReturnFailure()
         {
-            // Arrange
             string inviteCode = "ABC123XY";
             int userId = 5;
 
@@ -120,10 +111,8 @@ namespace FourTaste.Tests
                 .Setup(r => r.GetByInviteCodeAsync(inviteCode))
                 .ReturnsAsync(existingRoom);
 
-            // Act
-            var result = await _roomService.JoinRoomByCodeAsync(inviteCode, userId);
+            var result = await CreateServiceFor(userId).JoinRoomByCodeAsync(inviteCode);
 
-            // Assert
             Assert.True(result.IsFailure);
             Assert.Equal("Ви вже є учасником цієї кімнати.", result.Error);
             _roomRepositoryMock.Verify(r => r.AddMemberAsync(It.IsAny<RoomMember>()), Times.Never);

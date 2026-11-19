@@ -19,7 +19,7 @@ namespace FourTaste.WPF
         private readonly IRoomService? _roomService;
         private int searchVersion;
 
-        private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
+        private int CurrentUserId => App.CurrentUser.UserId;
 
         private RecipeSearchFilter CurrentFilter
         {
@@ -77,7 +77,7 @@ namespace FourTaste.WPF
             }
 
             int userId = this.CurrentUserId;
-            var avatarImage = await Task.Run(() => AvatarService.LoadAvatar(userId));
+            var avatarImage = await Task.Run(() => App.Avatars.LoadAvatar(userId));
 
             if (avatarImage != null)
             {
@@ -313,7 +313,7 @@ namespace FourTaste.WPF
                 return;
             }
 
-            var result = await roomService.GetUserRoomsAsync(this.CurrentUserId);
+            var result = await roomService.GetUserRoomsAsync();
             if (result.IsSuccess && this.UserRoomsItemsControl != null)
             {
                 this.UserRoomsItemsControl.ItemsSource = result.Value;

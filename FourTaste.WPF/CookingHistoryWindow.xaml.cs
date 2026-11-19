@@ -31,7 +31,7 @@ namespace FourTaste.WPF
         private readonly IRoomService? _roomService;
         private List<CookingHistoryDisplayItem> allCookedMeals = new ();
 
-        private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
+        private int CurrentUserId => App.CurrentUser.UserId;
 
         public CookingHistoryWindow()
             : this(
@@ -68,7 +68,7 @@ namespace FourTaste.WPF
                 return;
             }
 
-            var avatarImage = AvatarService.LoadAvatar(this.CurrentUserId);
+            var avatarImage = App.Avatars.LoadAvatar(this.CurrentUserId);
             if (avatarImage != null)
             {
                 this.UserAvatarImageBrush.ImageSource = avatarImage;
@@ -340,7 +340,7 @@ namespace FourTaste.WPF
                 return;
             }
 
-            var result = await roomService.GetUserRoomsAsync(this.CurrentUserId);
+            var result = await roomService.GetUserRoomsAsync();
             if (result.IsSuccess && this.UserRoomsItemsControl != null)
             {
                 this.UserRoomsItemsControl.ItemsSource = result.Value;

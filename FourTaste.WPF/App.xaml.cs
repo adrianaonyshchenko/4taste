@@ -17,7 +17,15 @@ namespace FourTaste.WPF
 {
     public partial class App : Application
     {
+        private static readonly ICurrentUserService AnonymousUser = new CurrentUserService();
+
         public static IServiceProvider? ServiceProvider { get; private set; }
+
+        public static ICurrentUserService CurrentUser =>
+            ServiceProvider?.GetService<ICurrentUserService>() ?? AnonymousUser;
+
+        public static AvatarService Avatars =>
+            ServiceProvider?.GetService<AvatarService>() ?? throw new InvalidOperationException("AvatarService не зареєстровано.");
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -40,24 +48,10 @@ namespace FourTaste.WPF
             ServiceProvider = services.BuildServiceProvider();
 
             var provider = ServiceProvider;
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
-                    using var ctx = await factory.CreateDbContextAsync();
-                    ctx.EnsureDatabaseReady();
-                    await BackfillRecipeThumbnailsAsync(provider);
-
-                    var subRepo = provider.GetRequiredService<FourTaste.ApplicationCore.Interfaces.ISubstituteRepository>();
-                    await subRepo.GetAllergenCatalogAsync();
-                    await subRepo.GetAllSubstitutesAsync();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error(ex, "Не вдалося виконати прогрів бази даних");
-                }
-            });
+            _ = Task.Run(() => WarmUpDatabaseAsync(provider))
+                .ContinueWith(
+                    t => Log.Error(t.Exception, "Не вдалося виконати прогрів бази даних"),
+                    TaskContinuationOptions.OnlyOnFaulted);
 
             base.OnStartup(e);
         }
@@ -71,6 +65,21 @@ namespace FourTaste.WPF
 
             Log.CloseAndFlush();
             base.OnExit(e);
+        }
+
+        private static async Task WarmUpDatabaseAsync(IServiceProvider provider)
+        {
+            var factory = provider.GetRequiredService<IDbContextFactory<AppDbContext>>();
+            using (var ctx = await factory.CreateDbContextAsync())
+            {
+                ctx.EnsureDatabaseReady();
+            }
+
+            await BackfillRecipeThumbnailsAsync(provider);
+
+            var subRepo = provider.GetRequiredService<ISubstituteRepository>();
+            await subRepo.GetAllergenCatalogAsync();
+            await subRepo.GetAllSubstitutesAsync();
         }
 
         private static async Task BackfillRecipeThumbnailsAsync(IServiceProvider provider)
@@ -120,6 +129,11 @@ namespace FourTaste.WPF
             services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString), ServiceLifetime.Transient);
             services.AddDbContextFactory<AppDbContext>(options => options.UseNpgsql(connectionString));
 
+            services.AddSingleton<CurrentUserService>();
+            services.AddSingleton<ICurrentUserService>(sp => sp.GetRequiredService<CurrentUserService>());
+            services.AddSingleton<ICurrentUserSession>(sp => sp.GetRequiredService<CurrentUserService>());
+            services.AddSingleton<AvatarService>();
+
             services.AddScoped<IRepository<Allergy>, AllergyRepository>();
             services.AddScoped<IAllergyService, AllergyService>();
             services.AddScoped<IUserRepository, UserRepository>();
@@ -164,8 +178,8 @@ namespace FourTaste.WPF
         {
             Log.Error(e.Exception, "Непередбачувана критична помилка в UI потоці (DispatcherUnhandledException)");
             MessageBox.Show(
-                $"Виникла критична технічна помилка:\n{e.Exception.Message}\n\nЗверніться до адміністратора або перевірте підключення до бази даних чи мережі.",
-                "Критична помилка",
+                "Виникла технічна помилка. Спробуйте пізніше.\n\nЯкщо помилка повторюється, перевірте підключення до мережі.",
+                "Помилка",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             e.Handled = true;

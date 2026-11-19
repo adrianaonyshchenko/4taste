@@ -12,7 +12,7 @@ namespace FourTaste.WPF
     {
         private readonly UserService userService;
 
-        private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
+        private int CurrentUserId => App.CurrentUser.UserId;
 
         public EditProfileWindow()
             : this(App.ServiceProvider?.GetService<UserService>() ?? throw new InvalidOperationException("UserService не зареєстровано."))
@@ -33,7 +33,7 @@ namespace FourTaste.WPF
 
         private void UpdateAvatarPreview()
         {
-            var avatarImage = AvatarService.LoadAvatar(this.CurrentUserId);
+            var avatarImage = App.Avatars.LoadAvatar(this.CurrentUserId);
             if (avatarImage != null)
             {
                 this.AvatarImageBrush.ImageSource = avatarImage;
@@ -62,11 +62,11 @@ namespace FourTaste.WPF
                 this.ProfileUsernameTextBox.Text = user.Username;
                 this.ProfileEmailTextBox.Text = user.Email;
             }
-            else if (SessionContext.CurrentUser != null)
+            else if (App.CurrentUser.CurrentUser != null)
             {
-                this.ProfileNameTextBox.Text = SessionContext.CurrentUser.Name;
-                this.ProfileUsernameTextBox.Text = SessionContext.CurrentUser.Username;
-                this.ProfileEmailTextBox.Text = SessionContext.CurrentUser.Email;
+                this.ProfileNameTextBox.Text = App.CurrentUser.CurrentUser.Name;
+                this.ProfileUsernameTextBox.Text = App.CurrentUser.CurrentUser.Username;
+                this.ProfileEmailTextBox.Text = App.CurrentUser.CurrentUser.Email;
             }
         }
 
@@ -86,12 +86,12 @@ namespace FourTaste.WPF
 
             if (dialog.ShowDialog() == true)
             {
-                bool saved = AvatarService.SaveAvatar(this.CurrentUserId, dialog.FileName);
+                bool saved = App.Avatars.SaveAvatar(this.CurrentUserId, dialog.FileName);
                 if (saved)
                 {
-                    if (SessionContext.CurrentUser?.Avatar != null)
+                    if (App.CurrentUser.CurrentUser?.Avatar != null)
                     {
-                        await this.userService.UpdateAvatarAsync(this.CurrentUserId, SessionContext.CurrentUser.Avatar);
+                        await this.userService.UpdateAvatarAsync(this.CurrentUserId, App.CurrentUser.CurrentUser.Avatar);
                     }
 
                     this.UpdateAvatarPreview();
@@ -112,7 +112,7 @@ namespace FourTaste.WPF
                 return;
             }
 
-            if (!AvatarService.HasAvatar(this.CurrentUserId))
+            if (!App.Avatars.HasAvatar(this.CurrentUserId))
             {
                 MessageBox.Show("Аватарка ще не встановлена.", "Інформація", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
@@ -124,7 +124,7 @@ namespace FourTaste.WPF
                 return;
             }
 
-            AvatarService.DeleteAvatar(this.CurrentUserId);
+            App.Avatars.DeleteAvatar(this.CurrentUserId);
             await this.userService.UpdateAvatarAsync(this.CurrentUserId, null);
             this.UpdateAvatarPreview();
             MessageBox.Show("Аватарку успішно видалено.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -149,11 +149,11 @@ namespace FourTaste.WPF
                 return;
             }
 
-            if (SessionContext.CurrentUser != null)
+            if (App.CurrentUser.CurrentUser != null)
             {
-                SessionContext.CurrentUser.Name = name.Trim();
-                SessionContext.CurrentUser.Username = username.Trim();
-                SessionContext.CurrentUser.Email = email.Trim();
+                App.CurrentUser.CurrentUser.Name = name.Trim();
+                App.CurrentUser.CurrentUser.Username = username.Trim();
+                App.CurrentUser.CurrentUser.Email = email.Trim();
             }
 
             MessageBox.Show("Особисті дані успішно оновлено!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);

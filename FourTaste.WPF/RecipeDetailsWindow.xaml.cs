@@ -62,25 +62,7 @@ namespace FourTaste.WPF
 
         private static BitmapImage? ToBitmapImage(byte[]? bytes)
         {
-            if (bytes is null || bytes.Length == 0)
-            {
-                return null;
-            }
-            try
-            {
-                using var stream = new MemoryStream(bytes);
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.StreamSource = stream;
-                image.EndInit();
-                image.Freeze();
-                return image;
-            }
-            catch
-            {
-                return null;
-            }
+            return ImageDecoder.Decode(bytes);
         }
 
         private static string FormatServingsText(int count)
@@ -105,7 +87,7 @@ namespace FourTaste.WPF
 
         private async Task LoadRecipeDetailsAsync()
         {
-            int? viewerId = SessionContext.CurrentUser?.ID;
+            int? viewerId = App.CurrentUser.CurrentUser?.ID;
 
             var detailsTask = _recipeService.GetRecipeDetailsAsync(_recipeId, viewerId);
             var allergiesTask = LoadUserAllergensAsync(viewerId);
@@ -214,7 +196,7 @@ namespace FourTaste.WPF
 
         private async void FavoriteButton_Click(object sender, RoutedEventArgs e)
         {
-            int? viewerId = SessionContext.CurrentUser?.ID;
+            int? viewerId = App.CurrentUser.CurrentUser?.ID;
             if (!viewerId.HasValue)
             {
                 MessageBox.Show("Будь ласка, увійдіть у систему, щоб додавати рецепти в обране.", "Увага", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -342,7 +324,7 @@ namespace FourTaste.WPF
 
         private async void FindSubstituteButton_Click(object sender, RoutedEventArgs e)
         {
-            int? viewerId = SessionContext.CurrentUser?.ID;
+            int? viewerId = App.CurrentUser.CurrentUser?.ID;
             if (!viewerId.HasValue)
             {
                 MessageBox.Show(
@@ -396,7 +378,7 @@ namespace FourTaste.WPF
 
         private async Task LoadSubstitutesForSelectedIngredientAsync()
         {
-            int? viewerId = SessionContext.CurrentUser?.ID;
+            int? viewerId = App.CurrentUser.CurrentUser?.ID;
             if (!viewerId.HasValue || _substituteService == null || _selectedIngredientId <= 0)
             {
                 return;
@@ -456,7 +438,7 @@ namespace FourTaste.WPF
 
         private async void SaveSubstitutionButton_Click(object sender, RoutedEventArgs e)
         {
-            int? viewerId = SessionContext.CurrentUser?.ID;
+            int? viewerId = App.CurrentUser.CurrentUser?.ID;
             if (!viewerId.HasValue || _substituteService == null)
             {
                 MessageBox.Show("Необхідно авторизуватися.", "Увага", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -504,7 +486,7 @@ namespace FourTaste.WPF
                 return;
             }
 
-            int? viewerId = SessionContext.CurrentUser?.ID;
+            int? viewerId = App.CurrentUser.CurrentUser?.ID;
             if (!viewerId.HasValue || _substituteService == null)
             {
                 return;

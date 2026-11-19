@@ -1,9 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Models;
-using FourTaste.ApplicationCore.Results;
 using FourTaste.ApplicationCore.Services;
 using Moq;
 using Serilog;
@@ -11,33 +11,17 @@ using Xunit;
 
 namespace FourTaste.Tests
 {
-    [Collection("SessionContext")]
-    public class RoomServiceTests : IDisposable
+    public class RoomServiceTests
     {
         private const int CurrentUserId = 15;
 
-        private readonly Mock<IRoomRepository> _roomRepositoryMock;
-        private readonly Mock<ILogger> _loggerMock;
-        private readonly RoomService _service;
+        private readonly Mock<IRoomRepository> _roomRepositoryMock = new Mock<IRoomRepository>();
+        private readonly Mock<ILogger> _loggerMock = new Mock<ILogger>();
 
-        public RoomServiceTests()
+        private RoomService CreateService(Mock<ICurrentUserService>? currentUser = null)
         {
-            _roomRepositoryMock = new Mock<IRoomRepository>();
-            _loggerMock = new Mock<ILogger>();
-            _service = new RoomService(_roomRepositoryMock.Object, _loggerMock.Object);
-
-            SessionContext.CurrentUser = new User
-            {
-                ID = CurrentUserId,
-                Name = "Тестовий Користувач",
-                Username = "test_user",
-                Email = "test@example.com"
-            };
-        }
-
-        public void Dispose()
-        {
-            SessionContext.Clear();
+            currentUser ??= CurrentUserMock.Authenticated(CurrentUserId);
+            return new RoomService(_roomRepositoryMock.Object, currentUser.Object, _loggerMock.Object);
         }
 
         [Fact]
@@ -56,7 +40,7 @@ namespace FourTaste.Tests
                 Description = "Кімната для сімейного меню"
             };
 
-            var result = await _service.CreateRoomAsync(request);
+            var result = await CreateService().CreateRoomAsync(request);
 
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Value);
@@ -77,6 +61,19 @@ namespace FourTaste.Tests
                 Times.Once);
         }
 
+        [Fact]
+        public async Task CreateRoomAsync_ShouldTrimNameAndStoreNullDescription_WhenDescriptionIsWhitespace()
+        {
+            _roomRepositoryMock.Setup(r => r.InviteCodeExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
+            _roomRepositoryMock.Setup(r => r.CreateRoomAsync(It.IsAny<Room>())).ReturnsAsync((Room r) => r);
+
+            var result = await CreateService().CreateRoomAsync(new CreateRoomRequest { Name = "  Кухня  ", Description = "   " });
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("Кухня", result.Value!.Name);
+            Assert.Null(result.Value.Description);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -89,7 +86,7 @@ namespace FourTaste.Tests
                 Description = "Опис"
             };
 
-            var result = await _service.CreateRoomAsync(request);
+            var result = await CreateService().CreateRoomAsync(request);
 
             Assert.True(result.IsFailure);
             Assert.Equal("Назва кімнати не може бути порожньою.", result.Error);
@@ -104,7 +101,7 @@ namespace FourTaste.Tests
                 Name = new string('A', RoomOptions.MaxNameLength + 1)
             };
 
-            var result = await _service.CreateRoomAsync(request);
+            var result = await CreateService().CreateRoomAsync(request);
 
             Assert.True(result.IsFailure);
             Assert.Equal($"Назва кімнати не може перевищувати {RoomOptions.MaxNameLength} символів.", result.Error);
@@ -120,7 +117,7 @@ namespace FourTaste.Tests
                 Description = new string('D', RoomOptions.MaxDescriptionLength + 1)
             };
 
-            var result = await _service.CreateRoomAsync(request);
+            var result = await CreateService().CreateRoomAsync(request);
 
             Assert.True(result.IsFailure);
             Assert.Equal($"Опис кімнати не може перевищувати {RoomOptions.MaxDescriptionLength} символів.", result.Error);
@@ -130,33 +127,9 @@ namespace FourTaste.Tests
         [Fact]
         public async Task CreateRoomAsync_ShouldReturnFailure_WhenUserIsNotLoggedIn()
         {
-            SessionContext.Clear();
+            var service = CreateService(CurrentUserMock.Anonymous());
 
-            var request = new CreateRoomRequest
-            {
-                Name = "Кімната"
-            };
-
-            var result = await _service.CreateRoomAsync(request);
-
-            Assert.True(result.IsFailure);
-            Assert.Equal("Увійдіть в акаунт, щоб створити кімнату.", result.Error);
-            _roomRepositoryMock.Verify(r => r.CreateRoomAsync(It.IsAny<Room>()), Times.Never);
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-1)]
-        public async Task CreateRoomAsync_ShouldReturnFailure_WhenUserHasInvalidId(int userId)
-        {
-            SessionContext.CurrentUser = new User { ID = userId };
-
-            var request = new CreateRoomRequest
-            {
-                Name = "Кімната"
-            };
-
-            var result = await _service.CreateRoomAsync(request);
+            var result = await service.CreateRoomAsync(new CreateRoomRequest { Name = "Кімната" });
 
             Assert.True(result.IsFailure);
             Assert.Equal("Увійдіть в акаунт, щоб створити кімнату.", result.Error);
@@ -166,7 +139,7 @@ namespace FourTaste.Tests
         [Fact]
         public async Task CreateRoomAsync_ShouldReturnFailure_WhenRequestIsNull()
         {
-            var result = await _service.CreateRoomAsync(null!);
+            var result = await CreateService().CreateRoomAsync(null!);
 
             Assert.True(result.IsFailure);
             Assert.Equal("Дані кімнати не задано.", result.Error);
@@ -190,12 +163,7 @@ namespace FourTaste.Tests
                 return r;
             });
 
-            var request = new CreateRoomRequest
-            {
-                Name = "Колізійна кімната"
-            };
-
-            var result = await _service.CreateRoomAsync(request);
+            var result = await CreateService().CreateRoomAsync(new CreateRoomRequest { Name = "Колізійна кімната" });
 
             Assert.True(result.IsSuccess);
             Assert.Equal(2, checkCount);
@@ -203,27 +171,20 @@ namespace FourTaste.Tests
         }
 
         [Fact]
-        public async Task CreateRoomAsync_ShouldReturnFailure_WhenRepositoryThrowsException()
+        public async Task CreateRoomAsync_ShouldPropagateException_WhenRepositoryThrows()
         {
             _roomRepositoryMock.Setup(r => r.InviteCodeExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
             _roomRepositoryMock.Setup(r => r.CreateRoomAsync(It.IsAny<Room>()))
                 .ThrowsAsync(new InvalidOperationException("Помилка підключення до БД"));
 
-            var request = new CreateRoomRequest
-            {
-                Name = "Кімната зі збоєм"
-            };
-
-            var result = await _service.CreateRoomAsync(request);
-
-            Assert.True(result.IsFailure);
-            Assert.Equal("Виникла технічна помилка при збереженні кімнати. Спробуйте пізніше.", result.Error);
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => CreateService().CreateRoomAsync(new CreateRoomRequest { Name = "Кімната зі збоєм" }));
         }
 
         [Fact]
-        public async Task GetUserRoomsAsync_ShouldReturnRooms_WhenUserHasRooms()
+        public async Task GetUserRoomsAsync_ShouldReturnRoomsOfCurrentUser()
         {
-            var rooms = new System.Collections.Generic.List<Room>
+            var rooms = new List<Room>
             {
                 new Room { Id = 1, Name = "Кімната 1", OwnerId = CurrentUserId, InviteCode = "AAA111", CreatedAt = DateTime.UtcNow },
                 new Room { Id = 2, Name = "Кімната 2", OwnerId = CurrentUserId, InviteCode = "BBB222", CreatedAt = DateTime.UtcNow }
@@ -231,26 +192,112 @@ namespace FourTaste.Tests
 
             _roomRepositoryMock.Setup(r => r.GetUserRoomsAsync(CurrentUserId)).ReturnsAsync(rooms);
 
-            var result = await _service.GetUserRoomsAsync(CurrentUserId);
+            var result = await CreateService().GetUserRoomsAsync();
 
             Assert.True(result.IsSuccess);
-            Assert.NotNull(result.Value);
             Assert.Equal(2, result.Value!.Count);
             Assert.Equal("Кімната 1", result.Value[0].Name);
             Assert.Equal("Кімната 2", result.Value[1].Name);
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-1)]
-        public async Task GetUserRoomsAsync_ShouldReturnEmptyList_WhenUserIdIsInvalid(int userId)
+        [Fact]
+        public async Task GetUserRoomsAsync_ShouldReturnEmptyList_WhenUserIsNotLoggedIn()
         {
-            var result = await _service.GetUserRoomsAsync(userId);
+            var result = await CreateService(CurrentUserMock.Anonymous()).GetUserRoomsAsync();
 
             Assert.True(result.IsSuccess);
-            Assert.NotNull(result.Value);
             Assert.Empty(result.Value!);
             _roomRepositoryMock.Verify(r => r.GetUserRoomsAsync(It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task GetRoomDetailsAsync_ShouldMarkCurrentUserAsOwner()
+        {
+            var room = new Room
+            {
+                Id = 3,
+                Name = "Кімната",
+                OwnerId = CurrentUserId,
+                InviteCode = "CCC333",
+                Members = new List<RoomMember> { new RoomMember { UserId = CurrentUserId, Role = RoomRole.Owner } },
+            };
+            _roomRepositoryMock.Setup(r => r.GetByIdAsync(3)).ReturnsAsync(room);
+            _roomRepositoryMock.Setup(r => r.GetUserNamesAsync(It.IsAny<IEnumerable<int>>()))
+                .ReturnsAsync(new Dictionary<int, string> { [CurrentUserId] = "Соня" });
+
+            var result = await CreateService().GetRoomDetailsAsync(3);
+
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Value!.IsOwner);
+            Assert.Equal("Соня", result.Value.Members[0].Name);
+            Assert.Equal("Власник", result.Value.Members[0].Role);
+        }
+
+        [Fact]
+        public async Task DeleteRoomAsync_ShouldDelete_WhenCurrentUserIsOwner()
+        {
+            _roomRepositoryMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(new Room { Id = 5, OwnerId = CurrentUserId });
+
+            var result = await CreateService().DeleteRoomAsync(5);
+
+            Assert.True(result.IsSuccess);
+            _roomRepositoryMock.Verify(r => r.DeleteRoomAsync(5), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteRoomAsync_ShouldFail_WhenCurrentUserIsNotOwner()
+        {
+            _roomRepositoryMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(new Room { Id = 5, OwnerId = 99 });
+
+            var result = await CreateService().DeleteRoomAsync(5);
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Тільки власник може видалити кімнату.", result.Error);
+            _roomRepositoryMock.Verify(r => r.DeleteRoomAsync(It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task DeleteRoomAsync_ShouldFail_WhenRoomNotFound()
+        {
+            _roomRepositoryMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync((Room?)null);
+
+            var result = await CreateService().DeleteRoomAsync(5);
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Кімнату не знайдено.", result.Error);
+        }
+
+        [Fact]
+        public async Task DeleteRoomAsync_ShouldFail_WhenUserIsNotLoggedIn()
+        {
+            var result = await CreateService(CurrentUserMock.Anonymous()).DeleteRoomAsync(5);
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Увійдіть в акаунт.", result.Error);
+            _roomRepositoryMock.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task LeaveRoomAsync_ShouldRemoveCurrentUser_WhenUserIsMember()
+        {
+            _roomRepositoryMock.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(new Room { Id = 7, OwnerId = 99 });
+
+            var result = await CreateService().LeaveRoomAsync(7);
+
+            Assert.True(result.IsSuccess);
+            _roomRepositoryMock.Verify(r => r.RemoveMemberAsync(7, CurrentUserId), Times.Once);
+        }
+
+        [Fact]
+        public async Task LeaveRoomAsync_ShouldFail_WhenCurrentUserIsOwner()
+        {
+            _roomRepositoryMock.Setup(r => r.GetByIdAsync(7)).ReturnsAsync(new Room { Id = 7, OwnerId = CurrentUserId });
+
+            var result = await CreateService().LeaveRoomAsync(7);
+
+            Assert.True(result.IsFailure);
+            Assert.Equal("Власник не може покинути кімнату. Її можна тільки видалити.", result.Error);
+            _roomRepositoryMock.Verify(r => r.RemoveMemberAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
     }
 }

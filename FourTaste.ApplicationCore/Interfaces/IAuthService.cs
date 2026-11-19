@@ -9,7 +9,7 @@ namespace FourTaste.ApplicationCore.Interfaces
 {
     public interface IAuthService
     {
-        Task<Result> LogoutAsync(int userId = 0);
+        Task<Result> LogoutAsync();
 
         Task<Result<User>> LoginAsync(string email, string password);
     }
