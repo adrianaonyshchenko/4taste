@@ -10,7 +10,6 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Верхня панель: Назва рецепта та Таймер -->
         <Grid Grid.Row="0" Margin="0,0,0,15">
             <TextBlock x:Name="RecipeTitleTextBlock" Text="Назва рецепта" FontWeight="Bold" FontSize="20" Foreground="#4A352F" VerticalAlignment="Center"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
@@ -25,14 +24,12 @@
             </StackPanel>
         </Grid>
 
-        <!-- Центральний контент -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="280"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Ліва колонка: Фото та Інгредієнти -->
             <StackPanel Grid.Column="0" Margin="0,0,20,0">
                 <Border Height="160" Background="#B89F8B" CornerRadius="14" Margin="0,0,0,12" ClipToBounds="True">
                     <Image x:Name="StepImageViewer" Stretch="UniformToFill"/>
@@ -66,7 +63,6 @@
                 </Border>
             </StackPanel>
 
-            <!-- Права колонка: Крок, Опис, Збільшення тексту та WHY? -->
             <Border Grid.Column="1" Background="#B89F8B" CornerRadius="14" Padding="20">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -90,7 +86,6 @@
                         <TextBlock x:Name="StepDescriptionTextBlock" Text="Опис кроку..." FontSize="16" Foreground="#4A352F" TextWrapping="Wrap" LineHeight="22"/>
                     </ScrollViewer>
 
-                    <!-- Блок пояснення WHY? -->
                     <Border x:Name="WhyContainerBorder" Grid.Row="2" Background="#E3D7CB" CornerRadius="12" Padding="12" Visibility="Collapsed" MaxHeight="120" Margin="0,5,0,0">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
@@ -103,7 +98,6 @@
             </Border>
         </Grid>
 
-        <!-- Нижня панель кнопок -->
         <Grid Grid.Row="2" Margin="0,15,0,0">
             <Button Content="Вийти" Click="ExitButton_Click" Width="100" Height="40" HorizontalAlignment="Left" Background="#D5C4B4" Foreground="#4A352F" FontWeight="Bold" Cursor="Hand" BorderBrush="Transparent">
                 <Button.Resources>

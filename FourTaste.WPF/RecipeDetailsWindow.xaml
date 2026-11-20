@@ -248,7 +248,6 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Заголовок та кнопка улюбленого (сердечко) -->
                     <Grid Grid.Row="0" Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -260,7 +259,6 @@
                                    Grid.Column="0" Margin="0,0,10,0"/>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                            <!-- КНОПКА СЕРДЕЧКО (UC-34) -->
                             <Button x:Name="FavoriteButton" Click="FavoriteButton_Click" Width="42" Height="42" Background="#E3D7CB" BorderBrush="Transparent" Cursor="Hand" Margin="0,0,10,0" ToolTip="Додати до обраного">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">

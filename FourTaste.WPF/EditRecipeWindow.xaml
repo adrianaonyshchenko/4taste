@@ -216,18 +216,15 @@
                                                         <RowDefinition Height="Auto"/>
                                                     </Grid.RowDefinitions>
 
-                                                    <!-- Номер кроку -->
                                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding StepNumber, StringFormat={}{0}.}"
                                                                FontWeight="Bold" Foreground="White" FontSize="14"
                                                                VerticalAlignment="Top" Margin="0,4,0,0"/>
 
-                                                    <!-- Опис кроку -->
                                                     <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                              Foreground="White" Background="Transparent" BorderBrush="Transparent"
                                                              FontSize="13" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="30"
                                                              ToolTip="Опис кроку приготування"/>
 
-                                                    <!-- Кнопка видалення -->
                                                     <Button Grid.Row="0" Grid.Column="2" Content="✕" Click="DeleteStepButton_Click"
                                                             Tag="{Binding}" Background="#F29B9B" Foreground="#4A352F"
                                                             FontWeight="Bold" Height="24" Width="24" Cursor="Hand"
@@ -241,7 +238,6 @@
                                                         </Button.Template>
                                                     </Button>
 
-                                                    <!-- Поле для WHY? -->
                                                     <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Why, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                              Foreground="#F4EAE0" Background="#877063" BorderBrush="Transparent"
                                                              FontSize="12" TextWrapping="Wrap" AcceptsReturn="True"

@@ -1,18 +1,12 @@
-﻿// <copyright file="20261004165938_UserTable.cs" company="PlaceholderCompany">
-// Copyright (c) PlaceholderCompany. All rights reserved.
-// </copyright>
-
-#nullable disable
+﻿#nullable disable
 
 namespace FourTaste.Infrastructure.Migrations
 {
     using Microsoft.EntityFrameworkCore.Migrations;
     using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-    /// <inheritdoc />
     public partial class UserTable : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             _ = migrationBuilder.CreateTable(
@@ -32,7 +26,6 @@ namespace FourTaste.Infrastructure.Migrations
                 });
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
