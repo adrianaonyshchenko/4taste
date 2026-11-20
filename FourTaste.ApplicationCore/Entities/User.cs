@@ -17,5 +17,9 @@ namespace FourTaste.ApplicationCore.Entities
         public string PasswordHash { get; set; } = string.Empty;
 
         public byte[]? Avatar { get; set; }
+
+        public UserRole Role { get; set; } = UserRole.User;
+
+        public DateTime? CreatedAt { get; set; }
     }
 }

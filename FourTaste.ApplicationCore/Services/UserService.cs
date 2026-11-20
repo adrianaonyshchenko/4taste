@@ -8,6 +8,8 @@ namespace FourTaste.ApplicationCore.Services
 {
     public class UserService
     {
+        public const string LastAdminError = "Неможливо видалити єдиного адміністратора.";
+
         private readonly IUserRepository userRepository;
         private readonly ILogger logger;
 
@@ -44,6 +46,8 @@ namespace FourTaste.ApplicationCore.Services
                 Username = username.Trim(),
                 Email = email.Trim(),
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                Role = UserRole.User,
+                CreatedAt = DateTime.UtcNow,
             };
 
             await this.userRepository.AddAsync(newUser);
@@ -117,6 +121,12 @@ namespace FourTaste.ApplicationCore.Services
             {
                 this.logger.Warning("Користувача з ID {UserId} не знайдено для видалення", userId);
                 return Result.Failure("Користувача не знайдено.");
+            }
+
+            if (user.Role == UserRole.Admin && await this.userRepository.CountAdminsAsync() <= 1)
+            {
+                this.logger.Warning("Спроба видалити єдиного адміністратора (ID {UserId})", userId);
+                return Result.Failure(LastAdminError);
             }
 
             await this.userRepository.DeleteAsync(user);

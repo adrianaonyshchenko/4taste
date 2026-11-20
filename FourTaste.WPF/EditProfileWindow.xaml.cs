@@ -205,8 +205,7 @@ namespace FourTaste.WPF
 
         private void NavigateToProfile()
         {
-            var profileWindow = App.ServiceProvider?.GetService<UserProfileWindow>() ?? new UserProfileWindow();
-            profileWindow.Show();
+            App.CreateProfileWindow().Show();
             this.Close();
         }
     }

@@ -14,6 +14,8 @@ namespace FourTaste.ApplicationCore.Services
 
         public bool IsAuthenticated => this.UserId > 0;
 
+        public bool IsAdmin => this.currentUser?.Role == UserRole.Admin;
+
         public void SignIn(User user)
         {
             this.currentUser = user ?? throw new ArgumentNullException(nameof(user));
