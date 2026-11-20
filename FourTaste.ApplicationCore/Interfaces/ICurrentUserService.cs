@@ -9,5 +9,7 @@ namespace FourTaste.ApplicationCore.Interfaces
         int UserId { get; }
 
         bool IsAuthenticated { get; }
+
+        bool IsAdmin { get; }
     }
 }

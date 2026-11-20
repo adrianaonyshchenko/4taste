@@ -167,7 +167,6 @@ namespace FourTaste.WPF
                 return;
             }
 
-            // Попередження, якщо у меню є страви, додані вручну
             if (!string.IsNullOrEmpty(result.Value))
             {
                 MessageBox.Show(result.Value, "Увага (ручні страви)", MessageBoxButton.OK, MessageBoxImage.Information);

@@ -276,5 +276,70 @@ namespace FourTaste.Tests
             Assert.Null(exception);
             Assert.True(homeButtonFound);
         }
+
+        [Fact]
+        public void AdminHomeWindow_InitializesSuccessfully()
+        {
+            Exception? exception = null;
+            bool itemsControlFound = false;
+            int filtersFound = 0;
+
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    var window = new AdminHomeWindow(new Mock<IAdminService>().Object);
+                    itemsControlFound = window.FindName("UsersItemsControl") is ItemsControl;
+                    foreach (var name in new[] { "FilterAllRadio", "FilterNameRadio", "FilterUsernameRadio", "FilterEmailRadio" })
+                    {
+                        filtersFound += window.FindName(name) is RadioButton ? 1 : 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+            });
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+
+            Assert.Null(exception);
+            Assert.True(itemsControlFound);
+            Assert.Equal(4, filtersFound);
+        }
+
+        [Fact]
+        public void AdminProfileWindow_InitializesSuccessfully()
+        {
+            Exception? exception = null;
+            bool buttonsFound = false;
+
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    var userRepo = new Mock<IUserRepository>();
+                    var userService = new UserService(userRepo.Object, new Mock<Serilog.ILogger>().Object);
+                    var window = new AdminProfileWindow(new Mock<IAuthService>().Object, userService);
+                    buttonsFound = window.FindName("EditDataButton") is Button
+                        && window.FindName("DeleteProfileButton") is Button
+                        && window.FindName("LogoutButton") is Button
+                        && window.FindName("HomeButton") is Button;
+                }
+                catch (Exception ex)
+                {
+                    exception = ex;
+                }
+            });
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+
+            Assert.Null(exception);
+            Assert.True(buttonsFound);
+        }
     }
 }

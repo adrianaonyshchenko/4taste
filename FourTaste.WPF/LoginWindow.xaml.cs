@@ -124,8 +124,7 @@ namespace FourTaste.WPF
 
                 MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                var recipesWindow = App.ServiceProvider?.GetService<PublicRecipesWindow>() ?? new PublicRecipesWindow();
-                recipesWindow.Show();
+                App.CreateHomeWindow().Show();
                 this.Close();
             }
             finally

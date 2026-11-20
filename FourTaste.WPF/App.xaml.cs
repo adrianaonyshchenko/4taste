@@ -24,6 +24,12 @@ namespace FourTaste.WPF
         public static ICurrentUserService CurrentUser =>
             ServiceProvider?.GetService<ICurrentUserService>() ?? AnonymousUser;
 
+        public static Window CreateHomeWindow() =>
+            CurrentUser.IsAdmin ? Resolve<AdminHomeWindow>() : Resolve<PublicRecipesWindow>();
+
+        public static Window CreateProfileWindow() =>
+            CurrentUser.IsAdmin ? Resolve<AdminProfileWindow>() : Resolve<UserProfileWindow>();
+
         public static AvatarService Avatars =>
             ServiceProvider?.GetService<AvatarService>() ?? throw new InvalidOperationException("AvatarService не зареєстровано.");
 
@@ -66,6 +72,10 @@ namespace FourTaste.WPF
             Log.CloseAndFlush();
             base.OnExit(e);
         }
+
+        private static T Resolve<T>()
+            where T : Window =>
+            ServiceProvider?.GetService<T>() ?? throw new InvalidOperationException($"{typeof(T).Name} не зареєстровано.");
 
         private static async Task WarmUpDatabaseAsync(IServiceProvider provider)
         {
@@ -171,6 +181,9 @@ namespace FourTaste.WPF
             services.AddScoped<IReviewService, ReviewService>();
             services.AddScoped<IRoomRepository, RoomRepository>();
             services.AddScoped<IRoomService, RoomService>();
+            services.AddScoped<IAdminService, AdminService>();
+            services.AddTransient<AdminHomeWindow>();
+            services.AddTransient<AdminProfileWindow>();
             services.AddTransient<CreateRoomWindow>();
             services.AddTransient<RoomDetailsWindow>();
             services.AddSingleton<IImageThumbnailGenerator, WpfImageThumbnailGenerator>();
