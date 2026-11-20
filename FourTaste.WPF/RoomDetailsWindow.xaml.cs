@@ -22,7 +22,7 @@ namespace FourTaste.WPF
         private readonly ShoppingListService _shoppingListService;
         private List<RoomMealPlan> _allMealPlans = new ();
 
-        private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
+        private int CurrentUserId => App.CurrentUser.UserId;
 
         public RoomDetailsWindow(RoomDto room, IRoomService roomService)
             : this(room, roomService, App.ServiceProvider?.GetService<IRoomMealPlanService>() ?? throw new InvalidOperationException("IServiceProvider is not initialized."), App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService is not initialized."), App.ServiceProvider?.GetService<ShoppingListService>() ?? throw new InvalidOperationException("ShoppingListService is not initialized."))
@@ -63,7 +63,7 @@ namespace FourTaste.WPF
                 RemoveMemberButton.Visibility = isOwner ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            var result = await _roomService.GetRoomDetailsAsync(_room.Id, this.CurrentUserId);
+            var result = await _roomService.GetRoomDetailsAsync(_room.Id);
             if (result.IsSuccess && result.Value != null)
             {
                 MembersItemsControl.ItemsSource = result.Value.Members;
@@ -377,7 +377,7 @@ namespace FourTaste.WPF
                 return;
             }
 
-            var result = await _roomService.DeleteRoomAsync(_room.Id, this.CurrentUserId);
+            var result = await _roomService.DeleteRoomAsync(_room.Id);
             if (result.IsFailure)
             {
                 MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -401,7 +401,7 @@ namespace FourTaste.WPF
                 return;
             }
 
-            var result = await _roomService.LeaveRoomAsync(_room.Id, this.CurrentUserId);
+            var result = await _roomService.LeaveRoomAsync(_room.Id);
             if (result.IsFailure)
             {
                 MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);

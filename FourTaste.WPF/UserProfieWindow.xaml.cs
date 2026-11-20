@@ -20,7 +20,7 @@ namespace FourTaste.WPF
         private readonly UserService userService;
         private readonly IRecipeService _recipeService;
         private readonly IFridgeService _fridgeService;
-        private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
+        private int CurrentUserId => App.CurrentUser.UserId;
 
         public UserProfileWindow()
         : this(
@@ -55,13 +55,13 @@ namespace FourTaste.WPF
 
             this.Loaded += async (s, e) =>
             {
-                if (SessionContext.CurrentUser != null && (SessionContext.CurrentUser.Avatar == null || SessionContext.CurrentUser.Avatar.Length == 0))
+                if (App.CurrentUser.CurrentUser != null && (App.CurrentUser.CurrentUser.Avatar == null || App.CurrentUser.CurrentUser.Avatar.Length == 0))
                 {
-                    int uid = SessionContext.CurrentUser.ID;
-                    var dbBytes = await Task.Run(() => AvatarService.LoadAvatarBytes(uid));
-                    if (dbBytes != null && dbBytes.Length > 0 && SessionContext.CurrentUser != null && SessionContext.CurrentUser.ID == uid)
+                    int uid = App.CurrentUser.CurrentUser.ID;
+                    var dbBytes = await Task.Run(() => App.Avatars.LoadAvatarBytes(uid));
+                    if (dbBytes != null && dbBytes.Length > 0 && App.CurrentUser.CurrentUser != null && App.CurrentUser.CurrentUser.ID == uid)
                     {
-                        SessionContext.CurrentUser.Avatar = dbBytes;
+                        App.CurrentUser.CurrentUser.Avatar = dbBytes;
                         this.UpdateUserHeader();
                     }
                 }
@@ -70,19 +70,19 @@ namespace FourTaste.WPF
 
         public void UpdateUserHeader()
         {
-            if (SessionContext.CurrentUser != null)
+            if (App.CurrentUser.CurrentUser != null)
             {
-                this.UserNameTextBlock.Text = string.IsNullOrWhiteSpace(SessionContext.CurrentUser.Name)
-                    ? (string.IsNullOrWhiteSpace(SessionContext.CurrentUser.Email) ? "Користувач" : SessionContext.CurrentUser.Email)
-                    : SessionContext.CurrentUser.Name;
+                this.UserNameTextBlock.Text = string.IsNullOrWhiteSpace(App.CurrentUser.CurrentUser.Name)
+                    ? (string.IsNullOrWhiteSpace(App.CurrentUser.CurrentUser.Email) ? "Користувач" : App.CurrentUser.CurrentUser.Email)
+                    : App.CurrentUser.CurrentUser.Name;
 
-                string username = string.IsNullOrWhiteSpace(SessionContext.CurrentUser.Username)
+                string username = string.IsNullOrWhiteSpace(App.CurrentUser.CurrentUser.Username)
                     ? "Нікнейм"
-                    : SessionContext.CurrentUser.Username;
+                    : App.CurrentUser.CurrentUser.Username;
 
                 this.UserNicknameTextBlock.Text = username.StartsWith('@') ? username : $"@{username}";
 
-                var avatarImage = AvatarService.LoadAvatar(SessionContext.CurrentUser.ID);
+                var avatarImage = App.Avatars.LoadAvatar(App.CurrentUser.CurrentUser.ID);
                 if (avatarImage != null)
                 {
                     this.UserAvatarImageBrush.ImageSource = avatarImage;
@@ -210,7 +210,7 @@ namespace FourTaste.WPF
             }
 
             MessageBox.Show("Профіль успішно видалено.", "Видалення", MessageBoxButton.OK, MessageBoxImage.Information);
-            SessionContext.Clear();
+            await this.authService.LogoutAsync();
 
             var loginWindow = App.ServiceProvider?.GetService<LoginWindow>() ?? new LoginWindow();
             loginWindow.Show();

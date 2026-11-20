@@ -74,14 +74,6 @@ namespace FourTaste.WPF
                 this.DialogResult = true;
                 this.Close();
             }
-            catch (Exception)
-            {
-                MessageBox.Show(
-                    "Не вдалося з'єднатися з базою даних. Перевірте мережеве підключення або спробуйте пізніше.",
-                    "Помилка зв'язку",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
             finally
             {
                 if (CreateButton != null)
@@ -109,13 +101,6 @@ namespace FourTaste.WPF
 
         private async void JoinButton_Click(object sender, RoutedEventArgs e)
         {
-            int currentUserId = SessionContext.CurrentUser?.ID ?? 0;
-            if (currentUserId <= 0)
-            {
-                MessageBox.Show("Будь ласка, увійдіть у систему.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
             string code = JoinCodeTextBox.Text?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(code))
             {
@@ -126,20 +111,24 @@ namespace FourTaste.WPF
 
             JoinButton.IsEnabled = false;
 
-            var result = await _roomService.JoinRoomByCodeAsync(code, currentUserId);
-
-            JoinButton.IsEnabled = true;
-
-            if (result.IsFailure)
+            try
             {
-                MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                var result = await _roomService.JoinRoomByCodeAsync(code);
+                if (result.IsFailure)
+                {
+                    MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                MessageBox.Show($"Ви успішно приєдналися до кімнати «{result.Value?.Name}»!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                this.DialogResult = true;
+                this.Close();
             }
-
-            MessageBox.Show($"Ви успішно приєдналися до кімнати «{result.Value?.Name}»!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-
-            this.DialogResult = true;
-            this.Close();
+            finally
+            {
+                JoinButton.IsEnabled = true;
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,238 +14,145 @@ namespace FourTaste.ApplicationCore.Services
 {
     public class RoomService : IRoomService
     {
+        private const string NotAuthenticatedError = "Увійдіть в акаунт.";
+        private const string RoomNotFoundError = "Кімнату не знайдено.";
+
         private readonly IRoomRepository _roomRepository;
+        private readonly ICurrentUserService _currentUser;
         private readonly ILogger _logger;
 
-        public RoomService(IRoomRepository roomRepository, ILogger logger)
+        public RoomService(IRoomRepository roomRepository, ICurrentUserService currentUser, ILogger logger)
         {
             _roomRepository = roomRepository;
+            _currentUser = currentUser;
             _logger = logger;
         }
 
         public async Task<Result<RoomDto>> CreateRoomAsync(CreateRoomRequest request)
         {
-            var currentUser = SessionContext.CurrentUser;
-            if (currentUser is null || currentUser.ID <= 0)
+            if (!_currentUser.IsAuthenticated)
             {
                 _logger.Warning("Спроба створення кімнати неавторизованим користувачем.");
                 return Result<RoomDto>.Failure("Увійдіть в акаунт, щоб створити кімнату.");
             }
 
-            if (request is null)
+            var validation = CreateRoomRequestValidator.Validate(request);
+            if (validation.IsFailure)
             {
-                _logger.Warning("Помилка валідації: запит на створення кімнати порожній.");
-                return Result<RoomDto>.Failure("Дані кімнати не задано.");
+                _logger.Warning("Помилка валідації кімнати: {Error}", validation.Error);
+                return Result<RoomDto>.Failure(validation.Error!);
             }
 
-            string name = request.Name?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(name))
+            int userId = _currentUser.UserId;
+            var room = new Room
             {
-                _logger.Warning("Помилка валідації: назва кімнати порожня.");
-                return Result<RoomDto>.Failure("Назва кімнати не може бути порожньою.");
-            }
-
-            if (name.Length > RoomOptions.MaxNameLength)
-            {
-                _logger.Warning("Помилка валідації: назва кімнати занадто довга ({Length} символів).", name.Length);
-                return Result<RoomDto>.Failure($"Назва кімнати не може перевищувати {RoomOptions.MaxNameLength} символів.");
-            }
-
-            string? description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
-            if (description != null && description.Length > RoomOptions.MaxDescriptionLength)
-            {
-                _logger.Warning("Помилка валідації: опис кімнати занадто довгий ({Length} символів).", description.Length);
-                return Result<RoomDto>.Failure($"Опис кімнати не може перевищувати {RoomOptions.MaxDescriptionLength} символів.");
-            }
-
-            try
-            {
-                string inviteCode = await GenerateUniqueInviteCodeAsync();
-
-                var room = new Room
+                Name = request.Name.Trim(),
+                Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
+                OwnerId = userId,
+                InviteCode = await GenerateUniqueInviteCodeAsync(),
+                CreatedAt = DateTime.UtcNow,
+                Members = new List<RoomMember>
                 {
-                    Name = name,
-                    Description = description,
-                    OwnerId = currentUser.ID,
-                    InviteCode = inviteCode,
-                    CreatedAt = DateTime.UtcNow,
-                    Members = new List<RoomMember>
-                    {
-                        new RoomMember
-                        {
-                            UserId = currentUser.ID,
-                            Role = RoomRole.Owner,
-                            JoinedAt = DateTime.UtcNow
-                        }
-                    }
-                };
+                    new RoomMember { UserId = userId, Role = RoomRole.Owner, JoinedAt = DateTime.UtcNow },
+                },
+            };
 
-                var createdRoom = await _roomRepository.CreateRoomAsync(room);
+            var createdRoom = await _roomRepository.CreateRoomAsync(room);
 
-                _logger.Information(
-                    "Користувач {UserId} успішно створив кімнату {RoomId} з кодом {InviteCode}.",
-                    currentUser.ID,
-                    createdRoom.Id,
-                    createdRoom.InviteCode);
+            _logger.Information(
+                "Користувач {UserId} успішно створив кімнату {RoomId} з кодом {InviteCode}.",
+                userId,
+                createdRoom.Id,
+                createdRoom.InviteCode);
 
-                var dto = new RoomDto
-                {
-                    Id = createdRoom.Id,
-                    Name = createdRoom.Name,
-                    Description = createdRoom.Description,
-                    OwnerId = createdRoom.OwnerId,
-                    InviteCode = createdRoom.InviteCode,
-                    CreatedAt = createdRoom.CreatedAt
-                };
-
-                return Result<RoomDto>.Success(dto);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Помилка при створенні кімнати користувачем {UserId}.", currentUser.ID);
-                return Result<RoomDto>.Failure("Виникла технічна помилка при збереженні кімнати. Спробуйте пізніше.");
-            }
+            return Result<RoomDto>.Success(ToDto(createdRoom));
         }
 
-        public async Task<Result<List<RoomDto>>> GetUserRoomsAsync(int userId)
+        public async Task<Result<List<RoomDto>>> GetUserRoomsAsync()
         {
-            if (userId <= 0)
+            if (!_currentUser.IsAuthenticated)
             {
                 return Result<List<RoomDto>>.Success(new List<RoomDto>());
             }
 
-            try
-            {
-                var rooms = await _roomRepository.GetUserRoomsAsync(userId);
-                var dtos = rooms.Select(r => new RoomDto
-                {
-                    Id = r.Id,
-                    Name = r.Name,
-                    Description = r.Description,
-                    OwnerId = r.OwnerId,
-                    InviteCode = r.InviteCode,
-                    CreatedAt = r.CreatedAt
-                }).ToList();
-
-                return Result<List<RoomDto>>.Success(dtos);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Помилка при отриманні кімнат користувача {UserId}.", userId);
-                return Result<List<RoomDto>>.Failure("Не вдалося завантажити список кімнат.");
-            }
+            var rooms = await _roomRepository.GetUserRoomsAsync(_currentUser.UserId);
+            return Result<List<RoomDto>>.Success(rooms.Select(ToDto).ToList());
         }
 
-        public async Task<Result<RoomDetailsDto>> GetRoomDetailsAsync(int roomId, int userId)
+        public async Task<Result<RoomDetailsDto>> GetRoomDetailsAsync(int roomId)
         {
-            try
+            var room = await _roomRepository.GetByIdAsync(roomId);
+            if (room is null)
             {
-                var room = await _roomRepository.GetByIdAsync(roomId);
-                if (room is null)
-                {
-                    return Result<RoomDetailsDto>.Failure("Кімнату не знайдено.");
-                }
-
-                var memberUserIds = room.Members.Select(m => m.UserId).Concat(new[] { room.OwnerId }).Distinct();
-                var userNames = await _roomRepository.GetUserNamesAsync(memberUserIds);
-
-                var members = room.Members.Select(m => new RoomMemberDto
-                {
-                    UserId = m.UserId,
-                    Name = userNames.TryGetValue(m.UserId, out var name) ? name : $"Користувач #{m.UserId}",
-                    Role = m.Role == RoomRole.Owner ? "Власник" : "Учасник"
-                }).ToList();
-
-                var dto = new RoomDetailsDto
-                {
-                    Id = room.Id,
-                    Name = room.Name,
-                    Description = room.Description,
-                    OwnerId = room.OwnerId,
-                    InviteCode = room.InviteCode,
-                    IsOwner = room.OwnerId == userId,
-                    Members = members
-                };
-
-                return Result<RoomDetailsDto>.Success(dto);
+                return Result<RoomDetailsDto>.Failure(RoomNotFoundError);
             }
-            catch (Exception ex)
+
+            var memberUserIds = room.Members.Select(m => m.UserId).Append(room.OwnerId).Distinct();
+            var userNames = await _roomRepository.GetUserNamesAsync(memberUserIds);
+
+            var members = room.Members.Select(m => new RoomMemberDto
             {
-                _logger.Error(ex, "Помилка при отриманні деталей кімнати {RoomId}.", roomId);
-                return Result<RoomDetailsDto>.Failure("Не вдалося завантажити інформацію про кімнату.");
-            }
+                UserId = m.UserId,
+                Name = userNames.TryGetValue(m.UserId, out var name) ? name : $"Користувач #{m.UserId}",
+                Role = m.Role == RoomRole.Owner ? "Власник" : "Учасник",
+            }).ToList();
+
+            return Result<RoomDetailsDto>.Success(new RoomDetailsDto
+            {
+                Id = room.Id,
+                Name = room.Name,
+                Description = room.Description,
+                OwnerId = room.OwnerId,
+                InviteCode = room.InviteCode,
+                IsOwner = room.OwnerId == _currentUser.UserId,
+                Members = members,
+            });
         }
 
-        public async Task<Result> DeleteRoomAsync(int roomId, int userId)
+        public async Task<Result> DeleteRoomAsync(int roomId)
         {
-            if (userId <= 0)
+            var check = await GetRoomForCurrentUserAsync(roomId);
+            if (check.IsFailure)
             {
-                return Result.Failure("Увійдіть в акаунт.");
+                return check;
             }
 
-            try
+            if (check.Value!.OwnerId != _currentUser.UserId)
             {
-                var room = await _roomRepository.GetByIdAsync(roomId);
-                if (room is null)
-                {
-                    return Result.Failure("Кімнату не знайдено.");
-                }
-
-                if (room.OwnerId != userId)
-                {
-                    return Result.Failure("Тільки власник може видалити кімнату.");
-                }
-
-                await _roomRepository.DeleteRoomAsync(roomId);
-                return Result.Success();
+                return Result.Failure("Тільки власник може видалити кімнату.");
             }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Помилка при видаленні кімнати {RoomId}.", roomId);
-                return Result.Failure("Не вдалося видалити кімнату.");
-            }
+
+            await _roomRepository.DeleteRoomAsync(roomId);
+            return Result.Success();
         }
 
-        public async Task<Result> LeaveRoomAsync(int roomId, int userId)
+        public async Task<Result> LeaveRoomAsync(int roomId)
         {
-            if (userId <= 0)
+            var check = await GetRoomForCurrentUserAsync(roomId);
+            if (check.IsFailure)
             {
-                return Result.Failure("Увійдіть в акаунт.");
+                return check;
             }
 
-            try
+            if (check.Value!.OwnerId == _currentUser.UserId)
             {
-                var room = await _roomRepository.GetByIdAsync(roomId);
-                if (room is null)
-                {
-                    return Result.Failure("Кімнату не знайдено.");
-                }
-
-                if (room.OwnerId == userId)
-                {
-                    return Result.Failure("Власник не може покинути кімнату. Її можна тільки видалити.");
-                }
-
-                await _roomRepository.RemoveMemberAsync(roomId, userId);
-                return Result.Success();
+                return Result.Failure("Власник не може покинути кімнату. Її можна тільки видалити.");
             }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Помилка при виході з кімнати {RoomId}.", roomId);
-                return Result.Failure("Не вдалося вийти з кімнати.");
-            }
+
+            await _roomRepository.RemoveMemberAsync(roomId, _currentUser.UserId);
+            return Result.Success();
         }
 
-        public async Task<Result<RoomDto>> JoinRoomByCodeAsync(string inviteCode, int userId)
+        public async Task<Result<RoomDto>> JoinRoomByCodeAsync(string inviteCode)
         {
-            if (userId <= 0)
+            if (!_currentUser.IsAuthenticated)
             {
                 _logger.Warning("Спроба приєднання до кімнати неавторизованим користувачем.");
                 return Result<RoomDto>.Failure("Увійдіть в акаунт, щоб приєднатися до кімнати.");
             }
 
             string code = inviteCode?.Trim().ToUpperInvariant() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(code))
+            if (code.Length == 0)
             {
                 _logger.Warning("Помилка валідації: код запрошення порожній.");
                 return Result<RoomDto>.Failure("Введіть код запрошення.");
@@ -257,34 +165,58 @@ namespace FourTaste.ApplicationCore.Services
                 return Result<RoomDto>.Failure("Кімнату з таким кодом не знайдено.");
             }
 
+            int userId = _currentUser.UserId;
             if (room.OwnerId == userId || room.Members.Any(m => m.UserId == userId))
             {
                 return Result<RoomDto>.Failure("Ви вже є учасником цієї кімнати.");
             }
 
-            var newMember = new RoomMember
+            await _roomRepository.AddMemberAsync(new RoomMember
             {
                 RoomId = room.Id,
                 UserId = userId,
                 Role = RoomRole.Member,
-                JoinedAt = DateTime.UtcNow
-            };
-
-            await _roomRepository.AddMemberAsync(newMember);
+                JoinedAt = DateTime.UtcNow,
+            });
 
             _logger.Information("Користувач {UserId} успішно приєднався до кімнати {RoomId} за кодом.", userId, room.Id);
 
-            var dto = new RoomDto
-            {
-                Id = room.Id,
-                Name = room.Name,
-                Description = room.Description,
-                OwnerId = room.OwnerId,
-                InviteCode = room.InviteCode,
-                CreatedAt = room.CreatedAt
-            };
+            return Result<RoomDto>.Success(ToDto(room));
+        }
 
-            return Result<RoomDto>.Success(dto);
+        private static RoomDto ToDto(Room room) => new RoomDto
+        {
+            Id = room.Id,
+            Name = room.Name,
+            Description = room.Description,
+            OwnerId = room.OwnerId,
+            InviteCode = room.InviteCode,
+            CreatedAt = room.CreatedAt,
+        };
+
+        private static string GenerateRandomCode(int length)
+        {
+            var chars = RoomOptions.InviteCodeCharacters;
+            var bytes = new byte[length];
+            RandomNumberGenerator.Fill(bytes);
+            var sb = new StringBuilder(length);
+            foreach (byte b in bytes)
+            {
+                sb.Append(chars[b % chars.Length]);
+            }
+
+            return sb.ToString();
+        }
+
+        private async Task<Result<Room>> GetRoomForCurrentUserAsync(int roomId)
+        {
+            if (!_currentUser.IsAuthenticated)
+            {
+                return Result<Room>.Failure(NotAuthenticatedError);
+            }
+
+            var room = await _roomRepository.GetByIdAsync(roomId);
+            return room is null ? Result<Room>.Failure(RoomNotFoundError) : Result<Room>.Success(room);
         }
 
         private async Task<string> GenerateUniqueInviteCodeAsync()
@@ -293,27 +225,13 @@ namespace FourTaste.ApplicationCore.Services
             for (int i = 0; i < maxRetries; i++)
             {
                 string code = GenerateRandomCode(RoomOptions.InviteCodeLength);
-                bool exists = await _roomRepository.InviteCodeExistsAsync(code);
-                if (!exists)
+                if (!await _roomRepository.InviteCodeExistsAsync(code))
                 {
                     return code;
                 }
             }
 
             throw new InvalidOperationException("Не вдалося згенерувати унікальний код кімнати.");
-        }
-
-        private string GenerateRandomCode(int length)
-        {
-            var chars = RoomOptions.InviteCodeCharacters;
-            var bytes = new byte[length];
-            RandomNumberGenerator.Fill(bytes);
-            var sb = new StringBuilder(length);
-            for (int i = 0; i < length; i++)
-            {
-                sb.Append(chars[bytes[i] % chars.Length]);
-            }
-            return sb.ToString();
         }
     }
 }

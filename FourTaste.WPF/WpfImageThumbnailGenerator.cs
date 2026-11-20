@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.IO;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using FourTaste.ApplicationCore.Interfaces;
 
@@ -12,42 +13,22 @@ namespace FourTaste.WPF
 
         public byte[]? CreateThumbnail(byte[]? photo)
         {
-            if (photo is null || photo.Length == 0)
+            var image = ImageDecoder.Decode(photo);
+            if (image is null)
             {
                 return null;
             }
 
-            try
-            {
-                int originalWidth;
-                using (var probe = new MemoryStream(photo))
-                {
-                    originalWidth = BitmapDecoder
-                        .Create(probe, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None)
-                        .Frames[0]
-                        .PixelWidth;
-                }
+            BitmapSource source = image.PixelWidth > MaxWidth
+                ? new TransformedBitmap(image, new ScaleTransform((double)MaxWidth / image.PixelWidth, (double)MaxWidth / image.PixelWidth))
+                : image;
 
-                using var input = new MemoryStream(photo);
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.DecodePixelWidth = Math.Min(MaxWidth, originalWidth);
-                image.StreamSource = input;
-                image.EndInit();
-                image.Freeze();
+            var encoder = new JpegBitmapEncoder { QualityLevel = JpegQuality };
+            encoder.Frames.Add(BitmapFrame.Create(source));
 
-                var encoder = new JpegBitmapEncoder { QualityLevel = JpegQuality };
-                encoder.Frames.Add(BitmapFrame.Create(image));
-
-                using var output = new MemoryStream();
-                encoder.Save(output);
-                return output.ToArray();
-            }
-            catch (Exception ex) when (ex is NotSupportedException or FileFormatException or IOException or InvalidOperationException)
-            {
-                return null;
-            }
+            using var output = new MemoryStream();
+            encoder.Save(output);
+            return output.ToArray();
         }
     }
 }

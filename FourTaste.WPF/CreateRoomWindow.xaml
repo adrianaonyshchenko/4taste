@@ -1,7 +1,7 @@
 <Window x:Class="FourTaste.WPF.CreateRoomWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Додати кімнату" Height="530" Width="820"
+        Title="Додати кімнату" Height="560" Width="820"
         WindowStartupLocation="CenterOwner"
         Background="#EADCC9"
         ResizeMode="NoResize">
@@ -54,7 +54,7 @@
                     Background="#B89F8B"
                     CornerRadius="20"
                     Width="320"
-                    Height="270"
+                    Height="300"
                     Padding="24,20">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -78,15 +78,20 @@
                                            Text="Введіть назву"
                                            Foreground="#7A685D"
                                            FontSize="14"
-                                           VerticalAlignment="Center"
+                                           VerticalAlignment="Top"
+                                           Margin="2,0,0,0"
                                            IsHitTestVisible="False"/>
                                 <TextBox x:Name="RoomNameTextBox"
-                                         MaxLength="100"
+                                         MaxLength="50"
+                                         Height="40"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Disabled"
+                                         VerticalContentAlignment="Top"
                                          Background="Transparent"
                                          BorderThickness="0"
                                          Foreground="#4A352F"
                                          FontSize="14"
-                                         VerticalAlignment="Center"
                                          CaretBrush="#4A352F"
                                          TextChanged="RoomNameTextBox_TextChanged"/>
                             </Grid>
@@ -98,15 +103,21 @@
                                            Text="Додайте опис"
                                            Foreground="#7A685D"
                                            FontSize="14"
-                                           VerticalAlignment="Center"
+                                           VerticalAlignment="Top"
+                                           Margin="2,0,0,0"
                                            IsHitTestVisible="False"/>
                                 <TextBox x:Name="RoomDescriptionTextBox"
                                          MaxLength="500"
+                                         Height="76"
+                                         TextWrapping="Wrap"
+                                         AcceptsReturn="True"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalScrollBarVisibility="Disabled"
+                                         VerticalContentAlignment="Top"
                                          Background="Transparent"
                                          BorderThickness="0"
                                          Foreground="#4A352F"
                                          FontSize="14"
-                                         VerticalAlignment="Center"
                                          CaretBrush="#4A352F"
                                          TextChanged="RoomDescriptionTextBox_TextChanged"/>
                             </Grid>
@@ -132,7 +143,7 @@
                     Background="#B89F8B"
                     CornerRadius="20"
                     Width="320"
-                    Height="270"
+                    Height="300"
                     Padding="24,20">
                 <Grid>
                     <Grid.RowDefinitions>

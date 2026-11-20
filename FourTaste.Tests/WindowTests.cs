@@ -244,7 +244,8 @@ namespace FourTaste.Tests
                     var mockRecipeRepo = new Mock<IRecipeRepository>();
 
                     var mockMealPlan = new Mock<MealPlanService>(MockBehavior.Loose, mockMealRepo.Object, mockLogger.Object);
-                    var mockAuth = new Mock<AuthService>(MockBehavior.Loose, mockUserRepo.Object, mockLogger.Object);
+                    var mockSession = new Mock<ICurrentUserSession>();
+                    var mockAuth = new Mock<AuthService>(MockBehavior.Loose, mockUserRepo.Object, mockSession.Object, mockLogger.Object);
                     var mockAllergy = new Mock<IAllergyService>();
                     var mockUser = new Mock<UserService>(MockBehavior.Loose, mockUserRepo.Object, mockLogger.Object);
                     var mockRecipe = new Mock<IRecipeService>();

@@ -122,21 +122,11 @@ namespace FourTaste.WPF
                     return;
                 }
 
-                var loggedInUser = loginResult.Value!;
+                MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                if (loggedInUser != null)
-                {
-                    SessionContext.CurrentUser = loggedInUser;
-                    MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                    var recipesWindow = App.ServiceProvider?.GetService<PublicRecipesWindow>() ?? new PublicRecipesWindow();
-                    recipesWindow.Show();
-                    this.Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Помилка зв'язку з базою даних:\n{ex.Message}", "Помилка входу", MessageBoxButton.OK, MessageBoxImage.Error);
+                var recipesWindow = App.ServiceProvider?.GetService<PublicRecipesWindow>() ?? new PublicRecipesWindow();
+                recipesWindow.Show();
+                this.Close();
             }
             finally
             {

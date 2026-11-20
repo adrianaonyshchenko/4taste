@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -11,13 +11,13 @@ namespace FourTaste.WPF
         private const int JpegQuality = 80;
         private const int AvatarDecodeWidth = 96;
 
-        public static byte[] CompressToJpeg(string filePath)
+        public static byte[]? CompressToJpeg(string filePath)
         {
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.UriSource = new Uri(filePath, UriKind.Absolute);
-            image.EndInit();
+            var image = ImageDecoder.Decode(File.ReadAllBytes(filePath));
+            if (image is null)
+            {
+                return null;
+            }
 
             BitmapSource result = image;
             int longestSide = Math.Max(image.PixelWidth, image.PixelHeight);
@@ -37,44 +37,12 @@ namespace FourTaste.WPF
 
         public static BitmapImage? ToBitmapImage(byte[]? bytes)
         {
-            if (bytes is null || bytes.Length == 0)
-            {
-                return null;
-            }
-
-            using var stream = new MemoryStream(bytes);
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.StreamSource = stream;
-            image.EndInit();
-            image.Freeze();
-            return image;
+            return ImageDecoder.Decode(bytes);
         }
 
         public static BitmapImage? ToAvatarImage(byte[]? bytes)
         {
-            if (bytes is null || bytes.Length == 0)
-            {
-                return null;
-            }
-
-            try
-            {
-                using var stream = new MemoryStream(bytes);
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.DecodePixelWidth = AvatarDecodeWidth;
-                image.StreamSource = stream;
-                image.EndInit();
-                image.Freeze();
-                return image;
-            }
-            catch (Exception ex) when (ex is NotSupportedException or FileFormatException or IOException or InvalidOperationException)
-            {
-                return null;
-            }
+            return ImageDecoder.Decode(bytes, AvatarDecodeWidth);
         }
     }
 }

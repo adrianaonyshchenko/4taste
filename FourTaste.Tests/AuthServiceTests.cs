@@ -9,36 +9,37 @@ using Xunit;
 
 namespace FourTaste.Tests
 {
-    [Collection("SessionContext")]
     public class AuthServiceTests
     {
+        private readonly Mock<ICurrentUserSession> sessionMock = new Mock<ICurrentUserSession>();
+
         [Fact]
-        public async Task LogoutAsync_ShouldClearSessionAndNotQueryDatabase_WhenCalled()
+        public async Task LogoutAsync_ShouldSignOutAndNotQueryDatabase_WhenCalled()
         {
             var mockRepo = new Mock<IUserRepository>();
             var mockLogger = new Mock<ILogger>();
-            SessionContext.CurrentUser = new User { ID = 1, Username = "Tania" };
-            var service = new AuthService(mockRepo.Object, mockLogger.Object);
-
-            var result = await service.LogoutAsync(1);
-
-            Assert.True(result.IsSuccess);
-            Assert.Null(SessionContext.CurrentUser);
-            mockRepo.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
-        }
-
-        [Fact]
-        public async Task LogoutAsync_ShouldSucceedAndClearSession_WhenNoSessionActive()
-        {
-            var mockRepo = new Mock<IUserRepository>();
-            var mockLogger = new Mock<ILogger>();
-            SessionContext.CurrentUser = null;
-            var service = new AuthService(mockRepo.Object, mockLogger.Object);
+            this.sessionMock.Setup(s => s.CurrentUser).Returns(new User { ID = 1, Username = "Tania" });
+            var service = new AuthService(mockRepo.Object, this.sessionMock.Object, mockLogger.Object);
 
             var result = await service.LogoutAsync();
 
             Assert.True(result.IsSuccess);
-            Assert.Null(SessionContext.CurrentUser);
+            this.sessionMock.Verify(s => s.SignOut(), Times.Once);
+            mockRepo.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task LogoutAsync_ShouldSucceedAndSignOut_WhenNoSessionActive()
+        {
+            var mockRepo = new Mock<IUserRepository>();
+            var mockLogger = new Mock<ILogger>();
+            this.sessionMock.Setup(s => s.CurrentUser).Returns((User?)null);
+            var service = new AuthService(mockRepo.Object, this.sessionMock.Object, mockLogger.Object);
+
+            var result = await service.LogoutAsync();
+
+            Assert.True(result.IsSuccess);
+            this.sessionMock.Verify(s => s.SignOut(), Times.Once);
             mockRepo.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
         }
 
@@ -47,13 +48,12 @@ namespace FourTaste.Tests
         {
             var mockRepo = new Mock<IUserRepository>();
             var mockLogger = new Mock<ILogger>();
-            SessionContext.CurrentUser = new User { ID = 10, Username = "TestUser" };
-            var service = new AuthService(mockRepo.Object, mockLogger.Object);
+            this.sessionMock.Setup(s => s.CurrentUser).Returns(new User { ID = 10, Username = "TestUser" });
+            var service = new AuthService(mockRepo.Object, this.sessionMock.Object, mockLogger.Object);
 
-            var result = await service.LogoutAsync(10);
+            var result = await service.LogoutAsync();
 
             Assert.True(result.IsSuccess);
-            Assert.Null(SessionContext.CurrentUser);
             mockLogger.Verify(
                 l => l.Information(
                     It.Is<string>(s => s.Contains("сесію очищено")),
@@ -78,12 +78,13 @@ namespace FourTaste.Tests
             mockRepo.Setup(r => r.GetByEmailAsync("test@gmail.com"))
                     .ReturnsAsync(testUser);
 
-            var service = new AuthService(mockRepo.Object, mockLogger.Object);
+            var service = new AuthService(mockRepo.Object, this.sessionMock.Object, mockLogger.Object);
 
             var result = await service.LoginAsync("test@gmail.com", "correct_password");
 
             Assert.True(result.IsSuccess);
             Assert.Equal("test@gmail.com", result.Value!.Email);
+            this.sessionMock.Verify(s => s.SignIn(testUser), Times.Once);
         }
 
         [Fact]
@@ -102,12 +103,13 @@ namespace FourTaste.Tests
             mockRepo.Setup(r => r.GetByEmailAsync("test@gmail.com"))
                     .ReturnsAsync(testUser);
 
-            var service = new AuthService(mockRepo.Object, mockLogger.Object);
+            var service = new AuthService(mockRepo.Object, this.sessionMock.Object, mockLogger.Object);
 
             var result = await service.LoginAsync("test@gmail.com", "wrong_password");
 
             Assert.True(result.IsFailure);
             Assert.Equal("Невірна електронна пошта або пароль.", result.Error);
+            this.sessionMock.Verify(s => s.SignIn(It.IsAny<User>()), Times.Never);
         }
 
         [Fact]
@@ -116,7 +118,7 @@ namespace FourTaste.Tests
             var mockRepo = new Mock<IUserRepository>();
             var mockLogger = new Mock<ILogger>();
 
-            var service = new AuthService(mockRepo.Object, mockLogger.Object);
+            var service = new AuthService(mockRepo.Object, this.sessionMock.Object, mockLogger.Object);
 
             var result = await service.LoginAsync(string.Empty, "some_password");
 
@@ -130,7 +132,7 @@ namespace FourTaste.Tests
             var mockRepo = new Mock<IUserRepository>();
             var mockLogger = new Mock<ILogger>();
 
-            var service = new AuthService(mockRepo.Object, mockLogger.Object);
+            var service = new AuthService(mockRepo.Object, this.sessionMock.Object, mockLogger.Object);
 
             var result = await service.LoginAsync("user@gmail.com", string.Empty);
 
@@ -145,12 +147,13 @@ namespace FourTaste.Tests
             mockRepo.Setup(r => r.GetByEmailAsync("notfound@gmail.com")).ReturnsAsync((User?)null);
             var mockLogger = new Mock<ILogger>();
 
-            var service = new AuthService(mockRepo.Object, mockLogger.Object);
+            var service = new AuthService(mockRepo.Object, this.sessionMock.Object, mockLogger.Object);
 
             var result = await service.LoginAsync("notfound@gmail.com", "any_password");
 
             Assert.True(result.IsFailure);
             Assert.Equal("Невірна електронна пошта або пароль.", result.Error);
+            this.sessionMock.Verify(s => s.SignIn(It.IsAny<User>()), Times.Never);
         }
     }
 }

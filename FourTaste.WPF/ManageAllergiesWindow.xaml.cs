@@ -16,7 +16,7 @@ namespace FourTaste.WPF
         private readonly UserService userService;
         private readonly IAuthService authService;
 
-        private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
+        private int CurrentUserId => App.CurrentUser.UserId;
 
         public ManageAllergiesWindow()
             : this(
@@ -155,7 +155,7 @@ namespace FourTaste.WPF
             }
 
             MessageBox.Show("Обліковий запис видалено.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-            SessionContext.Clear();
+            await this.authService.LogoutAsync();
 
             var registerWindow = App.ServiceProvider?.GetService<RegisterWindow>() ?? new RegisterWindow();
             registerWindow.Show();
@@ -164,7 +164,7 @@ namespace FourTaste.WPF
 
         private async void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            var result = await this.authService.LogoutAsync(this.CurrentUserId);
+            var result = await this.authService.LogoutAsync();
             if (result.IsFailure)
             {
                 MessageBox.Show(result.Error, "Помилка при виході", MessageBoxButton.OK, MessageBoxImage.Warning);

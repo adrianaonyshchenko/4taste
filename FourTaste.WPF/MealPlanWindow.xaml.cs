@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,7 +18,7 @@ namespace FourTaste.WPF
         private readonly IRecipeService recipeService;
         private List<Recipe> availableRecipes = new ();
 
-        private int CurrentUserId => SessionContext.CurrentUser?.ID ?? 0;
+        private int CurrentUserId => App.CurrentUser.UserId;
 
         public MealPlanWindow(MealPlanService mealPlanService)
             : this(mealPlanService, App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService is not initialized."))
