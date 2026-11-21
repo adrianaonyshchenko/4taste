@@ -1,0 +1,40 @@
+﻿<Window x:Class="FourTaste.WPF.TextPromptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Введіть текст" Width="460" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" Background="#E3D1BD" ShowInTaskbar="False"
+        Loaded="Window_Loaded">
+    <Window.Resources>
+        <Style x:Key="PromptButton" TargetType="Button">
+            <Setter Property="Width" Value="110"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="16">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="20">
+        <TextBlock x:Name="LabelTextBlock" FontWeight="Bold" Foreground="#4A3532"
+                   TextWrapping="Wrap" Margin="0,0,0,10"/>
+        <Border Background="#C4B4A4" CornerRadius="12" Padding="8">
+            <TextBox x:Name="InputTextBox" Background="Transparent" BorderThickness="0"
+                     Foreground="#4A3532" FontSize="14" TextWrapping="Wrap" AcceptsReturn="True"
+                     MinHeight="90" MaxHeight="160" VerticalScrollBarVisibility="Auto"/>
+        </Border>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="Скасувати" Style="{StaticResource PromptButton}" Background="#C4B4A4"
+                    Foreground="#4A3532" Margin="0,0,10,0" Click="CancelButton_Click"/>
+            <Button Content="OK" Style="{StaticResource PromptButton}" Background="#542E2B"
+                    Foreground="White" IsDefault="True" Click="OkButton_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

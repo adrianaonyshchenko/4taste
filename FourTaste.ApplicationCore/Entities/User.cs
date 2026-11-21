@@ -21,5 +21,8 @@ namespace FourTaste.ApplicationCore.Entities
         public UserRole Role { get; set; } = UserRole.User;
 
         public DateTime? CreatedAt { get; set; }
+        public bool IsBlocked { get; set; }
+
+        public string? BlockedReason { get; set; }
     }
 }

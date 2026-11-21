@@ -164,5 +164,14 @@ namespace FourTaste.WPF
             App.CreateProfileWindow().Show();
             this.Close();
         }
+
+        private void UserCard_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement { DataContext: UserCardViewModel card })
+            {
+                new AdminUserDetailsWindow(card.Id).Show();
+                this.Close();
+            }
+        }
     }
 }

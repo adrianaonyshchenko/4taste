@@ -124,6 +124,8 @@ namespace FourTaste.WPF
 
                 MessageBox.Show("Успішний вхід у систему!", "Вітаємо", MessageBoxButton.OK, MessageBoxImage.Information);
 
+                await WarningNotifier.ShowUnreadAsync();
+
                 App.CreateHomeWindow().Show();
                 this.Close();
             }

@@ -97,6 +97,7 @@ namespace FourTaste.Infrastructure.Repositories
                     RecipesCount = context.Recipes.Count(r => r.UserId == u.ID),
                     CreatedAt = u.CreatedAt,
                     IsAdmin = u.Role == UserRole.Admin,
+                    IsBlocked = u.IsBlocked,
                 })
                 .ToListAsync();
         }

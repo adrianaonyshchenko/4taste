@@ -163,6 +163,9 @@ namespace FourTaste.WPF
             services.AddScoped<IShoppingListRepository, ShoppingListRepository>();
             services.AddScoped<ShoppingListService>();
 
+            services.AddScoped<IUserWarningRepository, UserWarningRepository>();
+            services.AddScoped<IUserModerationService, UserModerationService>();
+
             services.AddTransient<ManageAllergiesWindow>();
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();
