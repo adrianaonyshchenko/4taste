@@ -190,6 +190,10 @@ namespace FourTaste.WPF
             services.AddTransient<CreateRoomWindow>();
             services.AddTransient<RoomDetailsWindow>();
             services.AddSingleton<IImageThumbnailGenerator, WpfImageThumbnailGenerator>();
+            services.AddScoped<IRecipeCategoryRepository, RecipeCategoryRepository>();
+            services.AddScoped<IRecipeCategoryService, RecipeCategoryService>();
+            services.AddTransient<AdminCategoriesWindow>();
+
         }
 
         private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

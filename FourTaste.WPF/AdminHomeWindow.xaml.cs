@@ -113,7 +113,6 @@ namespace FourTaste.WPF
         private async void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             this.UpdateSearchControls();
-
             if (this.IsLoaded)
             {
                 await this.SearchAsync(immediate: false);
@@ -157,6 +156,13 @@ namespace FourTaste.WPF
             {
                 await this.SearchAsync(immediate: true);
             }
+        }
+
+        private void CategoriesButton_Click(object sender, RoutedEventArgs e)
+        {
+            var window = App.ServiceProvider?.GetService<AdminCategoriesWindow>() ?? new AdminCategoriesWindow();
+            window.Show();
+            this.Close();
         }
 
         private void ProfileButton_Click(object sender, RoutedEventArgs e)

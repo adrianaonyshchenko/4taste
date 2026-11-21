@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using FourTaste.ApplicationCore.Entities;
-using FourTaste.ApplicationCore.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace FourTaste.Infrastructure.Data
@@ -29,6 +26,8 @@ namespace FourTaste.Infrastructure.Data
         public DbSet<RoomMealPlan> RoomMealPlans { get; set; } = null!;
         public DbSet<ShoppingListItem> ShoppingListItems { get; set; } = null!;
         public DbSet<UserWarning> UserWarnings { get; set; } = null!;
+        public DbSet<RecipeCategory> RecipeCategories { get; set; } = null!;
+
         public AppDbContext()
         {
         }
@@ -44,6 +43,7 @@ namespace FourTaste.Infrastructure.Data
             {
                 return;
             }
+
             lock (InitLock)
             {
                 if (isDatabaseInitialized)
@@ -158,7 +158,6 @@ namespace FourTaste.Infrastructure.Data
                         );
                     ");
                     this.Database.ExecuteSqlRaw(@"CREATE UNIQUE INDEX IF NOT EXISTS ""IX_RoomMembers_RoomId_UserId"" ON ""RoomMembers"" (""RoomId"", ""UserId"");");
-
                     this.Database.ExecuteSqlRaw(@"
                         CREATE TABLE IF NOT EXISTS ""RoomMealPlans"" (
                             ""Id"" SERIAL PRIMARY KEY,
@@ -182,7 +181,16 @@ namespace FourTaste.Infrastructure.Data
                             ""IsRead"" BOOLEAN NOT NULL DEFAULT FALSE
                         );
                     ");
+                    this.Database.ExecuteSqlRaw(@"
+                        CREATE TABLE IF NOT EXISTS ""RecipeCategories"" (
+                            ""Id"" SERIAL PRIMARY KEY,
+                            ""Name"" TEXT NOT NULL,
+                            ""CreatedAt"" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                        );
+                    ");
+                    this.Database.ExecuteSqlRaw(@"CREATE UNIQUE INDEX IF NOT EXISTS ""IX_RecipeCategories_Name"" ON ""RecipeCategories"" (""Name"");");
                 }
+
                 isDatabaseInitialized = true;
             }
         }
@@ -190,6 +198,7 @@ namespace FourTaste.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<RecipeReview>(entity =>
             {
                 entity.HasIndex(r => new { r.RecipeId, r.UserId }).IsUnique();
@@ -203,9 +212,7 @@ namespace FourTaste.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Cascade);
                 entity.HasOne<User>()
                     .WithMany()
-                    .HasForeignKey(r => r
-
-.UserId)
+                    .HasForeignKey(r => r.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -242,6 +249,11 @@ namespace FourTaste.Infrastructure.Data
                     .WithMany()
                     .HasForeignKey(w => w.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<RecipeCategory>(entity =>
+            {
+                entity.HasIndex(c => c.Name).IsUnique();
             });
         }
     }

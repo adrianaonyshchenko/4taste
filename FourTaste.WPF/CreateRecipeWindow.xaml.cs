@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -16,29 +17,45 @@ namespace FourTaste.WPF
     {
         private readonly IRecipeService _recipeService = null!;
         private readonly IAllergyService? _allergyService;
+        private readonly IRecipeCategoryService? _categoryService;
         private readonly int _currentUserId;
         private readonly List<string> _userAllergies = new ();
         private readonly ObservableCollection<RecipeIngredientDisplayModel> _ingredients = new ();
         private readonly List<string> _stepsList = new ();
-
         private byte[]? _selectedPhoto;
 
         public CreateRecipeWindow(IRecipeService recipeService, int currentUserId)
-            : this(recipeService, App.ServiceProvider?.GetService<IAllergyService>(), currentUserId)
+            : this(
+                recipeService,
+                App.ServiceProvider?.GetService<IAllergyService>(),
+                App.ServiceProvider?.GetService<IRecipeCategoryService>(),
+                currentUserId)
         {
         }
 
         public CreateRecipeWindow(IRecipeService recipeService, IAllergyService? allergyService, int currentUserId)
+            : this(
+                recipeService,
+                allergyService,
+                App.ServiceProvider?.GetService<IRecipeCategoryService>(),
+                currentUserId)
+        {
+        }
+
+        public CreateRecipeWindow(
+            IRecipeService recipeService,
+            IAllergyService? allergyService,
+            IRecipeCategoryService? categoryService,
+            int currentUserId)
         {
             _recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
             _allergyService = allergyService;
+            _categoryService = categoryService;
             _currentUserId = currentUserId;
 
             InitializeComponent();
-
             IngredientsItemsControl.ItemsSource = _ingredients;
             StepsListBox.ItemsSource = _stepsList;
-
             CategoryComboBox.ItemsSource = _recipeService?.GetAvailableCategories() ?? Array.Empty<string>();
             CuisineComboBox.ItemsSource = _recipeService?.GetAvailableCuisines() ?? Array.Empty<string>();
 
@@ -73,6 +90,8 @@ namespace FourTaste.WPF
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            await LoadCategoriesAsync();
+
             if (_allergyService != null && _currentUserId > 0)
             {
                 var allergiesResult = await _allergyService.GetAllergiesByUserIdAsync(_currentUserId);
@@ -86,11 +105,35 @@ namespace FourTaste.WPF
             }
         }
 
+        private async Task LoadCategoriesAsync()
+        {
+            var fallbackCategories = _recipeService?.GetAvailableCategories() ?? Array.Empty<string>();
+            var categories = new List<string>(fallbackCategories);
+
+            if (_categoryService != null)
+            {
+                var categoriesResult = await _categoryService.GetAllAsync();
+                if (categoriesResult.IsSuccess && categoriesResult.Value != null)
+                {
+                    foreach (var dbCategory in categoriesResult.Value)
+                    {
+                        string name = dbCategory.Name?.Trim() ?? string.Empty;
+                        if (!string.IsNullOrWhiteSpace(name) &&
+                            !categories.Any(c => string.Equals(c.Trim(), name, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            categories.Add(name);
+                        }
+                    }
+                }
+            }
+
+            CategoryComboBox.ItemsSource = categories;
+        }
+
         private RecipeIngredientDisplayModel CreateIngredientDisplayModel(string name, string amount)
         {
             string trimmedName = name?.Trim() ?? string.Empty;
             string trimmedAmount = string.IsNullOrWhiteSpace(amount) ? "1 шт." : amount.Trim();
-
             bool isAllergen = _userAllergies.Any(allergen =>
                 !string.IsNullOrWhiteSpace(allergen) &&
                 trimmedName.ToLower().Contains(allergen));
@@ -136,7 +179,6 @@ namespace FourTaste.WPF
             }
 
             string whyInput = Microsoft.VisualBasic.Interaction.InputBox("Введіть пояснення 'WHY?' для цього кроку (необов'язково):", "Пояснення кроку", string.Empty);
-
             string stepEntry = descInput.Trim();
             if (!string.IsNullOrWhiteSpace(whyInput))
             {
@@ -178,7 +220,6 @@ namespace FourTaste.WPF
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             SaveButton.IsEnabled = false;
-
             try
             {
                 string title = TitleTextBox.Text?.Trim() ?? string.Empty;
@@ -198,7 +239,6 @@ namespace FourTaste.WPF
                     .ToList();
 
                 List<string> steps = GetStepsFromUI();
-
                 var request = new CreateRecipeRequest
                 {
                     Title = title,
@@ -214,7 +254,6 @@ namespace FourTaste.WPF
                 };
 
                 var result = await _recipeService.CreateRecipeAsync(request);
-
                 if (result.IsFailure)
                 {
                     MessageBox.Show(result.Error, "Помилка валідації", MessageBoxButton.OK, MessageBoxImage.Warning);
