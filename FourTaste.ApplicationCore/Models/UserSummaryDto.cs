@@ -17,7 +17,7 @@ namespace FourTaste.ApplicationCore.Models
         public int RecipesCount { get; set; }
 
         public DateTime? CreatedAt { get; set; }
-
         public bool IsAdmin { get; set; }
+        public bool IsBlocked { get; set; }
     }
 }

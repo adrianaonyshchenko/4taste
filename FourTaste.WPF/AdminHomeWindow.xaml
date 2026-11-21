@@ -239,7 +239,9 @@
                                     Background="#877063"
                                     CornerRadius="18"
                                     Padding="15"
-                                    Margin="8,6">
+                                    Margin="8,6"
+                                    Cursor="Hand"
+                                    MouseLeftButtonUp="UserCard_MouseLeftButtonUp">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -296,6 +298,11 @@
                                                 Background="#EBB832"
                                                 Visibility="{Binding IsAdmin, Converter={StaticResource BoolToVisibility}}">
                                             <TextBlock Text="Адмін" Foreground="#4A3532" FontSize="11" FontWeight="Bold"/>
+                                        </Border>
+                                        <Border Style="{StaticResource ChipStyle}"
+                                                Background="#B84A39"
+                                                Visibility="{Binding IsBlocked, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock Text="Заблоковано" Foreground="White" FontSize="11" FontWeight="Bold"/>
                                         </Border>
                                     </WrapPanel>
                                 </Grid>

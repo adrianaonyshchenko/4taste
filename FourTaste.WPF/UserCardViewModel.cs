@@ -16,6 +16,8 @@ namespace FourTaste.WPF
 
         public UserSummaryDto User { get; }
 
+        public int Id => this.User.Id;
+
         public BitmapImage? Avatar { get; }
 
         public string DisplayName => string.IsNullOrWhiteSpace(this.User.Name) ? this.User.Username : this.User.Name;
@@ -33,6 +35,8 @@ namespace FourTaste.WPF
             : "дата реєстрації —";
 
         public bool IsAdmin => this.User.IsAdmin;
+
+        public bool IsBlocked => this.User.IsBlocked;
 
         public static string RecipeWord(int count)
         {

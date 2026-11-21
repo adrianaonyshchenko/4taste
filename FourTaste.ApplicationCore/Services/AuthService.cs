@@ -9,6 +9,7 @@ namespace FourTaste.ApplicationCore.Services
 {
     public class AuthService : IAuthService
     {
+        public const string BlockedAccountError = "Ваш акаунт заблоковано адміністратором.";
         private readonly IUserRepository userRepository;
         private readonly ICurrentUserSession session;
         private readonly ILogger logger;
@@ -72,6 +73,17 @@ namespace FourTaste.ApplicationCore.Services
                 this.logger.Warning("Введено невірний пароль для користувача з поштою {Email}.", email);
                 return Result<User>.Failure("Невірна електронна пошта або пароль.");
             }
+
+            if (user.IsBlocked)
+            {
+                this.logger.Warning("Спроба входу в заблокований акаунт: {Email} (ID {UserId}).", email, user.ID);
+                return Result<User>.Failure(
+                    string.IsNullOrWhiteSpace(user.BlockedReason)
+                        ? BlockedAccountError
+                        : $"{BlockedAccountError} Причина: {user.BlockedReason}");
+            }
+
+            this.session.SignIn(user);
 
             this.session.SignIn(user);
             this.logger.Information("Користувач з поштою {Email} успішно увійшов у систему.", email);

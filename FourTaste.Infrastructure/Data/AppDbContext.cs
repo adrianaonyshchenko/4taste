@@ -28,6 +28,7 @@ namespace FourTaste.Infrastructure.Data
         public DbSet<RoomMember> RoomMembers { get; set; } = null!;
         public DbSet<RoomMealPlan> RoomMealPlans { get; set; } = null!;
         public DbSet<ShoppingListItem> ShoppingListItems { get; set; } = null!;
+        public DbSet<UserWarning> UserWarnings { get; set; } = null!;
         public AppDbContext()
         {
         }
@@ -169,6 +170,18 @@ namespace FourTaste.Infrastructure.Data
                             ""IsCooked"" BOOLEAN NOT NULL DEFAULT FALSE
                         );
                     ");
+                    this.Database.ExecuteSqlRaw(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""IsBlocked"" BOOLEAN NOT NULL DEFAULT FALSE;");
+                    this.Database.ExecuteSqlRaw(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""BlockedReason"" TEXT NULL;");
+                    this.Database.ExecuteSqlRaw(@"
+                        CREATE TABLE IF NOT EXISTS ""UserWarnings"" (
+                            ""Id"" SERIAL PRIMARY KEY,
+                            ""UserId"" INTEGER NOT NULL REFERENCES ""Users""(""ID"") ON DELETE CASCADE,
+                            ""AdminId"" INTEGER NULL,
+                            ""Message"" TEXT NOT NULL,
+                            ""CreatedAt"" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                            ""IsRead"" BOOLEAN NOT NULL DEFAULT FALSE
+                        );
+                    ");
                 }
                 isDatabaseInitialized = true;
             }
@@ -220,6 +233,14 @@ namespace FourTaste.Infrastructure.Data
                 entity.HasOne<User>()
                     .WithMany()
                     .HasForeignKey(m => m.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserWarning>(entity =>
+            {
+                entity.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(w => w.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }
