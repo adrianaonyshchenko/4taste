@@ -39,12 +39,32 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
         <Style x:Key="ChipStyle" TargetType="Border">
-            <Setter Property="Background" Value="#DDD4C8"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Margin" Value="0,0,6,6"/>
+        <Setter Property="Background" Value="#DDD4C8"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Padding" Value="10,5"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
+        </Style>
+
+        <Style x:Key="HeaderNavButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Background" Value="#4A3532"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="14"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
@@ -95,7 +115,6 @@
                                VerticalAlignment="Center"
                                IsHitTestVisible="False"
                                Margin="2,0,0,0"/>
-
                     <TextBox x:Name="SearchTextBox"
                              Grid.Column="0"
                              Background="Transparent"
@@ -146,7 +165,6 @@
                     </Button>
                 </Grid>
             </Border>
-
             <Button Grid.Column="2"
                     x:Name="ProfileButton"
                     Click="ProfileButton_Click"
@@ -178,52 +196,68 @@
                 </Grid>
             </Button>
         </Grid>
+        <Grid Grid.Row="1" Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,14">
-            <TextBlock Text="Усі користувачі"
-                       Foreground="#4A3532"
-                       FontSize="20"
-                       FontWeight="Bold"
-                       VerticalAlignment="Center"
-                       Margin="0,0,16,0"/>
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <TextBlock Text="Усі користувачі"
+                           Foreground="#4A3532"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"
+                           Margin="0,0,16,0"/>
 
-            <Border Background="#F4EAE0" CornerRadius="14" Padding="3" Margin="0,0,12,0" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal">
-                    <RadioButton x:Name="FilterAllRadio"
-                                 GroupName="UserFilterGroup"
-                                 Content="Всі"
-                                 IsChecked="True"
-                                 Tag="{x:Static entities:UserSearchFilter.All}"
-                                 Checked="FilterRadio_Checked"
-                                 Style="{StaticResource FilterRadioPillStyle}"/>
-                    <RadioButton x:Name="FilterNameRadio"
-                                 GroupName="UserFilterGroup"
-                                 Content="За ім'ям"
-                                 Tag="{x:Static entities:UserSearchFilter.Name}"
-                                 Checked="FilterRadio_Checked"
-                                 Style="{StaticResource FilterRadioPillStyle}"/>
-                    <RadioButton x:Name="FilterUsernameRadio"
-                                 GroupName="UserFilterGroup"
-                                 Content="За нікнеймом"
-                                 Tag="{x:Static entities:UserSearchFilter.Username}"
-                                 Checked="FilterRadio_Checked"
-                                 Style="{StaticResource FilterRadioPillStyle}"/>
-                    <RadioButton x:Name="FilterEmailRadio"
-                                 GroupName="UserFilterGroup"
-                                 Content="За поштою"
-                                 Tag="{x:Static entities:UserSearchFilter.Email}"
-                                 Checked="FilterRadio_Checked"
-                                 Style="{StaticResource FilterRadioPillStyle}"/>
-                </StackPanel>
-            </Border>
+                <Border Background="#F4EAE0" CornerRadius="14" Padding="3" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="FilterAllRadio"
+                                     GroupName="UserFilterGroup"
+                                     Content="Всі"
+                                     IsChecked="True"
+                                     Tag="{x:Static entities:UserSearchFilter.All}"
+                                     Checked="FilterRadio_Checked"
+                                     Style="{StaticResource FilterRadioPillStyle}"/>
+                        <RadioButton x:Name="FilterNameRadio"
+                                     GroupName="UserFilterGroup"
+                                     Content="За ім'ям"
+                                     Tag="{x:Static entities:UserSearchFilter.Name}"
+                                     Checked="FilterRadio_Checked"
+                                     Style="{StaticResource FilterRadioPillStyle}"/>
+                        <RadioButton x:Name="FilterUsernameRadio"
+                                     GroupName="UserFilterGroup"
+                                     Content="За нікнеймом"
+                                     Tag="{x:Static entities:UserSearchFilter.Username}"
+                                     Checked="FilterRadio_Checked"
+                                     Style="{StaticResource FilterRadioPillStyle}"/>
+                        <RadioButton x:Name="FilterEmailRadio"
+                                     GroupName="UserFilterGroup"
+                                     Content="За поштою"
+                                     Tag="{x:Static entities:UserSearchFilter.Email}"
+                                     Checked="FilterRadio_Checked"
+                                     Style="{StaticResource FilterRadioPillStyle}"/>
+                    </StackPanel>
+                </Border>
 
-            <TextBlock x:Name="ResultsCountTextBlock"
-                       Foreground="#7A6865"
-                       FontSize="13"
-                       FontWeight="Medium"
-                       VerticalAlignment="Center"/>
-        </StackPanel>
+                <TextBlock x:Name="ResultsCountTextBlock"
+                           Foreground="#7A6865"
+                           FontSize="13"
+                           FontWeight="Medium"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
 
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+
+                <Button x:Name="CategoriesButton"
+                        Content="Категорії рецептів"
+                        Style="{StaticResource HeaderNavButtonStyle}"
+                        Background="#EBB832"
+                        Foreground="#4A3532"
+                        FontWeight="Bold"
+                        Click="CategoriesButton_Click"/>
+            </StackPanel>
+        </Grid>
         <Grid Grid.Row="2">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl x:Name="UsersItemsControl">
@@ -311,7 +345,6 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
-
             <TextBlock x:Name="EmptyTextBlock"
                        TextAlignment="Center"
                        Foreground="#7A6865"
@@ -323,4 +356,4 @@
                        Visibility="Collapsed"/>
         </Grid>
     </Grid>
-</Window>
+</Window>       
