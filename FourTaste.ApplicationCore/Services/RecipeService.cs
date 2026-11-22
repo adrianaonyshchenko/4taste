@@ -151,7 +151,8 @@ namespace FourTaste.ApplicationCore.Services
                 return Result.Failure("Рецепт не знайдено.");
             }
 
-            if (recipe.UserId != request.UserId)
+            bool isAdmin = await IsAdminAsync(request.UserId);
+            if (!isAdmin && recipe.UserId != request.UserId)
             {
                 _logger.Warning("Спроба несанкціонованого редагування: користувач {UserId} намагався змінити рецепт {RecipeId} автора {AuthorId}.", request.UserId, request.Id, recipe.UserId);
                 return Result.Failure("Ви можете редагувати лише власні рецепти.");
@@ -269,7 +270,8 @@ namespace FourTaste.ApplicationCore.Services
                 return Result.Failure("Рецепт не знайдено.");
             }
 
-            if (recipe.UserId != userId)
+            bool isAdmin = await IsAdminAsync(userId);
+            if (!isAdmin && recipe.UserId != userId)
             {
                 _logger.Warning("Спроба несанкціонованого видалення: користувач {UserId} намагався видалити рецепт {RecipeId} автора {AuthorId}.", userId, recipeId, recipe.UserId);
                 return Result.Failure("Ви можете видаляти лише власні рецепти.");
@@ -361,7 +363,8 @@ namespace FourTaste.ApplicationCore.Services
                 return Result<RecipeDetails>.Failure("Рецепт не знайдено.");
             }
 
-            if (!recipe.IsPublic && recipe.UserId != viewerUserId)
+            bool isAdmin = viewerUserId.HasValue && await IsAdminAsync(viewerUserId.Value);
+            if (!recipe.IsPublic && !isAdmin && recipe.UserId != viewerUserId)
             {
                 _logger.Warning("Спроба перегляду приватного рецепта {RecipeId} без доступу (глядач: {ViewerUserId})", recipeId, viewerUserId);
                 return Result<RecipeDetails>.Failure("Цей рецепт приватний.");
@@ -452,6 +455,17 @@ namespace FourTaste.ApplicationCore.Services
             int hours = int.Parse(match.Groups[1].Value);
             int minutes = int.Parse(match.Groups[2].Value);
             return (hours * 60) + minutes > 0;
+        }
+
+        private async Task<bool> IsAdminAsync(int userId)
+        {
+            if (userId <= 0)
+            {
+                return false;
+            }
+
+            var user = await _userRepository.GetByIdAsync(userId);
+            return user?.Role == UserRole.Admin;
         }
     }
 }
