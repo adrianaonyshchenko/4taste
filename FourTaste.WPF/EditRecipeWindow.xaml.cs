@@ -24,6 +24,7 @@ namespace FourTaste.WPF
 
         private byte[]? _selectedPhoto;
         private int _servings = 1;
+        private int _recipeOwnerId;
 
         public EditRecipeWindow(int recipeId)
             : this(
@@ -93,8 +94,9 @@ namespace FourTaste.WPF
             }
 
             var recipe = result.Value!.Recipe;
+            _recipeOwnerId = recipe.UserId;
 
-            if (recipe.UserId != currentUserId.Value)
+            if (!App.CurrentUser.IsAdmin && recipe.UserId != currentUserId.Value)
             {
                 MessageBox.Show("Ви можете редагувати виключно власні рецепти.", "Доступ заборонено", MessageBoxButton.OK, MessageBoxImage.Warning);
                 Close();
@@ -388,7 +390,7 @@ namespace FourTaste.WPF
                 var request = new UpdateRecipeRequest
                 {
                     Id = _recipeId,
-                    UserId = currentUserId.Value,
+                    UserId = App.CurrentUser.IsAdmin ? _recipeOwnerId : currentUserId.Value,
                     Title = title,
                     Time = time,
                     Category = category,
@@ -400,7 +402,6 @@ namespace FourTaste.WPF
                     Ingredients = ingredientsList,
                     Steps = stepsList,
                 };
-
                 var result = await _recipeService.UpdateRecipeAsync(request);
 
                 if (result.IsFailure)
@@ -445,7 +446,8 @@ namespace FourTaste.WPF
 
             try
             {
-                var result = await _recipeService.DeleteRecipeAsync(_recipeId, currentUserId.Value);
+                int targetUserId = App.CurrentUser.IsAdmin ? _recipeOwnerId : currentUserId.Value;
+                var result = await _recipeService.DeleteRecipeAsync(_recipeId, targetUserId);
 
                 if (result.IsFailure)
                 {
