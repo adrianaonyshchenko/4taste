@@ -322,6 +322,8 @@ namespace FourTaste.WPF
 
             MessageBox.Show("Рецепт видалено.", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
             await this.SearchAsync(immediate: true);
+        }
+
         private void CategoriesButton_Click(object sender, RoutedEventArgs e)
         {
             var window = App.ServiceProvider?.GetService<AdminCategoriesWindow>() ?? new AdminCategoriesWindow();
