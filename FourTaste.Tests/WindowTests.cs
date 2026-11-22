@@ -288,7 +288,7 @@ namespace FourTaste.Tests
             {
                 try
                 {
-                    var window = new AdminHomeWindow(new Mock<IAdminService>().Object);
+                    var window = new AdminHomeWindow(new Mock<IAdminService>().Object, new Mock<IRecipeService>().Object);
                     itemsControlFound = window.FindName("UsersItemsControl") is ItemsControl;
                     foreach (var name in new[] { "FilterAllRadio", "FilterNameRadio", "FilterUsernameRadio", "FilterEmailRadio" })
                     {
