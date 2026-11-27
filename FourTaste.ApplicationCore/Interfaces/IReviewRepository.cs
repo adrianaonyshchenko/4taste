@@ -13,5 +13,6 @@ namespace FourTaste.ApplicationCore.Interfaces
         Task<bool> DeleteAsync(int recipeId, int userId);
         Task<List<RecipeReview>> GetByRecipeAsync(int recipeId);
         Task<Dictionary<int, byte[]>> GetAuthorAvatarsAsync(IReadOnlyCollection<int> userIds);
+        Task<bool> DeleteByIdAsync(int reviewId);
     }
 }

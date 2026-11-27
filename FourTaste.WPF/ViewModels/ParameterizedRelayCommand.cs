@@ -1,0 +1,25 @@
+﻿using System;
+using System.Windows.Input;
+
+namespace FourTaste.WPF.ViewModels
+{
+    public sealed class ParameterizedRelayCommand<T> : ICommand
+    {
+        private readonly Action<T?> _execute;
+        private readonly Func<T?, bool>? _canExecute;
+
+        public ParameterizedRelayCommand(Action<T?> execute, Func<T?, bool>? canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public event EventHandler? CanExecuteChanged;
+
+        public bool CanExecute(object? parameter) => _canExecute?.Invoke(parameter is T typed ? typed : default) ?? true;
+
+        public void Execute(object? parameter) => _execute(parameter is T typed ? typed : default);
+
+        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+    }
+}
