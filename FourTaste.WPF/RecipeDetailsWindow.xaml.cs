@@ -10,6 +10,7 @@ using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Models;
 using FourTaste.ApplicationCore.Services;
+using FourTaste.WPF.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
@@ -21,6 +22,8 @@ namespace FourTaste.WPF
         private readonly IAllergyService? _allergyService;
         private readonly ISubstituteService? _substituteService;
         private readonly int _recipeId;
+        private readonly RecipeDetailsViewModel _viewModel = new (
+            App.ServiceProvider?.GetService<IRecipeScalingService>() ?? new RecipeScalingService());
         private bool _isFavorite;
 
         private Recipe? _currentRecipe;
@@ -58,26 +61,12 @@ namespace FourTaste.WPF
             _allergyService = allergyService;
             _substituteService = substituteService ?? App.ServiceProvider?.GetService<ISubstituteService>();
             _recipeId = recipeId;
+            DataContext = _viewModel;
         }
 
         private static BitmapImage? ToBitmapImage(byte[]? bytes)
         {
             return ImageDecoder.Decode(bytes);
-        }
-
-        private static string FormatServingsText(int count)
-        {
-            int mod10 = count % 10;
-            int mod100 = count % 100;
-            if (mod10 == 1 && mod100 != 11)
-            {
-                return $"{count}\nпорція";
-            }
-            if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
-            {
-                return $"{count}\nпорції";
-            }
-            return $"{count}\nпорцій";
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -95,7 +84,7 @@ namespace FourTaste.WPF
             await Task.WhenAll(detailsTask, allergiesTask);
 
             var result = await detailsTask;
-            var userAllergies = await allergiesTask;
+            _ = await allergiesTask;
 
             if (result.IsFailure)
             {
@@ -114,9 +103,6 @@ namespace FourTaste.WPF
             CategoryTextBlock.Text = $"Категорія: {recipe.Category}";
             CuisineTextBlock.Text = $"Країна: {recipe.Cuisine}";
             StatusTextBlock.Text = $"Статус: {(recipe.IsPublic ? "публічний" : "приватний")}";
-
-            int servings = recipe.Servings > 0 ? recipe.Servings : 1;
-            ServingsTextBlock.Text = FormatServingsText(servings);
 
             bool isAuthor = viewerId.HasValue && viewerId.Value == recipe.UserId;
             EditRecipeButton.Visibility = isAuthor ? Visibility.Visible : Visibility.Collapsed;
@@ -159,7 +145,7 @@ namespace FourTaste.WPF
                 }
             }
 
-            RenderIngredientsList();
+            _viewModel.Initialize(recipe, _conflictingIngredients, _activeSubstitutions);
 
             if (!viewerId.HasValue)
             {
@@ -241,41 +227,6 @@ namespace FourTaste.WPF
                 .Where(a => !string.IsNullOrWhiteSpace(a.AllergenName))
                 .Select(a => a.AllergenName.Trim().ToLower())
                 .ToList();
-        }
-
-        private void RenderIngredientsList()
-        {
-            if (_currentRecipe == null)
-            {
-                return;
-            }
-
-            var conflictingIds = new HashSet<int>(_conflictingIngredients.Select(i => i.Id));
-
-            var ingredientViewModels = _currentRecipe.Ingredients.Select(ing =>
-            {
-                bool isSubstituted = _activeSubstitutions.TryGetValue(ing.Id, out var sub);
-                bool isAllergen = !isSubstituted && conflictingIds.Contains(ing.Id);
-
-                var (cleanName, effectiveAmount) = AllergyMatcher.ExtractCleanNameAndAmount(ing.Name, ing.Amount);
-
-                string displayName = isSubstituted ? sub!.SubstituteIngredientName : cleanName;
-                string displayAmount = isSubstituted ? sub!.CalculatedAmount : effectiveAmount;
-
-                return new RecipeIngredientDisplayModel
-                {
-                    Id = ing.Id,
-                    Name = displayName,
-                    Amount = displayAmount,
-                    IsAllergen = isAllergen,
-                    IsSubstituted = isSubstituted,
-                    OriginalName = cleanName,
-                    OriginalAmount = effectiveAmount,
-                    SubstituteNote = isSubstituted ? sub!.Note : null,
-                };
-            }).ToList();
-
-            IngredientsItemsControl.ItemsSource = ingredientViewModels;
         }
 
         private void UpdateAllergenSelector()
@@ -468,7 +419,7 @@ namespace FourTaste.WPF
             }
 
             _activeSubstitutions[_selectedIngredientId] = applyResult.Value!;
-            RenderIngredientsList();
+            _viewModel.UpdateSubstitutions(_activeSubstitutions);
 
             SubstitutePanel.Visibility = Visibility.Collapsed;
 
@@ -511,7 +462,7 @@ namespace FourTaste.WPF
             }
 
             _activeSubstitutions.Remove(model.Id);
-            RenderIngredientsList();
+            _viewModel.UpdateSubstitutions(_activeSubstitutions);
         }
 
         private void CloseSubstitutePanelButton_Click(object sender, RoutedEventArgs e)
@@ -571,13 +522,11 @@ namespace FourTaste.WPF
                 return;
             }
 
-            var ingredientsList = IngredientsItemsControl.ItemsSource as List<RecipeIngredientDisplayModel>;
-
+            var ingredientsList = _viewModel.Ingredients.ToList();
             var cookingWindow = new CookingStepWindow(_currentRecipe, ingredientsList)
             {
                 Owner = this,
             };
-
             cookingWindow.ShowDialog();
         }
     }

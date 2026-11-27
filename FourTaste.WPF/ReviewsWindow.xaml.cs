@@ -2,6 +2,7 @@ using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Models;
 using FourTaste.ApplicationCore.Services;
+using FourTaste.WPF.ViewModels;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ namespace FourTaste.WPF
     {
         private readonly IReviewService _reviewService;
         private readonly int _recipeId;
+        private readonly ReviewsViewModel _viewModel;
 
         private ReviewsOverview? _overview;
         private RecipeReview? _editingReview;
@@ -32,10 +34,23 @@ namespace FourTaste.WPF
             _reviewService = reviewService ?? throw new ArgumentNullException(nameof(reviewService));
             _recipeId = recipeId;
 
-            TitleTextBlock.Text = $"Відгуки: {recipeTitle}";
-            ReviewTextBox.MaxLength = ReviewOptions.MaxTextLength;
-
             var currentUser = App.CurrentUser.CurrentUser;
+            bool isAdmin = App.CurrentUser.IsAdmin;
+            _viewModel = new ReviewsViewModel(_reviewService, recipeId, recipeTitle, currentUser?.ID, isAdmin);
+            DataContext = _viewModel;
+
+            _viewModel.Reviews.CollectionChanged += (_, e) =>
+            {
+                if (e.OldItems is not null && _overview is not null)
+                {
+                    foreach (ReviewCardViewModel removed in e.OldItems)
+                    {
+                        _overview.Reviews.RemoveAll(r => r.Id == removed.Review.Id);
+                    }
+                }
+            };
+
+            ReviewTextBox.MaxLength = ReviewOptions.MaxTextLength;
             FormAuthorTextBlock.Text = currentUser?.Username ?? string.Empty;
             FormInitialTextBlock.Text = ReviewCardViewModel.GetInitial(currentUser?.Username);
 
@@ -249,22 +264,9 @@ namespace FourTaste.WPF
                 return;
             }
 
-            int? viewerId = App.CurrentUser.CurrentUser?.ID;
-
-            var cards = _overview.Reviews
-                .Select(r => new ReviewCardViewModel(r, viewerId))
-                .ToList();
-
-            ReviewsItemsControl.ItemsSource = cards;
-            EmptyTextBlock.Visibility = cards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-
-            _ = LoadAvatarsAsync(cards);
-
-            var counts = _overview.TagCounts;
-            DnaItemsControl.ItemsSource = counts;
-            DnaEmptyTextBlock.Visibility = counts.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-
-            UpdateFormState(viewerId);
+            _viewModel.SetReviews(_overview.Reviews);
+            _ = LoadAvatarsAsync(_viewModel.Reviews);
+            UpdateFormState(App.CurrentUser.CurrentUser?.ID);
         }
 
         private async Task LoadAvatarsAsync(IReadOnlyList<ReviewCardViewModel> cards)
@@ -322,7 +324,11 @@ namespace FourTaste.WPF
                 return;
             }
 
-            if (viewerId is null)
+            if (App.CurrentUser.IsAdmin)
+            {
+                ShowInfo("Режим модерації: ви можете видаляти неприйнятні відгуки.");
+            }
+            else if (viewerId is null)
             {
                 ShowInfo("Увійдіть в акаунт, щоб залишити відгук.");
             }

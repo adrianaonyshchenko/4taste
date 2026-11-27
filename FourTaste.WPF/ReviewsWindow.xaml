@@ -101,10 +101,10 @@
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
-            <TextBlock x:Name="TitleTextBlock" FontSize="22" FontWeight="Bold"
+            <TextBlock x:Name="TitleTextBlock" Text="{Binding WindowTitle}" FontSize="22" FontWeight="Bold"
                        Foreground="#4A352F" TextWrapping="Wrap"/>
             <TextBlock Text="ДНК рецепту" FontWeight="Bold" Foreground="#4A352F" Margin="0,12,0,6"/>
-            <ItemsControl x:Name="DnaItemsControl">
+            <ItemsControl x:Name="DnaItemsControl" ItemsSource="{Binding DnaTags}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel/>
@@ -123,12 +123,12 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
             <TextBlock x:Name="DnaEmptyTextBlock" Text="Тегів ще немає" Foreground="#7A685D"
-                       FontSize="13" Visibility="Collapsed"/>
+                       FontSize="13" Visibility="{Binding IsDnaEmpty, Converter={StaticResource BoolToVisibility}}"/>
         </StackPanel>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <ItemsControl x:Name="ReviewsItemsControl">
+                <ItemsControl x:Name="ReviewsItemsControl" ItemsSource="{Binding Reviews}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="#B89F8B" CornerRadius="18" Padding="16" Margin="0,0,0,12">
@@ -150,10 +150,10 @@
 
                                         <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20" Background="#542E2B">
                                             <TextBlock Text="{Binding Initial}" Visibility="{Binding InitialVisibility}"
-                                                        Foreground="White" FontWeight="Bold" FontSize="16"
-                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                       Foreground="White" FontWeight="Bold" FontSize="16"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
-                                        <Ellipse>
+                                        <Ellipse Grid.Column="0" Width="40" Height="40">
                                             <Ellipse.Fill>
                                                 <ImageBrush ImageSource="{Binding Avatar}" Stretch="UniformToFill"/>
                                             </Ellipse.Fill>
@@ -194,14 +194,22 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
-                                    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0"
-                                                Visibility="{Binding IsOwn, Converter={StaticResource BoolToVisibility}}">
-                                        <Button Content="Редагувати" Style="{StaticResource PillButton}"
-                                                Background="#947A66" Foreground="White" Height="34" FontSize="13"
-                                                Margin="0,0,8,0" Click="EditReviewButton_Click"/>
-                                        <Button Content="Видалити" Style="{StaticResource PillButton}"
-                                                Background="#D8B5A8" Foreground="#D9534F" Height="34" FontSize="13"
-                                                Click="DeleteReviewButton_Click"/>
+                                    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Visibility="{Binding IsOwn, Converter={StaticResource BoolToVisibility}}">
+                                            <Button Content="Редагувати" Style="{StaticResource PillButton}"
+                                                    Background="#947A66" Foreground="White" Height="34" FontSize="13"
+                                                    Margin="0,0,8,0" Click="EditReviewButton_Click"/>
+                                            <Button Content="Видалити" Style="{StaticResource PillButton}"
+                                                    Background="#D8B5A8" Foreground="#D9534F" Height="34" FontSize="13"
+                                                    Click="DeleteReviewButton_Click"/>
+                                        </StackPanel>
+
+                                        <Button Content="Видалити відгук" Style="{StaticResource PillButton}"
+                                                Background="#542E2B" Foreground="White" Height="34" FontSize="13"
+                                                Visibility="{Binding CanAdminDelete, Converter={StaticResource BoolToVisibility}}"
+                                                Command="{Binding DataContext.DeleteReviewByAdminCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -211,7 +219,7 @@
 
                 <TextBlock x:Name="EmptyTextBlock" Text="Відгуків ще немає. Будьте першим!"
                            Foreground="#4A352F" FontSize="15" HorizontalAlignment="Center"
-                           Margin="0,30" Visibility="Collapsed"/>
+                           Margin="0,30" Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}"/>
             </StackPanel>
         </ScrollViewer>
 

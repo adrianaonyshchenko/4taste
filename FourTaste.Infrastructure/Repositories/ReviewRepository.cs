@@ -131,5 +131,23 @@ namespace FourTaste.Infrastructure.Repositories
 
             return rows.ToDictionary(x => x.ID, x => x.Avatar!);
         }
+
+        public async Task<bool> DeleteByIdAsync(int reviewId)
+        {
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            var review = await context.RecipeReviews
+                .Include(r => r.Tags)
+                .FirstOrDefaultAsync(r => r.Id == reviewId);
+
+            if (review is null)
+            {
+                return false;
+            }
+
+            context.RecipeReviews.Remove(review);
+            await context.SaveChangesAsync();
+            return true;
+        }
     }
 }

@@ -166,6 +166,8 @@ namespace FourTaste.WPF
             services.AddScoped<IUserWarningRepository, UserWarningRepository>();
             services.AddScoped<IUserModerationService, UserModerationService>();
 
+            services.AddSingleton<IRecipeScalingService, RecipeScalingService>();
+
             services.AddTransient<ManageAllergiesWindow>();
             services.AddTransient<RegisterWindow>();
             services.AddTransient<LoginWindow>();

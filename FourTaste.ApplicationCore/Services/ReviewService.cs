@@ -12,12 +12,16 @@ namespace FourTaste.ApplicationCore.Services
 {
     public class ReviewService : IReviewService
     {
+        public const string AccessDeniedError = "Недостатньо прав для модерації відгуків.";
+
         private readonly IReviewRepository _reviewRepository;
+        private readonly ICurrentUserService _currentUser;
         private readonly ILogger _logger;
 
-        public ReviewService(IReviewRepository reviewRepository, ILogger logger)
+        public ReviewService(IReviewRepository reviewRepository, ICurrentUserService currentUser, ILogger logger)
         {
             _reviewRepository = reviewRepository;
+            _currentUser = currentUser;
             _logger = logger;
         }
 
@@ -151,6 +155,31 @@ namespace FourTaste.ApplicationCore.Services
             _logger.Information("Завантажено аватарки {Found} з {Requested} авторів відгуків.", avatars.Count, ids.Count);
             return Result<Dictionary<int, byte[]>>.Success(avatars);
         }
+
+        public async Task<Result> DeleteReviewByAdminAsync(int reviewId)
+        {
+            if (!_currentUser.IsAdmin)
+            {
+                _logger.Warning("Користувач {UserId} без прав адміністратора намагався видалити відгук {ReviewId}.", _currentUser.UserId, reviewId);
+                return Result.Failure(AccessDeniedError);
+            }
+
+            if (reviewId <= 0)
+            {
+                _logger.Warning("Помилка валідації: некоректний Id відгуку {ReviewId}.", reviewId);
+                return Result.Failure("Некоректний ідентифікатор відгуку.");
+            }
+
+            if (!await _reviewRepository.DeleteByIdAsync(reviewId))
+            {
+                _logger.Warning("Адміністратор {AdminId}: відгук {ReviewId} не знайдено для видалення.", _currentUser.UserId, reviewId);
+                return Result.Failure("Відгук не знайдено.");
+            }
+
+            _logger.Information("Адміністратор {AdminId} видалив відгук {ReviewId}.", _currentUser.UserId, reviewId);
+            return Result.Success();
+        }
+
         private static RecipeReview BuildReview(ReviewRequest request, IEnumerable<string> tags)
         {
             return new RecipeReview

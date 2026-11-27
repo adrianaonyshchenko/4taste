@@ -14,12 +14,13 @@ namespace FourTaste.WPF
 
         private BitmapImage? avatar;
 
-        public ReviewCardViewModel(RecipeReview review, int? viewerUserId)
+        public ReviewCardViewModel(RecipeReview review, int? viewerUserId, bool isAdminViewer = false)
         {
             int rating = Math.Clamp(review.Rating, 0, MaxStars);
 
             Review = review;
             IsOwn = viewerUserId.HasValue && review.UserId == viewerUserId.Value;
+            CanAdminDelete = isAdminViewer && !IsOwn;
             AuthorName = review.AuthorName;
             Initial = GetInitial(review.AuthorName);
             FilledStars = new string('★', rating);
@@ -35,6 +36,7 @@ namespace FourTaste.WPF
         public event PropertyChangedEventHandler? PropertyChanged;
         public RecipeReview Review { get; }
         public bool IsOwn { get; }
+        public bool CanAdminDelete { get; }
         public string AuthorName { get; }
         public string Initial { get; }
         public string FilledStars { get; }

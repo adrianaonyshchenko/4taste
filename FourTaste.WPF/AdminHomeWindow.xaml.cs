@@ -345,5 +345,27 @@ namespace FourTaste.WPF
                 this.Close();
             }
         }
+
+        private void RecipeReviewsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement { Tag: Recipe recipe })
+            {
+                return;
+            }
+
+            var reviewService = App.ServiceProvider?.GetService<IReviewService>();
+            if (reviewService is null)
+            {
+                MessageBox.Show("Сервіс відгуків недоступний.", "Помилка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var window = new ReviewsWindow(reviewService, recipe.Id, recipe.Title)
+            {
+                Owner = this,
+            };
+
+            window.ShowDialog();
+        }
     }
 }
