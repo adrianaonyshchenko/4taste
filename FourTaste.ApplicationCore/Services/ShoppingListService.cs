@@ -27,6 +27,80 @@ namespace FourTaste.ApplicationCore.Services
             _logger = logger;
         }
 
+        public async Task<Result<List<ShoppingListItem>>> GetByRoomIdAsync(int roomId)
+        {
+            if (roomId <= 0)
+            {
+                _logger.Warning("Некоректний RoomId ({RoomId}) при отриманні списку покупок.", roomId);
+                return Result<List<ShoppingListItem>>.Failure("Некоректний ідентифікатор кімнати.");
+            }
+
+            var items = await _shoppingListRepository.GetByRoomIdAsync(roomId);
+            return Result<List<ShoppingListItem>>.Success(items);
+        }
+
+        public async Task<Result<ShoppingListItem>> AddManualItemAsync(int roomId, string productName, decimal quantity, string unit)
+        {
+            if (roomId <= 0)
+            {
+                _logger.Warning("Некоректний RoomId ({RoomId}) при ручному додаванні продукту.", roomId);
+                return Result<ShoppingListItem>.Failure("Некоректний ідентифікатор кімнати.");
+            }
+
+            string trimmedName = productName?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedName))
+            {
+                _logger.Warning("Спроба додати продукт з порожньою назвою у кімнаті {RoomId}.", roomId);
+                return Result<ShoppingListItem>.Failure("Введіть назву продукту.");
+            }
+
+            decimal validQuantity = quantity > 0 ? quantity : 1m;
+            string validUnit = string.IsNullOrWhiteSpace(unit) ? "шт" : unit.Trim();
+            string formattedName = char.ToUpper(trimmedName[0]) + (trimmedName.Length > 1 ? trimmedName.Substring(1) : string.Empty);
+
+            var newItem = new ShoppingListItem
+            {
+                RoomId = roomId,
+                ProductName = formattedName,
+                Quantity = validQuantity,
+                Unit = validUnit,
+                IsChecked = false
+            };
+
+            await _shoppingListRepository.AddAsync(newItem);
+            _logger.Information("Вручну додано продукт «{ProductName}» ({Quantity} {Unit}) до списку кімнати {RoomId}.", newItem.ProductName, newItem.Quantity, newItem.Unit, roomId);
+
+            return Result<ShoppingListItem>.Success(newItem);
+        }
+
+        public async Task<Result> RemoveItemAsync(int roomId, int itemId)
+        {
+            if (roomId <= 0 || itemId <= 0)
+            {
+                _logger.Warning("Некоректні параметри RoomId ({RoomId}) або ItemId ({ItemId}) при видаленні продукту.", roomId, itemId);
+                return Result.Failure("Некоректний ідентифікатор продукту або кімнати.");
+            }
+
+            await _shoppingListRepository.DeleteAsync(roomId, itemId);
+            _logger.Information("Видалено продукт з Id {ItemId} зі списку покупок кімнати {RoomId}.", itemId, roomId);
+
+            return Result.Success();
+        }
+
+        public async Task<Result> ClearListAsync(int roomId)
+        {
+            if (roomId <= 0)
+            {
+                _logger.Warning("Некоректний RoomId ({RoomId}) при очищенні списку покупок.", roomId);
+                return Result.Failure("Некоректний ідентифікатор кімнати.");
+            }
+
+            await _shoppingListRepository.ClearRoomListAsync(roomId);
+            _logger.Information("Очищено список покупок для кімнати {RoomId}.", roomId);
+
+            return Result.Success();
+        }
+
         public async Task<Result<string?>> GenerateShoppingListFromMealPlanAsync(int roomId)
         {
             if (roomId <= 0)
@@ -40,6 +114,7 @@ namespace FourTaste.ApplicationCore.Services
             await _shoppingListRepository.ClearRoomListAsync(roomId);
 
             var mealPlans = await _mealPlanRepository.GetByRoomIdWithRecipesAsync(roomId);
+
             if (mealPlans == null || mealPlans.Count == 0)
             {
                 return Result<string?>.Success("Спільне меню порожнє. Немає страв для генерації списку.");
@@ -47,7 +122,6 @@ namespace FourTaste.ApplicationCore.Services
 
             var manualPlans = mealPlans.Where(m => !m.RecipeId.HasValue || m.Recipe == null).ToList();
             string? warningMessage = null;
-
             if (manualPlans.Count > 0)
             {
                 var manualNames = string.Join(", ", manualPlans.Select(m => $"«{m.RecipeName}»"));
@@ -74,7 +148,6 @@ namespace FourTaste.ApplicationCore.Services
                         if (!string.IsNullOrWhiteSpace(ingredient.Amount))
                         {
                             var amountStr = ingredient.Amount.Trim();
-
                             var match = Regex.Match(amountStr, @"^([\d\.,]+)");
                             if (match.Success)
                             {
@@ -83,6 +156,7 @@ namespace FourTaste.ApplicationCore.Services
                                 {
                                     parsedQuantity = q;
                                 }
+
                                 unitName = amountStr.Substring(match.Length).Trim();
                             }
                             else
@@ -93,7 +167,6 @@ namespace FourTaste.ApplicationCore.Services
 
                         string normalizedName = productName.ToLowerInvariant();
                         string normalizedUnit = unitName.ToLowerInvariant();
-
                         var key = (Name: normalizedName, Unit: normalizedUnit);
 
                         if (aggregatedIngredients.ContainsKey(key))
@@ -112,7 +185,6 @@ namespace FourTaste.ApplicationCore.Services
             foreach (var kvp in aggregatedIngredients)
             {
                 string formattedName = char.ToUpper(kvp.Key.Name[0]) + (kvp.Key.Name.Length > 1 ? kvp.Key.Name.Substring(1) : string.Empty);
-
                 newItems.Add(new ShoppingListItem
                 {
                     RoomId = roomId,
@@ -129,7 +201,6 @@ namespace FourTaste.ApplicationCore.Services
             }
 
             _logger.Information("Список покупок для кімнати {RoomId} успішно згенеровано. Додано {Count} позицій.", roomId, newItems.Count);
-
             return Result<string?>.Success(warningMessage);
         }
     }

@@ -2,6 +2,7 @@ using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.ApplicationCore.Models;
 using FourTaste.ApplicationCore.Services;
+using FourTaste.WPF.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -22,14 +23,26 @@ namespace FourTaste.WPF
         private readonly ShoppingListService _shoppingListService;
         private List<RoomMealPlan> _allMealPlans = new ();
 
+        public ShoppingListViewModel ShoppingList { get; }
+
         private int CurrentUserId => App.CurrentUser.UserId;
 
         public RoomDetailsWindow(RoomDto room, IRoomService roomService)
-            : this(room, roomService, App.ServiceProvider?.GetService<IRoomMealPlanService>() ?? throw new InvalidOperationException("IServiceProvider is not initialized."), App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService is not initialized."), App.ServiceProvider?.GetService<ShoppingListService>() ?? throw new InvalidOperationException("ShoppingListService is not initialized."))
+            : this(
+                room,
+                roomService,
+                App.ServiceProvider?.GetService<IRoomMealPlanService>() ?? throw new InvalidOperationException("IServiceProvider is not initialized."),
+                App.ServiceProvider?.GetService<IRecipeService>() ?? throw new InvalidOperationException("IRecipeService is not initialized."),
+                App.ServiceProvider?.GetService<ShoppingListService>() ?? throw new InvalidOperationException("ShoppingListService is not initialized."))
         {
         }
 
-        public RoomDetailsWindow(RoomDto room, IRoomService roomService, IRoomMealPlanService roomMealPlanService, IRecipeService recipeService, ShoppingListService shoppingListService)
+        public RoomDetailsWindow(
+            RoomDto room,
+            IRoomService roomService,
+            IRoomMealPlanService roomMealPlanService,
+            IRecipeService recipeService,
+            ShoppingListService shoppingListService)
         {
             InitializeComponent();
             _room = room ?? throw new ArgumentNullException(nameof(room));
@@ -37,6 +50,10 @@ namespace FourTaste.WPF
             _roomMealPlanService = roomMealPlanService ?? throw new ArgumentNullException(nameof(roomMealPlanService));
             _recipeService = recipeService ?? throw new ArgumentNullException(nameof(recipeService));
             _shoppingListService = shoppingListService ?? throw new ArgumentNullException(nameof(shoppingListService));
+
+            ShoppingList = new ShoppingListViewModel(_room.Id, _shoppingListService);
+            ShoppingList.NotificationRequested += OnShoppingListNotificationRequested;
+            DataContext = this;
 
             RoomCalendar.SelectedDate = DateTime.Today;
         }
@@ -75,7 +92,154 @@ namespace FourTaste.WPF
             }
 
             await LoadMealPlansAsync();
-            await LoadShoppingListAsync();
+            await ShoppingList.LoadAsync();
+        }
+
+        private void OnShoppingListNotificationRequested(string message, bool isError)
+        {
+            MessageBox.Show(
+                message,
+                isError ? "Помилка" : "Список покупок",
+                MessageBoxButton.OK,
+                isError ? MessageBoxImage.Warning : MessageBoxImage.Information);
+        }
+
+        private async void AddShoppingItemButton_Click(object sender, RoutedEventArgs e)
+        {
+            var input = PromptShoppingItemInput();
+            if (input == null)
+            {
+                return;
+            }
+
+            await ShoppingList.AddManualItemFromInputAsync(input.Value.Name, input.Value.QuantityText, input.Value.Unit);
+        }
+        private (string Name, string QuantityText, string Unit)? PromptShoppingItemInput()
+        {
+            var promptWindow = new Window
+            {
+                Title = "Додати продукт",
+                Width = 360,
+                Height = 235,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
+                Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#E5D3BD")!,
+                ResizeMode = ResizeMode.NoResize
+            };
+
+            var grid = new Grid { Margin = new Thickness(14) };
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            var nameLabel = new TextBlock
+            {
+                Text = "Назва продукту:",
+                Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#4A352F")!,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+            Grid.SetRow(nameLabel, 0);
+            grid.Children.Add(nameLabel);
+
+            var nameBox = new TextBox
+            {
+                Height = 28,
+                Padding = new Thickness(6, 2, 6, 2),
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+            Grid.SetRow(nameBox, 1);
+            grid.Children.Add(nameBox);
+
+            var qtyGrid = new Grid { Margin = new Thickness(0, 0, 0, 12) };
+            qtyGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            qtyGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(90) });
+
+            var qtyStack = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
+            qtyStack.Children.Add(new TextBlock
+            {
+                Text = "Кількість:",
+                Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#4A352F")!,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 0, 4)
+            });
+            var qtyBox = new TextBox
+            {
+                Text = "1",
+                Height = 28,
+                Padding = new Thickness(6, 2, 6, 2)
+            };
+            qtyStack.Children.Add(qtyBox);
+            Grid.SetColumn(qtyStack, 0);
+            qtyGrid.Children.Add(qtyStack);
+
+            var unitStack = new StackPanel();
+            unitStack.Children.Add(new TextBlock
+            {
+                Text = "Одиниця:",
+                Foreground = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#4A352F")!,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 0, 4)
+            });
+            var unitBox = new TextBox
+            {
+                Text = "шт",
+                Height = 28,
+                Padding = new Thickness(6, 2, 6, 2)
+            };
+            unitStack.Children.Add(unitBox);
+            Grid.SetColumn(unitStack, 1);
+            qtyGrid.Children.Add(unitStack);
+
+            Grid.SetRow(qtyGrid, 2);
+            grid.Children.Add(qtyGrid);
+
+            var buttonPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            Grid.SetRow(buttonPanel, 3);
+
+            (string Name, string QuantityText, string Unit)? resultData = null;
+
+            var okButton = new Button
+            {
+                Content = "ОК",
+                Width = 75,
+                Height = 34,
+                Margin = new Thickness(0, 0, 8, 0),
+                Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#542E2B")!,
+                Foreground = System.Windows.Media.Brushes.White,
+                FontWeight = FontWeights.Bold
+            };
+            okButton.Click += (s, ev) =>
+            {
+                resultData = (nameBox.Text?.Trim() ?? string.Empty, qtyBox.Text?.Trim() ?? "1", unitBox.Text?.Trim() ?? "шт");
+                promptWindow.DialogResult = true;
+                promptWindow.Close();
+            };
+            var cancelButton = new Button
+            {
+                Content = "Скасувати",
+                Width = 90,
+                Height = 34,
+                Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#877063")!,
+                Foreground = System.Windows.Media.Brushes.White,
+                FontWeight = FontWeights.Bold
+            };
+            cancelButton.Click += (s, ev) => promptWindow.Close();
+
+            buttonPanel.Children.Add(okButton);
+            buttonPanel.Children.Add(cancelButton);
+            grid.Children.Add(buttonPanel);
+
+            promptWindow.Content = grid;
+            nameBox.Focus();
+
+            if (promptWindow.ShowDialog() == true)
+            {
+                return resultData;
+            }
+
+            return null;
         }
 
         private async Task LoadMealPlansAsync()
@@ -85,17 +249,6 @@ namespace FourTaste.WPF
             {
                 _allMealPlans = result.Value;
                 UpdateMealPlansDisplay();
-            }
-        }
-
-        private async Task LoadShoppingListAsync()
-        {
-            var repo = App.ServiceProvider?.GetService<IShoppingListRepository>();
-            if (repo != null)
-            {
-                var items = await repo.GetByRoomIdAsync(_room.Id);
-                ShoppingListItemsControl.ItemsSource = items;
-                ShoppingListPlaceholderText.Visibility = items == null || items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
@@ -158,43 +311,6 @@ namespace FourTaste.WPF
             await LoadMealPlansAsync();
         }
 
-        private async void GenerateShoppingListButton_Click(object sender, RoutedEventArgs e)
-        {
-            var result = await _shoppingListService.GenerateShoppingListFromMealPlanAsync(_room.Id);
-            if (result.IsFailure)
-            {
-                MessageBox.Show(result.Error, "Помилка", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(result.Value))
-            {
-                MessageBox.Show(result.Value, "Увага (ручні страви)", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Список покупок успішно згенеровано зі спільного меню!", "Успіх", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-
-            await LoadShoppingListAsync();
-        }
-
-        private async void ClearShoppingListButton_Click(object sender, RoutedEventArgs e)
-        {
-            var confirm = MessageBox.Show("Ви дійсно хочете очистити весь список покупок?", "Підтвердження", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (confirm != MessageBoxResult.Yes)
-            {
-                return;
-            }
-
-            var repo = App.ServiceProvider?.GetService<IShoppingListRepository>();
-            if (repo != null)
-            {
-                await repo.ClearRoomListAsync(_room.Id);
-                await LoadShoppingListAsync();
-            }
-        }
-
         private async void DeleteMealPlan_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is int mealPlanId)
@@ -228,7 +344,6 @@ namespace FourTaste.WPF
                 Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFrom("#E5D3BD")!,
                 ResizeMode = ResizeMode.NoResize
             };
-
             var grid = new Grid { Margin = new Thickness(14) };
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -257,8 +372,6 @@ namespace FourTaste.WPF
                 ItemsSource = recipes,
                 Height = 28,
                 VerticalContentAlignment = VerticalAlignment.Center
-
-
             };
             Grid.SetColumn(comboBox, 0);
             inputGrid.Children.Add(comboBox);
@@ -352,8 +465,7 @@ namespace FourTaste.WPF
             }
             return null;
         }
-
-        private async void RoomCodeButton_Click(object sender, RoutedEventArgs e)
+        private void RoomCodeButton_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new RoomCreatedDialog(
                 _room.Name,

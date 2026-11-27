@@ -7,6 +7,7 @@
         Loaded="Window_Loaded">
 
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <Style x:Key="RoundedButtonStyle" TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -117,10 +118,10 @@
                                             Padding="10,5"
                                             Margin="0,0,6,6">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock x:Name="OwnerIcon" 
-                                                       Text="👑 " 
-                                                       FontSize="11" 
-                                                       VerticalAlignment="Center" 
+                                            <TextBlock x:Name="OwnerIcon"
+                                                       Text="👑 "
+                                                       FontSize="11"
+                                                       VerticalAlignment="Center"
                                                        Visibility="Collapsed"/>
                                             <TextBlock Text="{Binding Name}"
                                                        Foreground="#4A352F"
@@ -168,7 +169,6 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
-
                 <Border Grid.Row="1"
                         Background="#B89F8B"
                         CornerRadius="18"
@@ -229,9 +229,7 @@
                 <Border Grid.Row="0"
                         Background="#B89F8B"
                         CornerRadius="18"
-             
- 
-Padding="14"
+                        Padding="14"
                         Margin="0,0,0,14">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -326,7 +324,6 @@ Padding="14"
                                 </ItemsControl>
                             </StackPanel>
                         </ScrollViewer>
-
                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
                             <Button x:Name="PlanMealButton"
                                     Content="Скласти меню"
@@ -349,7 +346,7 @@ Padding="14"
                                     FontWeight="Bold"
                                     Height="32"
                                     Padding="10,0"
-                                    Click="GenerateShoppingListButton_Click"/>
+                                    Command="{Binding ShoppingList.GenerateFromMealPlanCommand}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -380,45 +377,117 @@ Padding="14"
                                    Foreground="#4A352F"
                                    Margin="0,0,0,8"/>
 
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                            <StackPanel>
-                                <TextBlock x:Name="ShoppingListPlaceholderText"
-                                           Text="Список порожній. Натисніть «Згенерувати список»"
-                                           Foreground="#5C4740"
-                                           FontSize="12"
-                                           HorizontalAlignment="Center"
-                                           TextAlignment="Center"
-                                           TextWrapping="Wrap"
-                                           Margin="0,15,0,15"/>
+                        <Grid Grid.Row="1">
+                            <TextBlock x:Name="ShoppingListPlaceholderText"
+                                       Text="Список порожній. Натисніть «Згенерувати список» або «Додати»"
+                                       Foreground="#5C4740"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       Margin="8,15,8,15"
+                                       Visibility="{Binding ShoppingList.IsEmpty, Converter={StaticResource BoolToVis}}"/>
 
-                                <ItemsControl x:Name="ShoppingListItemsControl">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Background="#E3D7CB" CornerRadius="8" Padding="8,6" Margin="0,3">
-                                                <TextBlock Text="{Binding ProductName}"
-                                                           Foreground="#4A352F"
-                                                           FontSize="13"
-                                                           FontWeight="SemiBold"
-                                                           VerticalAlignment="Center"
-                                                           TextWrapping="Wrap"/>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </ScrollViewer>
+                            <ListBox x:Name="ShoppingListBox"
+                                     ItemsSource="{Binding ShoppingList.Items}"
+                                     SelectedItem="{Binding ShoppingList.SelectedItem, Mode=TwoWay}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.InputBindings>
+                                    <KeyBinding Key="Delete" Command="{Binding ShoppingList.RemoveSelectedItemCommand}"/>
+                                </ListBox.InputBindings>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                        <Setter Property="Margin" Value="0,3"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="ItemBorder"
+                                                            Background="#E3D7CB"
+                                                            CornerRadius="8"
+                                                            Padding="8,6">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="ItemBorder" Property="Background" Value="#D5B89F"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
 
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding ProductName}"
+                                                       Foreground="#4A352F"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"
+                                                       TextWrapping="Wrap"/>
+
+                                            <TextBlock Grid.Column="1"
+                                                       Foreground="#6B5750"
+                                                       FontSize="12"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8,0,0,0">
+                                                <Run Text="{Binding Quantity}"/>
+                                                <Run Text=" "/>
+                                                <Run Text="{Binding Unit}"/>
+                                            </TextBlock>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                            <Button x:Name="AddShoppingItemButton"
+                                    Content="Додати"
+                                    Style="{StaticResource RoundedButtonStyle}"
+                                    Background="#542E2B"
+                                    Foreground="White"
+                                    FontSize="11"
+                                    FontWeight="Bold"
+                                    Height="30"
+                                    Padding="9,0"
+                                    Margin="0,0,4,0"
+                                    Click="AddShoppingItemButton_Click"/>
+
+                            <Button x:Name="RemoveSelectedShoppingItemButton"
+                                    Content="Видалити"
+                                    Style="{StaticResource RoundedButtonStyle}"
+                                    Background="#B03A2E"
+                                    Foreground="White"
+                                    FontSize="11"
+                                    FontWeight="Bold"
+                                    Height="30"
+                                    Padding="9,0"
+                                    Margin="0,0,4,0"
+                                    Command="{Binding ShoppingList.RemoveSelectedItemCommand}"/>
+
                             <Button x:Name="ClearShoppingListButton"
-                                    Content="Очистити список"
+                                    Content="Очистити"
                                     Style="{StaticResource RoundedButtonStyle}"
                                     Background="#877063"
                                     Foreground="White"
                                     FontSize="11"
                                     FontWeight="Bold"
                                     Height="30"
-                                    Padding="10,0"
-                                    Click="ClearShoppingListButton_Click"/>
+                                    Padding="9,0"
+                                    Command="{Binding ShoppingList.ClearListCommand}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -436,10 +505,6 @@ Padding="14"
                         HorizontalAlignment="Center"
                         Click="ExitButton_Click"/>
             </Grid>
-
-
         </Grid>
     </Grid>
 </Window>
- 
- 
