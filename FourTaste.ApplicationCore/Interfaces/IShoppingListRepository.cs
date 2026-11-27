@@ -8,6 +8,8 @@ namespace FourTaste.ApplicationCore.Interfaces
     {
         Task<List<ShoppingListItem>> GetByRoomIdAsync(int roomId);
         Task AddRangeAsync(IEnumerable<ShoppingListItem> items);
+        Task AddAsync(ShoppingListItem item);
+        Task DeleteAsync(int roomId, int itemId);
         Task ClearRoomListAsync(int roomId);
     }
 }

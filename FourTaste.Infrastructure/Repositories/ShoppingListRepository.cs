@@ -5,6 +5,7 @@ using FourTaste.ApplicationCore.Entities;
 using FourTaste.ApplicationCore.Interfaces;
 using FourTaste.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+
 namespace FourTaste.Infrastructure.Repositories
 {
     public class ShoppingListRepository : IShoppingListRepository
@@ -27,6 +28,24 @@ namespace FourTaste.Infrastructure.Repositories
         {
             await _context.ShoppingListItems.AddRangeAsync(items);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task AddAsync(ShoppingListItem item)
+        {
+            await _context.ShoppingListItems.AddAsync(item);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int roomId, int itemId)
+        {
+            var item = await _context.ShoppingListItems
+                .FirstOrDefaultAsync(i => i.RoomId == roomId && i.Id == itemId);
+
+            if (item != null)
+            {
+                _context.ShoppingListItems.Remove(item);
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task ClearRoomListAsync(int roomId)
